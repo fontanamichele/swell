@@ -20,6 +20,10 @@ prefs = [
 
 ["browser_isolation_extensions.js"]
 
+["browser_isolation_native.js"]
+
+["browser_isolation_realaddons.js"]
+
 ["browser_isolation_audit_history.js"]
 
 ["browser_isolation_audit_security.js"]
