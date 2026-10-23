@@ -12,12 +12,10 @@ support-files = [
 ]
 prefs = [
   "privacy.userContext.enabled=true",
+  "signon.rememberSignons=true",
 ]
 
 ["browser_isolation_audit_forms.js"]
-prefs = [
-  "signon.rememberSignons=true",
-]
 
 ["browser_isolation_audit_history.js"]
 
