@@ -1,0 +1,10 @@
+--- a/moz.build
++++ b/moz.build
+@@ -279,6 +279,7 @@ DIRS += [
+     "build",
+     "config",
+     "python",
++    "swell",
+     "testing",
+     "third_party/python",
+ ]

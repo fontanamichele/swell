@@ -1,0 +1,6 @@
+[DEFAULT]
+prefs = [
+  "privacy.userContext.enabled=true",
+]
+
+["browser_smoke.js"]
