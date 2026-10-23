@@ -93,7 +93,10 @@ function loadCopy({ id }) {
       ],
     },
     files: {
-      "content.js": "browser.runtime.sendMessage({ url: location.href });",
+      "content.js": `
+        document.documentElement.setAttribute("data-copy-" + browser.runtime.id.split("@")[0].slice(-1), "1");
+        browser.runtime.sendMessage({ url: location.href });
+      `,
     },
     background,
   });
@@ -139,11 +142,25 @@ async function runScenario(config, prefs = []) {
   // asynchronous deliveries a moment before reading the results.
   await new Promise(resolve => setTimeout(resolve, 500)); // eslint-disable-line mozilla/no-arbitrary-setTimeout
 
+  // Direct injection probe: which tabs did each copy's content script touch?
+  let injected = { a: [], b: [] };
+  for (let [i, tab] of tabs.entries()) {
+    let marks = await SpecialPowers.spawn(tab.linkedBrowser, [], () =>
+      ["a", "b"].filter(n =>
+        content.document.documentElement.hasAttribute(`data-copy-${n}`)
+      )
+    );
+    for (let n of marks) {
+      injected[n].push(`firefox-${i ? "container-" + i : "default"}`);
+    }
+  }
+
   for (let [name, copy] of Object.entries(COPIES)) {
     exts[name].sendMessage("observe", { stores: STORES, page: PAGE, echo: ECHO });
     let r = await exts[name].awaitMessage("observed");
     const foreign = list => list.filter(s => s != copy.store);
-    obs(config, name, "content scripts", foreign(r.contentScripts), JSON.stringify(r.contentScripts));
+    obs(config, name, "content script injected", foreign(injected[name]), JSON.stringify(injected[name]));
+    obs(config, name, "content script messages", foreign(r.contentScripts), JSON.stringify(r.contentScripts));
     obs(config, name, "tabs.query", foreign(r.tabs), JSON.stringify(r.tabs));
     obs(config, name, "cookies.getAllCookieStores", foreign(r.stores), JSON.stringify(r.stores));
     obs(config, name, "cookies.getAll", foreign(Object.keys(r.cookies)), JSON.stringify(r.cookies));
@@ -166,4 +183,13 @@ async function runScenario(config, prefs = []) {
 
 add_task(async function test_C0_stock() {
   await runScenario("C0");
+});
+
+add_task(async function test_C1_existing_denylist() {
+  // Copy a may only use container 1, copy b only container 2.
+  await runScenario("C1", [
+    ["extensions.userContextIsolation.enabled", true],
+    [`extensions.userContextIsolation.${COPIES.a.id}.restricted`, "[0,2]"],
+    [`extensions.userContextIsolation.${COPIES.b.id}.restricted`, "[0,1]"],
+  ]);
 });
