@@ -1,6 +1,15 @@
 [DEFAULT]
+support-files = [
+  "head.js",
+  "file_auth.sjs",
+  "file_blank.html",
+  "file_counter.sjs",
+  "file_worker.js",
+]
 prefs = [
   "privacy.userContext.enabled=true",
 ]
+
+["browser_isolation_audit_storage.js"]
 
 ["browser_smoke.js"]
