@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+.DS_Store
+spikes/m0/addons/*.xpi
+spikes/m0/profiles/
