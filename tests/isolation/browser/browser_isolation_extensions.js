@@ -43,6 +43,26 @@ function background() {
     } else if (msg == "get") {
       let { k } = await browser.storage.local.get("k");
       browser.test.sendMessage("get-done", k ?? null);
+    } else if (msg == "dynamic") {
+      await browser.contentScripts.register({
+        matches: ["https://example.com/*"],
+        js: [
+          {
+            code: `document.documentElement.setAttribute("data-dyn-${arg.name}", "1")`,
+          },
+        ],
+      });
+      let created = "created";
+      try {
+        let tab = await browser.tabs.create({
+          url: "about:blank",
+          cookieStoreId: arg.foreignStore,
+        });
+        await browser.tabs.remove(tab.id);
+      } catch (e) {
+        created = `rejected: ${e.message}`;
+      }
+      browser.test.sendMessage("dynamic-done", created);
     } else if (msg == "observe") {
       const out = {};
       out.tabs = [
@@ -163,7 +183,7 @@ async function runScenario(config, prefs = []) {
     obs(config, name, "content script messages", foreign(r.contentScripts), JSON.stringify(r.contentScripts));
     obs(config, name, "tabs.query", foreign(r.tabs), JSON.stringify(r.tabs));
     obs(config, name, "cookies.getAllCookieStores", foreign(r.stores), JSON.stringify(r.stores));
-    obs(config, name, "cookies.getAll", foreign(Object.keys(r.cookies)), JSON.stringify(r.cookies));
+    obs(config, name, "cookies.getAll", foreign(Object.keys(r.cookies).filter(k => !String(r.cookies[k]).startsWith("error"))), JSON.stringify(r.cookies));
     obs(config, name, "cookies.onChanged", foreign(r.cookieChanges), JSON.stringify(r.cookieChanges));
     obs(config, name, "webRequest", foreign(r.webRequest), JSON.stringify(r.webRequest));
     // The background page's own request: which container's cookie did it carry?
@@ -171,7 +191,35 @@ async function runScenario(config, prefs = []) {
     obs(config, name, "background fetch", r.fetch == owner ? [] : [r.fetch], `Cookie header: "${r.fetch}" (own would be "${owner}")`);
   }
 
-  for (let tab of tabs) {
+  // Dynamically registered content scripts and tabs.create into a foreign space.
+  let created = {};
+  for (let [name, copy] of Object.entries(COPIES)) {
+    exts[name].sendMessage("dynamic", {
+      name,
+      foreignStore: name == "a" ? COPIES.b.store : COPIES.a.store,
+    });
+    created[name] = await exts[name].awaitMessage("dynamic-done");
+  }
+  let fresh = [];
+  let dynamic = { a: [], b: [] };
+  for (let ucid of [0, 1, 2]) {
+    let tab = await openTabInUserContext(PAGE + "?dynamic", ucid);
+    fresh.push(tab);
+    let marks = await SpecialPowers.spawn(tab.linkedBrowser, [], () =>
+      ["a", "b"].filter(n =>
+        content.document.documentElement.hasAttribute(`data-dyn-${n}`)
+      )
+    );
+    for (let n of marks) {
+      dynamic[n].push(`firefox-${ucid ? "container-" + ucid : "default"}`);
+    }
+  }
+  for (let [name, copy] of Object.entries(COPIES)) {
+    obs(config, name, "dynamic content script injected", dynamic[name].filter(s => s != copy.store), JSON.stringify(dynamic[name]));
+    obs(config, name, "tabs.create in a foreign space", created[name] == "created" ? [created[name]] : [], created[name]);
+  }
+
+  for (let tab of [...tabs, ...fresh]) {
     BrowserTestUtils.removeTab(tab);
   }
   for (let ext of Object.values(exts)) {
@@ -191,5 +239,12 @@ add_task(async function test_C1_existing_denylist() {
     ["extensions.userContextIsolation.enabled", true],
     [`extensions.userContextIsolation.${COPIES.a.id}.restricted`, "[0,2]"],
     [`extensions.userContextIsolation.${COPIES.b.id}.restricted`, "[0,1]"],
+  ]);
+});
+
+add_task(async function test_C2_prototype() {
+  await runScenario("C2", [
+    [`swell.spike.boundUserContext.${COPIES.a.id}`, COPIES.a.ucid],
+    [`swell.spike.boundUserContext.${COPIES.b.id}`, COPIES.b.ucid],
   ]);
 });
