@@ -1,0 +1,15 @@
+[package]
+name = "core-logins"
+description = "Swell core: saved logins, kept apart per identity"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+rusqlite.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+rusqlite = { workspace = true, features = ["bundled"] }
+tempfile.workspace = true

@@ -4,6 +4,7 @@
 
 use crate::types::*;
 use core_history::History;
+use core_logins::Logins;
 use core_model::{Env, LiveTabId, Model, NodeId, NodeKind, SpaceId, SystemEnv, WindowId};
 use core_search::{default_engines, Candidate, CandidateKind};
 use core_store::Store;
@@ -45,6 +46,7 @@ struct Inner {
     model: Model,
     store: Store,
     history: History,
+    logins: Logins,
     listeners: Vec<Arc<dyn CoreListener>>,
     /// Set when a write failed; the next write saves everything instead.
     dirty: bool,
@@ -90,6 +92,19 @@ impl Inner {
                 })
             })
             .collect()
+    }
+
+    /// The identity that owns a container; a container no identity owns (the
+    /// default one, or one that was never made) has no logins to read or write.
+    fn identity_for_context(&self, user_context_id: u32) -> Result<String, CoreError> {
+        self.model
+            .identities()
+            .into_iter()
+            .find(|identity| identity.gecko_user_context_id == user_context_id)
+            .map(|identity| identity.id.0)
+            .ok_or_else(|| CoreError::NotFound {
+                what: format!("container {user_context_id}"),
+            })
     }
 
     /// The identity of the space a live tab belongs to.
@@ -240,6 +255,7 @@ impl SwellCore {
     pub fn open(dir: String) -> Result<Arc<Self>, CoreError> {
         let mut store = Store::open(Path::new(&dir))?;
         let history = History::open(Path::new(&dir))?;
+        let logins = Logins::open(Path::new(&dir))?;
         let device = match store.get_meta(META_DEVICE)? {
             Some(device) => device,
             None => {
@@ -260,6 +276,7 @@ impl SwellCore {
                 model,
                 store,
                 history,
+                logins,
                 listeners: Vec::new(),
                 dirty: false,
             }),
@@ -709,6 +726,116 @@ impl SwellCore {
         self.run(|inner, _| {
             let space = inner.space(&space)?;
             Ok(inner.history.clear(&space.identity_id.0)? as u32)
+        })
+    }
+
+    /// Every login of the container's identity.
+    pub fn logins_all(&self, user_context_id: u32) -> Result<Vec<LoginRecord>, CoreError> {
+        self.run(|inner, _| {
+            let identity = inner.identity_for_context(user_context_id)?;
+            Ok(inner
+                .logins
+                .all(&identity)?
+                .into_iter()
+                .map(Into::into)
+                .collect())
+        })
+    }
+
+    /// The container's logins whose origin is one of `origins`.
+    pub fn logins_for_origins(
+        &self,
+        user_context_id: u32,
+        origins: Vec<String>,
+    ) -> Result<Vec<LoginRecord>, CoreError> {
+        self.run(|inner, _| {
+            let identity = inner.identity_for_context(user_context_id)?;
+            Ok(inner
+                .logins
+                .for_origins(&identity, &origins)?
+                .into_iter()
+                .map(Into::into)
+                .collect())
+        })
+    }
+
+    pub fn logins_count(&self, user_context_id: u32) -> Result<u64, CoreError> {
+        self.run(|inner, _| {
+            let identity = inner.identity_for_context(user_context_id)?;
+            Ok(inner.logins.count(&identity)?)
+        })
+    }
+
+    pub fn login_add(&self, user_context_id: u32, login: LoginRecord) -> Result<(), CoreError> {
+        self.run(|inner, _| {
+            let identity = inner.identity_for_context(user_context_id)?;
+            Ok(inner.logins.add(&identity, &login.into())?)
+        })
+    }
+
+    pub fn login_update(&self, user_context_id: u32, login: LoginRecord) -> Result<(), CoreError> {
+        self.run(|inner, _| {
+            let identity = inner.identity_for_context(user_context_id)?;
+            Ok(inner.logins.update(&identity, &login.into())?)
+        })
+    }
+
+    pub fn login_remove(&self, user_context_id: u32, guid: String) -> Result<(), CoreError> {
+        self.run(|inner, _| {
+            let identity = inner.identity_for_context(user_context_id)?;
+            Ok(inner.logins.remove(&identity, &guid)?)
+        })
+    }
+
+    pub fn login_record_use(
+        &self,
+        user_context_id: u32,
+        guid: String,
+        time_ms: i64,
+    ) -> Result<(), CoreError> {
+        self.run(|inner, _| {
+            let identity = inner.identity_for_context(user_context_id)?;
+            Ok(inner.logins.record_use(&identity, &guid, time_ms)?)
+        })
+    }
+
+    /// Forgets the logins and "never save" choices of the container's identity.
+    pub fn logins_clear(&self, user_context_id: u32) -> Result<u32, CoreError> {
+        self.run(|inner, _| {
+            let identity = inner.identity_for_context(user_context_id)?;
+            Ok(inner.logins.clear(&identity)? as u32)
+        })
+    }
+
+    pub fn login_saving_disabled(
+        &self,
+        user_context_id: u32,
+        origin: String,
+    ) -> Result<bool, CoreError> {
+        self.run(|inner, _| {
+            let identity = inner.identity_for_context(user_context_id)?;
+            Ok(inner.logins.saving_disabled(&identity, &origin)?)
+        })
+    }
+
+    pub fn set_login_saving_disabled(
+        &self,
+        user_context_id: u32,
+        origin: String,
+        disabled: bool,
+    ) -> Result<(), CoreError> {
+        self.run(|inner, _| {
+            let identity = inner.identity_for_context(user_context_id)?;
+            Ok(inner
+                .logins
+                .set_saving_disabled(&identity, &origin, disabled)?)
+        })
+    }
+
+    pub fn login_disabled_origins(&self, user_context_id: u32) -> Result<Vec<String>, CoreError> {
+        self.run(|inner, _| {
+            let identity = inner.identity_for_context(user_context_id)?;
+            Ok(inner.logins.disabled_origins(&identity)?)
         })
     }
 

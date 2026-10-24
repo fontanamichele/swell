@@ -142,6 +142,7 @@ name = "core-ffi"
 version = "0.1.0"
 dependencies = [
  "core-history",
+ "core-logins",
  "core-model",
  "core-search",
  "core-store",
@@ -153,6 +154,15 @@ dependencies = [
 
 [[package]]
 name = "core-history"
+version = "0.1.0"
+dependencies = [
+ "rusqlite",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
+name = "core-logins"
 version = "0.1.0"
 dependencies = [
  "rusqlite",

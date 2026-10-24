@@ -225,6 +225,72 @@ impl From<model::ModelError> for CoreError {
     }
 }
 
+impl From<core_logins::LoginsError> for CoreError {
+    fn from(error: core_logins::LoginsError) -> Self {
+        match error {
+            core_logins::LoginsError::NotFound(what) => CoreError::NotFound { what },
+            other => CoreError::Storage {
+                reason: other.to_string(),
+            },
+        }
+    }
+}
+
+/// A saved login. The user name and password are encrypted by the caller.
+#[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
+pub struct LoginRecord {
+    pub guid: String,
+    pub origin: String,
+    pub form_action_origin: Option<String>,
+    pub http_realm: Option<String>,
+    pub username_field: String,
+    pub password_field: String,
+    pub encrypted_username: String,
+    pub encrypted_password: String,
+    pub time_created: i64,
+    pub time_last_used: i64,
+    pub time_password_changed: i64,
+    pub times_used: u32,
+}
+
+impl From<core_logins::Login> for LoginRecord {
+    fn from(login: core_logins::Login) -> Self {
+        Self {
+            guid: login.guid,
+            origin: login.origin,
+            form_action_origin: login.form_action_origin,
+            http_realm: login.http_realm,
+            username_field: login.username_field,
+            password_field: login.password_field,
+            encrypted_username: login.encrypted_username,
+            encrypted_password: login.encrypted_password,
+            time_created: login.time_created,
+            time_last_used: login.time_last_used,
+            time_password_changed: login.time_password_changed,
+            times_used: login.times_used,
+        }
+    }
+}
+
+impl From<LoginRecord> for core_logins::Login {
+    fn from(record: LoginRecord) -> Self {
+        Self {
+            guid: record.guid,
+            origin: record.origin,
+            form_action_origin: record.form_action_origin,
+            http_realm: record.http_realm,
+            username_field: record.username_field,
+            password_field: record.password_field,
+            encrypted_username: record.encrypted_username,
+            encrypted_password: record.encrypted_password,
+            time_created: record.time_created,
+            time_last_used: record.time_last_used,
+            time_password_changed: record.time_password_changed,
+            times_used: record.times_used,
+        }
+    }
+}
+
 impl From<core_history::HistoryError> for CoreError {
     fn from(error: core_history::HistoryError) -> Self {
         CoreError::Storage {

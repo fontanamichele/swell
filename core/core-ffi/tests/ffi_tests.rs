@@ -576,3 +576,89 @@ fn history_is_per_identity_and_feeds_the_command_bar() {
     assert_eq!(f.core.clear_history(a.id.clone()).unwrap(), 1);
     assert_eq!(f.core.history_count(a.id).unwrap(), 0);
 }
+
+fn record(guid: &str, origin: &str) -> LoginRecord {
+    LoginRecord {
+        guid: guid.into(),
+        origin: origin.into(),
+        form_action_origin: Some(origin.into()),
+        http_realm: None,
+        username_field: "user".into(),
+        password_field: "pass".into(),
+        encrypted_username: "enc-user".into(),
+        encrypted_password: "enc-pass".into(),
+        time_created: 1,
+        time_last_used: 1,
+        time_password_changed: 1,
+        times_used: 1,
+    }
+}
+
+#[test]
+fn logins_belong_to_the_container_of_a_space() {
+    let f = fixture();
+    let a = first_space(&f.core);
+    let b_id = f
+        .core
+        .create_space(
+            "B".into(),
+            Icon::Symbol {
+                name: "star".into(),
+            },
+        )
+        .unwrap();
+    let b = f
+        .core
+        .list_spaces()
+        .unwrap()
+        .into_iter()
+        .find(|s| s.id == b_id)
+        .unwrap();
+    f.core
+        .login_add(a.user_context_id, record("g1", "https://bank.test"))
+        .unwrap();
+    assert_eq!(f.core.logins_count(a.user_context_id).unwrap(), 1);
+    assert_eq!(f.core.logins_count(b.user_context_id).unwrap(), 0);
+    assert!(f.core.logins_all(b.user_context_id).unwrap().is_empty());
+    let found = f
+        .core
+        .logins_for_origins(a.user_context_id, vec!["https://bank.test".into()])
+        .unwrap();
+    assert_eq!(found[0].guid, "g1");
+    assert!(f.core.login_remove(b.user_context_id, "g1".into()).is_err());
+
+    f.core
+        .set_login_saving_disabled(a.user_context_id, "https://x.test".into(), true)
+        .unwrap();
+    assert!(f
+        .core
+        .login_saving_disabled(a.user_context_id, "https://x.test".into())
+        .unwrap());
+    assert!(!f
+        .core
+        .login_saving_disabled(b.user_context_id, "https://x.test".into())
+        .unwrap());
+
+    let f = reopen(f);
+    assert_eq!(f.core.logins_count(a.user_context_id).unwrap(), 1, "kept");
+    assert_eq!(f.core.logins_clear(a.user_context_id).unwrap(), 1);
+    assert!(!f
+        .core
+        .login_saving_disabled(a.user_context_id, "https://x.test".into())
+        .unwrap());
+}
+
+#[test]
+fn a_container_no_space_owns_has_no_logins() {
+    let f = fixture();
+    for context in [0, 9999] {
+        assert!(matches!(
+            f.core.logins_all(context),
+            Err(CoreError::NotFound { .. })
+        ));
+        assert!(f
+            .core
+            .login_add(context, record("g", "https://x.test"))
+            .is_err());
+    }
+}
