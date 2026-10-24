@@ -86,7 +86,7 @@ save)
   "$0" fixup "$prefix"
   name=$(ls "$swell"/patches | grep "^$prefix" | head -n 1 | sed 's/\.patch$//')
   git -C "$swell" add -- "patches/$name.patch"
-  git -C "$swell" commit -q --no-verify -m "patch(firefox): $name $message"
+  git -C "$swell" commit -q -m "patch(firefox): $name $message"
   echo "committed in swell: patch(firefox): $name $message"
   ;;
 new)
@@ -100,7 +100,7 @@ new)
   { echo "$name: $purpose"; echo; echo "Purpose: $purpose"; echo "Test: $test_cmd"; } | git commit -q --no-verify -F -
   "$0" export
   git -C "$swell" add -- "patches/$name.patch"
-  git -C "$swell" commit -q --no-verify -m "patch(firefox): $name $purpose"
+  git -C "$swell" commit -q -m "patch(firefox): $name $purpose"
   echo "committed in swell: patch(firefox): $name $purpose"
   ;;
 export)
