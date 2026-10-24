@@ -73,3 +73,44 @@ test globals.
   `SwellCore.site_zoom` / `set_site_zoom`; regenerated patch 0021). The engine
   stores zoom as a 32-bit float, so comparisons need a margin.
 - The isolation suite now has 17 stores, about 37 s.
+
+## Step 4: history per space
+
+- **How it works.** Places stays the store behind `:visited`: it already tags
+  every visit with the container. Patch `0200` (pref
+  `places.history.isolate_by_user_context`, default false) makes the parent
+  ask once per container for the processes that host it, counts only visits
+  with that `userContextId`, and tells only that container's processes about a
+  new visit. The container comes from the asking process's remote type, never
+  from the request. A control run with the pref off colors the link as
+  visited in the other space, so the case tests the patch. Parent-process
+  links count as the default container and see nothing.
+- **The core keeps its own history** (`core-history`, `history.db`, one row
+  per identity and URL with visit count, typed count and last visit) for the
+  command bar. Frecency is computed at query time. The command bar shows
+  history after tabs, a page that is also a tab appears once, and nothing is
+  shown for an empty query. `history_count` and `clear_history` are in the
+  surface; there is no view of history across spaces anywhere. Places and the
+  core are filled independently from the same navigations; Places is not
+  rebuilt from the core yet.
+- **Gotcha, same family as M1 finding 7.** Turning recording on crashed the
+  main process: `History::VisitURI` imports
+  `resource:///modules/BrowserWindowTracker.sys.mjs`, which does not exist in
+  Swell, and a missing module crashes instead of throwing
+  (`CheckForBrokenChromeURL`). Swell now installs a shim
+  (`app/jsm/BrowserWindowTracker.sys.mjs`) that never finds a browser.
+- **Latency (the M0 open question).** `browser_visited_latency.js`: a link is
+  marked visited about 25 ms after the page loads, with 1,000 visits and also
+  with 100,000 visits in the container (the query is idle priority and
+  asynchronous; links start unvisited and flip). No per-identity cache in the
+  content process is needed.
+- A `# if ...` comment line in `StaticPrefList.yaml` is read by the
+  preprocessor as a directive (`AMBIGUOUS_COMMENT`); reword such comments.
+- `git` hazard in the Firefox clone: `gecko-branch.sh save NNNN` folds every
+  uncommitted Firefox edit into patch NNNN, not only that patch's files.
+  Save one patch at a time, with nothing else modified. (It happened once with
+  0020 and was undone with an interactive rebase.)
+- Not done: "delete a space" does not exist yet, so there is nothing to
+  clean up on deletion (Places rows would go through
+  `PlacesUtils.history.removeVisitsByFilter`); Places expiration and a
+  history UI.
