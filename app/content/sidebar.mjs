@@ -45,6 +45,7 @@ export class Sidebar {
     more.addEventListener("click", () => {
       const { left, top: y } = more.getBoundingClientRect();
       app.menu.show(left, y - 40, [
+        { label: "Downloads", action: () => app.downloads.show() },
         { label: "Import from Arc\u2026", action: () => app.chooseArcFile() },
       ]);
     });

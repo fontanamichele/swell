@@ -623,3 +623,26 @@ dialog .buttons {
   justify-content: flex-end;
   gap: var(--space-small);
 }
+
+#downloads-dialog {
+  min-width: 420px;
+}
+
+.download-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-small);
+  margin-bottom: var(--space-small);
+}
+
+.download-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.download-state,
+.downloads-empty {
+  opacity: 0.7;
+}

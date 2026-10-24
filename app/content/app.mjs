@@ -7,6 +7,7 @@ import { CommandBar } from "chrome://swell/content/commandbar.mjs";
 import { ContextMenu } from "chrome://swell/content/menu.mjs";
 import { Toasts } from "chrome://swell/content/toasts.mjs";
 import { PermissionBar } from "chrome://swell/content/permissions.mjs";
+import { DownloadsPanel } from "chrome://swell/content/downloads.mjs";
 
 const IS_MAC = Services.appinfo.OS == "Darwin";
 
@@ -37,6 +38,7 @@ export class App {
     this.sidebar = new Sidebar(this);
     this.commandBar = new CommandBar(this);
     this.permissions = new PermissionBar(this);
+    this.downloads = new DownloadsPanel(this);
     this.#renderQueued = false;
   }
 
@@ -85,7 +87,7 @@ export class App {
     this.#installShortcuts();
     this.#windowChanged();
     this.render();
-    this.#watchDownloads();
+    this.downloads.init();
   }
 
   // Asks for an Arc StorableSidebar.json and imports it.
@@ -220,58 +222,6 @@ export class App {
     }
     const rect = browser.getBoundingClientRect();
     this.menu.show(rect.left + clientX, rect.top + clientY, items);
-  }
-
-  // Downloads save by themselves; say when one starts and finishes.
-  async #watchDownloads() {
-    const list = await this.Downloads.getList(this.Downloads.ALL);
-    const toasts = new WeakMap();
-    const fileName = download =>
-      PathUtils.filename(download.target.path ?? "") || "file";
-    await list.addView({
-      onDownloadAdded: download => {
-        if (!download.stopped) {
-          toasts.set(
-            download,
-            this.toasts.show({
-              text: `Downloading ${fileName(download)}`,
-              timeout: 0,
-            })
-          );
-        }
-      },
-      onDownloadChanged: download => {
-        const toast = toasts.get(download);
-        if (!toast) {
-          return;
-        }
-        if (download.succeeded) {
-          toast.dismiss();
-          toasts.delete(download);
-          this.toasts.show({
-            text: `Downloaded ${fileName(download)}`,
-            actions: [
-              {
-                label: "Show in folder",
-                run: () => {
-                  const file = Cc["@mozilla.org/file/local;1"].createInstance(
-                    Ci.nsIFile
-                  );
-                  file.initWithPath(download.target.path);
-                  file.reveal();
-                },
-              },
-            ],
-          });
-        } else if (download.error) {
-          toast.dismiss();
-          toasts.delete(download);
-          this.toasts.show({
-            text: `Download of ${fileName(download)} failed`,
-          });
-        }
-      },
-    });
   }
 
   async #loadTree() {
