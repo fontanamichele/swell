@@ -207,3 +207,48 @@ test globals.
   part of the Linux step. Deleting a space does not exist yet, so nothing
   removes its keychain item (`deleteLoginsKey` is ready). Import and export of
   logins, password generation, breach alerts.
+
+## Step 7: camera, microphone and screen sharing
+
+- **No Gecko patch.** Firefox's `WebRTCChild.sys.mjs` is used unmodified: it is
+  listed in `MOZ_SRC_FILES` as `../../browser/actors/WebRTCChild.sys.mjs`, which
+  installs it at `moz-src:///browser/actors/` (a path starting with `/` landed
+  under `moz-src:///swell/app/browser/`). A missing or wrongly placed module
+  crashes the content process again (M1 finding 7), which is how the first
+  attempt failed.
+- **Actors.** The window actor must be registered as `WebRTC` and its parent
+  class must be called `WebRTCParent` (the loader derives the class name from
+  the actor name; the file is `SwellMediaParent.sys.mjs`). A process actor
+  (`SwellProcess`, `SwellProcessChild.sys.mjs`) forwards `getUserMedia:request`,
+  `PeerConnection:request`, `recording-device-events`,
+  `recording-device-stopped` and `recording-window-ended` to `WebRTCChild.observe`,
+  as Firefox's `BrowserProcess` does.
+- **Parent.** `WebRTCParent` answers `webrtc:Request` from the saved
+  `camera` and `microphone` permissions of the page's origin and container
+  (isolated by `permissions.isolateBy.userContext`): a saved ALLOW for every
+  requested kind is granted without asking, any saved DENY is refused,
+  otherwise the window asks. A peer connection is allowed (it needs no
+  device); a request from an insecure page is refused. Screens, speakers and
+  computer audio are never remembered.
+- **UI** (`media.mjs`): a bar with the device pickers (camera, microphone or
+  screen), Remember, Allow, Block and Not now, shown for the page in front
+  (other tabs wait until selected); a red strip with Stop sharing while the
+  page in front shares; the tab row of a sharing tab gets a red dot. Stop
+  sharing goes through `webrtc:StopSharing`.
+- **Test gotchas.** A call to `getUserMedia` from `SpecialPowers.spawn` has the
+  system as its caller and is never asked about; the test page makes the call
+  from its own script. The page must keep the stream, or sharing ends. Fake
+  devices only count as capturing with `media.navigator.permission.fake`
+  (`DeviceListener::CapturingSource`), so without that pref no indicator update
+  carries a capture state. The test profile does not set the media prefs.
+- **Screen sharing** is checked up to the prompt and the system's answer: in a
+  headless run the OS refuses (`NotReadableError`) after the user allows,
+  which the test accepts; the indicator and Stop path run only when capture
+  starts. A real screen share, macOS Screen Recording permission, camera and
+  microphone entitlements in the signed build, and the Linux portal path are
+  for a hand check and the packaging and Linux steps. `NSCameraUsageDescription`
+  and `NSMicrophoneUsageDescription` are in `Info.plist.in` already.
+- **Not done.** Muting the camera or microphone from the window
+  (`webrtc:MuteCamera` and the like are wired in the actor, not in the UI), a
+  picker that previews a screen or window, speaker selection, and "this
+  session only" grants (Allow without Remember is for one request).
