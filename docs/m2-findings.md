@@ -252,3 +252,14 @@ test globals.
   (`webrtc:MuteCamera` and the like are wired in the actor, not in the UI), a
   picker that previews a screen or window, speaker selection, and "this
   session only" grants (Allow without Remember is for one request).
+
+## Step 8: extensions per space (in progress)
+
+Done: a tab and window layer for WebExtensions without `browser/` (`app/extensions/`), the `tabs` and `windows` APIs over the engine bridge, content scripts, storage, and installing an add-on per space.
+
+- A copy of an add-on is bound to its space by its id (`name--s<N>@domain`, or `<guid>--s<N>@derived.swell.invalid`). Patch 0100 reads the container from the id. Native hosts and `allowed_extensions` see the original id.
+- `ExtensionInstaller.sys.mjs` derives the copy from the package, keeps the original under `<profile>/swell/extension-originals`, and installs through the add-on manager. Copies are unsigned, so `xpinstall.signatures.required` is false; the original's signature is checked first unless `swell.extensions.allowUnsigned` is set.
+- Gotcha: installing a stored original for another space copied the file onto itself and emptied it (`getHashForFile` failed with `NS_ERROR_NOT_AVAILABLE`).
+- Isolation: `extension copies` is isolated, and the self-test detects sharing by loading the second copy unbound.
+
+Not done yet: `menus`, `browserAction` with a popup, `commands`, updating all copies of an add-on, idle unload of persistent backgrounds, a native messaging id test, hiding `contextualIdentities`.
