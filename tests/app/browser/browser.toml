@@ -3,6 +3,7 @@ support-files = [
   "head.js",
   "file_blank.html",
   "file_visited.html",
+  "file_form.html",
   "file_opener.html",
   "file_download.sjs",
   "file_links.html",
@@ -40,6 +41,6 @@ prefs = [
 
 ["browser_two_spaces.js"]
 
-["browser_zoom.js"]
-
 ["browser_visited_latency.js"]
+
+["browser_zoom.js"]

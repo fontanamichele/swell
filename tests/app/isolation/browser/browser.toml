@@ -8,6 +8,10 @@ prefs = [
 
 ["browser_downloads.js"]
 
+["browser_form_history.js"]
+
+["browser_history.js"]
+
 ["browser_permissions.js"]
 
 ["browser_security.js"]
@@ -15,5 +19,3 @@ prefs = [
 ["browser_storage.js"]
 
 ["browser_zoom.js"]
-
-["browser_history.js"]
