@@ -1,0 +1,279 @@
+Purpose: Address and credit card autofill keeps one storage for the whole profile, so a record saved in one container is offered in every container. With the new pref extensions.formautofill.isolate_by_user_context (default false, so Firefox is unchanged) FormAutofillParent serves each page from the storage of its container (userContextId), kept in autofill-profiles-<id>.json beside the default one; the saved-field-names gate is the union over all containers. A second pref, extensions.formautofill.prompterModuleURI, names the module that asks whether to save a captured record, for applications without Firefox's doorhanger UI. Upstreamable: the per-container storage yes, behind the pref; the prompter hook is a small seam.
+Test: MOZCONFIG=swell/mozconfig ./mach test swell/tests/app/isolation/browser/browser_autofill.js --headless
+
+diff --git a/toolkit/components/formautofill/FormAutofillParent.sys.mjs b/toolkit/components/formautofill/FormAutofillParent.sys.mjs
+index 625d13983fec..c0ef6c7d6383 100644
+--- a/toolkit/components/formautofill/FormAutofillParent.sys.mjs
++++ b/toolkit/components/formautofill/FormAutofillParent.sys.mjs
+@@ -46,7 +46,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
+     "resource://gre/modules/shared/FormAutofillSection.sys.mjs",
+   FormAutofillPreferences:
+     "resource://autofill/FormAutofillPreferences.sys.mjs",
+-  FormAutofillPrompter: "resource://autofill/FormAutofillPrompter.sys.mjs",
+   PassportRecord: "resource://gre/modules/shared/PassportRecord.sys.mjs",
+   FirefoxRelay: "resource://gre/modules/FirefoxRelay.sys.mjs",
+   LoginHelper: "resource://gre/modules/LoginHelper.sys.mjs",
+@@ -215,16 +214,31 @@ export let FormAutofillStatus = {
+     lazy.log.debug("updateSavedFieldNames");
+ 
+     const savedFieldNames = new Set();
+-    for (const type of AutofillDataTypes.all) {
+-      // Don't access a data type's store unless it is available.
+-      if (!FormAutofill.isAutofillTypeAvailable(type.id)) {
+-        continue;
++    // A field is worth offering autofill on if any container saved it; what
++    // is offered comes from the storage of the page's own container.
++    const storages = [lazy.gFormAutofillStorage];
++    if (lazy.ISOLATE_BY_USER_CONTEXT) {
++      const { openedFormAutofillStorages, openExistingContainerStorages } =
++        ChromeUtils.importESModule(
++          "resource://autofill/FormAutofillStorage.sys.mjs"
++        );
++      await openExistingContainerStorages();
++      for (const storage of openedFormAutofillStorages()) {
++        if (!storages.includes(storage)) {
++          await storage.initialize();
++          storages.push(storage);
++        }
++      }
++    }
++    for (const storage of storages) {
++      for (const type of AutofillDataTypes.all) {
++        // Don't access a data type's store unless it is available.
++        if (!FormAutofill.isAutofillTypeAvailable(type.id)) {
++          continue;
++        }
++        const names = await storage[type.collectionName].getSavedFieldNames();
++        names.forEach(name => savedFieldNames.add(name));
+       }
+-      const names =
+-        await lazy.gFormAutofillStorage[
+-          type.collectionName
+-        ].getSavedFieldNames();
+-      names.forEach(name => savedFieldNames.add(name));
+     }
+ 
+     Services.ppmm.sharedData.set(
+@@ -289,6 +303,43 @@ export let FormAutofillStatus = {
+   },
+ };
+ 
++// The prompt that asks whether to save a captured record. An application
++// without Firefox's doorhanger UI can name its own module.
++ChromeUtils.defineLazyGetter(lazy, "FormAutofillPrompter", () => {
++  const uri = Services.prefs.getStringPref(
++    "extensions.formautofill.prompterModuleURI",
++    "resource://autofill/FormAutofillPrompter.sys.mjs"
++  );
++  return ChromeUtils.importESModule(uri).FormAutofillPrompter;
++});
++
++// Keep the saved addresses and cards apart per container (userContextId)
++// instead of sharing them between all containers of a profile.
++XPCOMUtils.defineLazyPreferenceGetter(
++  lazy,
++  "ISOLATE_BY_USER_CONTEXT",
++  "extensions.formautofill.isolate_by_user_context",
++  false
++);
++
++// The storage serving one container; the default one for container 0 or when
++// containers are not kept apart.
++function storageFor(userContextId) {
++  if (!lazy.ISOLATE_BY_USER_CONTEXT || !userContextId) {
++    return lazy.gFormAutofillStorage;
++  }
++  const { getFormAutofillStorageFor } = ChromeUtils.importESModule(
++    "resource://autofill/FormAutofillStorage.sys.mjs"
++  );
++  const storage = getFormAutofillStorageFor(userContextId);
++  if (!initializedStorages.has(storage)) {
++    initializedStorages.add(storage);
++    storage.initialize().then(() => FormAutofillStatus.updateSavedFieldNames());
++  }
++  return storage;
++}
++const initializedStorages = new WeakSet();
++
+ // Lazily load the storage JSM to avoid disk I/O until absolutely needed.
+ // Once storage is loaded we need to update saved field names and inform content processes.
+ ChromeUtils.defineLazyGetter(lazy, "gFormAutofillStorage", () => {
+@@ -308,6 +359,16 @@ ChromeUtils.defineLazyGetter(lazy, "gFormAutofillStorage", () => {
+ export class FormAutofillParent extends JSWindowActorParent {
+   static #mlFeature;
+ 
++  // The container of the page this actor serves.
++  get userContextId() {
++    return this.manager?.browsingContext?.originAttributes.userContextId ?? 0;
++  }
++
++  // The storage of that container (see storageFor).
++  get formAutofillStorage() {
++    return storageFor(this.userContextId);
++  }
++
+   constructor() {
+     super();
+     FormAutofillStatus.init();
+@@ -362,7 +423,7 @@ export class FormAutofillParent extends JSWindowActorParent {
+ 
+     switch (name) {
+       case "FormAutofill:InitStorage": {
+-        await lazy.gFormAutofillStorage.initialize();
++        await this.formAutofillStorage.initialize();
+         await FormAutofillStatus.updateSavedFieldNames();
+         break;
+       }
+@@ -408,17 +469,17 @@ export class FormAutofillParent extends JSWindowActorParent {
+       // The remaining Save and Remove messages are invoked only by tests.
+       case "FormAutofill:SaveAddress": {
+         if (data.guid) {
+-          await lazy.gFormAutofillStorage.addresses.update(
++          await this.formAutofillStorage.addresses.update(
+             data.guid,
+             data.address
+           );
+         } else {
+-          await lazy.gFormAutofillStorage.addresses.add(data.address);
++          await this.formAutofillStorage.addresses.add(data.address);
+         }
+         break;
+       }
+       case "FormAutofill:SaveCreditCard": {
+-        await lazy.gFormAutofillStorage.creditCards.add(data.creditcard);
++        await this.formAutofillStorage.creditCards.add(data.creditcard);
+         break;
+       }
+       case "FormAutofill:RemoveAddresses": {
+@@ -428,14 +489,14 @@ export class FormAutofillParent extends JSWindowActorParent {
+         // the promises and return before any record was deleted.
+         await Promise.all(
+           data.guids.map(guid =>
+-            lazy.gFormAutofillStorage.addresses.remove(guid)
++            this.formAutofillStorage.addresses.remove(guid)
+           )
+         );
+         break;
+       }
+       case "FormAutofill:RemoveCreditCards": {
+         data.guids.forEach(guid =>
+-          lazy.gFormAutofillStorage.creditCards.remove(guid)
++          this.formAutofillStorage.creditCards.remove(guid)
+         );
+         break;
+       }
+@@ -826,7 +887,7 @@ export class FormAutofillParent extends JSWindowActorParent {
+     collectionName ||=
+       FormAutofillUtils.getCollectionNameFromFieldName(fieldName);
+ 
+-    const collection = lazy.gFormAutofillStorage[collectionName];
++    const collection = this.formAutofillStorage[collectionName];
+     if (!collection) {
+       return [];
+     }
+@@ -902,7 +963,7 @@ export class FormAutofillParent extends JSWindowActorParent {
+       return false;
+     }
+ 
+-    const storage = lazy.gFormAutofillStorage.addresses;
++    const storage = this.formAutofillStorage.addresses;
+ 
+     // Make sure record is normalized before comparing with records in the storage
+     try {
+@@ -1004,7 +1065,7 @@ export class FormAutofillParent extends JSWindowActorParent {
+   }
+ 
+   async _onCreditCardSubmit(creditCard, browser) {
+-    const storage = lazy.gFormAutofillStorage.creditCards;
++    const storage = this.formAutofillStorage.creditCards;
+ 
+     // Make sure record is normalized before comparing with records in the storage
+     try {
+@@ -1071,7 +1132,7 @@ export class FormAutofillParent extends JSWindowActorParent {
+       return false;
+     }
+ 
+-    const storage = lazy.gFormAutofillStorage.passports;
++    const storage = this.formAutofillStorage.passports;
+ 
+     // If the passport already exists in storage, don't bother showing the
+     // prompt. Passports are deduped by passport number.
+@@ -1218,7 +1279,7 @@ export class FormAutofillParent extends JSWindowActorParent {
+     }
+ 
+     // Both stores warn and return for a guid they do not hold.
+-    await lazy.gFormAutofillStorage.addresses.remove(guid);
++    await this.formAutofillStorage.addresses.remove(guid);
+   }
+ 
+   async #confirmCreditCardRemoval(guid) {
+@@ -1270,7 +1331,7 @@ export class FormAutofillParent extends JSWindowActorParent {
+     }
+ 
+     // Both stores warn and return for a guid they do not hold.
+-    await lazy.gFormAutofillStorage.creditCards.remove(guid);
++    await this.formAutofillStorage.creditCards.remove(guid);
+   }
+ 
+   /**
+@@ -1738,7 +1799,7 @@ export class FormAutofillParent extends JSWindowActorParent {
+       const collection = FormAutofillUtils.getCollectionNameFromFieldName(
+         fields[0]
+       );
+-      const storage = lazy.gFormAutofillStorage[collection];
++      const storage = this.formAutofillStorage[collection];
+       // Since we don't define the pattern for the passed 'record',
+       // we need to normalize it first.
+       storage._normalizeRecord(record);
+diff --git a/toolkit/components/formautofill/default/FormAutofillStorage.sys.mjs b/toolkit/components/formautofill/default/FormAutofillStorage.sys.mjs
+index 3db4a743ec59..86da9f73a4a9 100644
+--- a/toolkit/components/formautofill/default/FormAutofillStorage.sys.mjs
++++ b/toolkit/components/formautofill/default/FormAutofillStorage.sys.mjs
+@@ -503,3 +503,47 @@ export class FormAutofillStorage extends FormAutofillStorageBase {
+ export const formAutofillStorage = new FormAutofillStorage(
+   PathUtils.join(PathUtils.profileDir, PROFILE_JSON_FILE_NAME)
+ );
++
++// Each container (userContextId) can have a storage of its own, kept in its own
++// file, when extensions.formautofill.isolate_by_user_context is set. The default
++// container uses the singleton above.
++const containerStorages = new Map();
++
++export function getFormAutofillStorageFor(userContextId) {
++  if (!userContextId) {
++    return formAutofillStorage;
++  }
++  let storage = containerStorages.get(userContextId);
++  if (!storage) {
++    storage = new FormAutofillStorage(
++      PathUtils.join(
++        PathUtils.profileDir,
++        `autofill-profiles-${userContextId}.json`
++      )
++    );
++    containerStorages.set(userContextId, storage);
++  }
++  return storage;
++}
++
++export function openedFormAutofillStorages() {
++  return [formAutofillStorage, ...containerStorages.values()];
++}
++
++// Opens the storage of every container that has a file in the profile.
++export async function openExistingContainerStorages() {
++  let paths = [];
++  try {
++    paths = await IOUtils.getChildren(PathUtils.profileDir);
++  } catch (e) {
++    return;
++  }
++  for (const path of paths) {
++    const match = /^autofill-profiles-(\d+)\.json$/.exec(
++      PathUtils.filename(path)
++    );
++    if (match) {
++      getFormAutofillStorageFor(Number(match[1]));
++    }
++  }
++}
