@@ -41,6 +41,8 @@ const COMMANDS = [
   "onTabClosed",
   "onTabOpened",
   "onFavicon",
+  "siteZoom",
+  "setSiteZoom",
 ];
 
 /**

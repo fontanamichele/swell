@@ -378,6 +378,16 @@ export class App {
       case "f":
         this.bridge.openFind();
         return true;
+      case "=":
+      case "+":
+        this.bridge.zoom(1);
+        return true;
+      case "-":
+        this.bridge.zoom(-1);
+        return true;
+      case "0":
+        this.bridge.zoom(0);
+        return true;
       case "[":
         this.bridge.goBack();
         return true;

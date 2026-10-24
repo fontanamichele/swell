@@ -16,6 +16,21 @@ const BrowserDOMWindow = Ci.nsIBrowserDOMWindow;
 const NOT_REMOTE = null;
 const BLANK = "about:blank";
 
+// The page zoom steps of the engine, from 30% to 500%. The engine keeps the
+// zoom as a 32-bit float, so compare with a margin.
+const ZOOM_STEPS = [
+  0.3, 0.5, 0.67, 0.8, 0.9, 1, 1.1, 1.2, 1.33, 1.5, 1.7, 2, 2.4, 3, 4, 5,
+];
+
+function hostOf(url) {
+  try {
+    const { protocol, hostname } = new URL(url);
+    return protocol == "http:" || protocol == "https:" ? hostname : "";
+  } catch (e) {
+    return "";
+  }
+}
+
 const BROWSER_ATTRIBUTES = {
   message: "true",
   messagemanagergroup: "browsers",
@@ -86,6 +101,7 @@ class Tab {
   canGoForward = false;
   crashed = false;
   pendingTransition = null;
+  zoomHost = "";
   listener = null;
   findbar = null;
   findbarSlot = null;
@@ -318,6 +334,56 @@ export class EngineBridge {
     this.#selected?.browser.goForward();
   }
 
+  // Zooms the selected page: 1 in, -1 out, 0 back to 100%. The zoom of a
+  // site is remembered by the core for the space's identity.
+  zoom(direction) {
+    const tab = this.#selected;
+    const context = tab?.browser.browsingContext;
+    if (!context) {
+      return;
+    }
+    let next = 1;
+    if (direction) {
+      const current = context.fullZoom;
+      const steps = direction > 0 ? ZOOM_STEPS : [...ZOOM_STEPS].reverse();
+      next =
+        steps.find(step =>
+          direction > 0 ? step > current + 1e-3 : step < current - 1e-3
+        ) ?? current;
+    }
+    context.fullZoom = next;
+    const host = hostOf(tab.url);
+    if (host) {
+      this.#core
+        .setSiteZoom(tab.space, host, next)
+        .catch(e => console.error("Swell: could not save the zoom", e));
+    }
+  }
+
+  // Puts the saved zoom of `host` on the page when it changes host.
+  #applyZoom(tab, host) {
+    if (tab.zoomHost === host) {
+      return;
+    }
+    tab.zoomHost = host;
+    const context = tab.browser.browsingContext;
+    if (!host) {
+      if (context) {
+        context.fullZoom = 1;
+      }
+      return;
+    }
+    this.#core
+      .siteZoom(tab.space, host)
+      .then(factor => {
+        const live = tab.browser.browsingContext;
+        if (tab.zoomHost === host && live) {
+          live.fullZoom = factor;
+        }
+      })
+      .catch(e => console.error("Swell: could not read the zoom", e));
+  }
+
   reload() {
     const tab = this.#selected;
     if (tab?.crashed) {
@@ -506,6 +572,7 @@ export class EngineBridge {
     tab.url = url;
     tab.title = browser.contentTitle || tab.title;
     this.#emitState(tab);
+    this.#applyZoom(tab, hostOf(url));
     if (url == BLANK) {
       return;
     }
