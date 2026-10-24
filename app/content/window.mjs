@@ -28,6 +28,9 @@ const { Core, Icon } = ChromeUtils.importESModule(
 const { EngineBridge } = ChromeUtils.importESModule(
   "moz-src:///swell/app/modules/EngineBridge.sys.mjs"
 );
+const { SwellWindows } = ChromeUtils.importESModule(
+  "moz-src:///swell/app/modules/SwellWindows.sys.mjs"
+);
 const { TreeState } = ChromeUtils.importESModule(
   "moz-src:///swell/app/modules/TreeState.sys.mjs"
 );
@@ -106,6 +109,7 @@ async function start() {
     pages: document.getElementById("pages"),
   });
   await bridge.init(await core.lastActiveSpace());
+  SwellWindows.register(window, bridge);
   const app = new App({
     doc: document,
     core,

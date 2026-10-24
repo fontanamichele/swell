@@ -115,6 +115,11 @@ class Tab {
     this.browser = browser;
   }
 
+  // The name the toolkit's WebExtension code knows a tab's browser by.
+  get linkedBrowser() {
+    return this.browser;
+  }
+
   snapshot(selected) {
     return {
       liveTab: this.liveTab,
@@ -171,6 +176,23 @@ export class EngineBridge {
 
   get selectedTab() {
     return this.#selected;
+  }
+
+  // The containers of the spaces.
+  userContextIds() {
+    return [...this.#spaces.values()].map(space => space.userContextId);
+  }
+
+  // The container of a space, or undefined.
+  userContextOf(space) {
+    return this.#spaces.get(space)?.userContextId;
+  }
+
+  // The id of the space that uses a container, or undefined.
+  spaceForContext(userContextId) {
+    return [...this.#spaces.values()].find(
+      space => space.userContextId == userContextId
+    )?.id;
   }
 
   // The tab behind a live tab id, or undefined.

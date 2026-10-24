@@ -1,0 +1,4 @@
+category webextension-modules swell chrome://swellext/content/ext-swell.json
+
+category webextension-scripts c-swell chrome://swellext/content/ext-swell.js
+category webextension-scripts-addon swell chrome://swellext/content/child/ext-swell.js

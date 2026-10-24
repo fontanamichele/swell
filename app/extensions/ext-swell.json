@@ -1,0 +1,14 @@
+{
+  "tabs": {
+    "url": "chrome://swellext/content/ext-tabs.js",
+    "schema": "chrome://swellext/content/schemas/tabs.json",
+    "scopes": ["addon_parent"],
+    "paths": [["tabs"]]
+  },
+  "windows": {
+    "url": "chrome://swellext/content/ext-windows.js",
+    "schema": "chrome://swellext/content/schemas/windows.json",
+    "scopes": ["addon_parent"],
+    "paths": [["windows"]]
+  }
+}
