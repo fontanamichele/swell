@@ -6,7 +6,7 @@ Test: ./mach test swell/tests/app/browser --headless
 Upstreamable: no (names a downstream application).
 
 diff --git a/python/mozbuild/mozbuild/base.py b/python/mozbuild/mozbuild/base.py
-index 7325c8b4b847..e7f93ea5f1fc 100644
+index 7325c8b4b847..c2910ab56e28 100644
 --- a/python/mozbuild/mozbuild/base.py
 +++ b/python/mozbuild/mozbuild/base.py
 @@ -1118,6 +1118,13 @@ class MachCommandConditions:
@@ -23,6 +23,21 @@ index 7325c8b4b847..e7f93ea5f1fc 100644
      @staticmethod
      def is_jsshell(build_obj):
          """Must have a jsshell build."""
+@@ -1184,9 +1191,11 @@ class MachCommandConditions:
+     @staticmethod
+     def has_build(build_obj):
+         """Must have a build."""
+-        return MachCommandConditions.is_firefox_or_android(
+-            build_obj
+-        ) or MachCommandConditions.is_thunderbird(build_obj)
++        return (
++            MachCommandConditions.is_firefox_or_android(build_obj)
++            or MachCommandConditions.is_thunderbird(build_obj)
++            or MachCommandConditions.is_swell(build_obj)
++        )
+ 
+     @staticmethod
+     def has_build_or_shell(build_obj):
 diff --git a/testing/mochitest/api.js b/testing/mochitest/api.js
 index eafa0ee93a06..d6c73c0f0a16 100644
 --- a/testing/mochitest/api.js
