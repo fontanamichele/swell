@@ -43,6 +43,8 @@ const COMMANDS = [
   "onFavicon",
   "siteZoom",
   "setSiteZoom",
+  "historyCount",
+  "clearHistory",
 ];
 
 /**

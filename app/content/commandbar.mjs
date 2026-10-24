@@ -5,12 +5,14 @@
 // The core's SuggestionKind values.
 const KIND_PINNED = 0;
 const KIND_TODAY = 1;
-const KIND_URL = 2;
-const KIND_SEARCH = 3;
+const KIND_HISTORY = 2;
+const KIND_URL = 3;
+const KIND_SEARCH = 4;
 
 const KIND_MARK = new Map([
   [KIND_PINNED, "★"],
   [KIND_TODAY, "●"],
+  [KIND_HISTORY, "◷"],
   [KIND_URL, "↗"],
   [KIND_SEARCH, "⌕"],
 ]);

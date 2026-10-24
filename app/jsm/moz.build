@@ -7,3 +7,6 @@ DIST_SUBDIR = "app"
 # Firefox's icon loader, unmodified; the link actor imports it as
 # resource:///modules/FaviconLoader.sys.mjs, as Firefox does.
 EXTRA_JS_MODULES += ["/browser/modules/FaviconLoader.sys.mjs"]
+
+# Places needs this module to exist; see the file for why it is empty.
+EXTRA_JS_MODULES += ["BrowserWindowTracker.sys.mjs"]

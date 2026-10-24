@@ -7,9 +7,15 @@ pref("toolkit.defaultChromeURI", "chrome://swell/content/window.xhtml");
 pref("toolkit.defaultChromeFeatures", "chrome,dialog=no,all,resizable");
 pref("privacy.userContext.enabled", true);
 pref("permissions.isolateBy.userContext", true);
-pref("places.history.enabled", false);
 
-// HSTS state and certificate exceptions belong to one space (patch 0230).
+// Visits are recorded with the container they happened in, and :visited only
+// counts visits of the asking container (patch 0200). Nothing lists history
+// across spaces. The command bar reads the core's own per-identity history.
+pref("places.history.enabled", true);
+pref("places.history.isolate_by_user_context", true);
+pref("places.semanticHistory.featureGate", false);
+
+// HSTS state and certificate exceptions belong to one space (patch 0500).
 pref("security.hsts.isolate_by_user_context", true);
 pref("security.cert_override.isolate_by_user_context", true);
 

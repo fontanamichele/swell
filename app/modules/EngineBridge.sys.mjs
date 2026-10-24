@@ -36,7 +36,6 @@ const BROWSER_ATTRIBUTES = {
   messagemanagergroup: "browsers",
   type: "content",
   manualactiveness: "true",
-  disableglobalhistory: "true",
 };
 
 // Forwards top-level state of one browser to the bridge.
