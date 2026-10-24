@@ -36,10 +36,10 @@ fn same(a: &Model, b: &Model) {
 fn fresh_database_is_migrated_and_reopening_is_idempotent() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
-    assert_eq!(store.schema_version().unwrap(), 1);
+    assert_eq!(store.schema_version().unwrap(), 2);
     drop(store);
     let store = Store::open(dir.path()).unwrap();
-    assert_eq!(store.schema_version().unwrap(), 1);
+    assert_eq!(store.schema_version().unwrap(), 2);
     let empty = reload(&store);
     assert!(empty.spaces().is_empty());
 }
@@ -205,4 +205,43 @@ fn state_survives_reopening_the_file() {
         Some(s.as_str())
     );
     assert_eq!(store.get_meta("missing").unwrap(), None);
+}
+
+#[test]
+fn site_zoom_is_kept_per_identity_and_host() {
+    let mut m = model();
+    let a = m
+        .create_space("A", Icon::Symbol("star".into()), None)
+        .unwrap();
+    let b = m
+        .create_space("B", Icon::Symbol("star".into()), None)
+        .unwrap();
+    let identity_a = m.identity_of_space(&a).unwrap().id.0.clone();
+    let identity_b = m.identity_of_space(&b).unwrap().id.0.clone();
+    assert_ne!(identity_a, identity_b);
+    let mut store = Store::open_in_memory().unwrap();
+    store.save_all(&m).unwrap();
+
+    assert_eq!(store.site_zoom(&identity_a, "example.com").unwrap(), None);
+    store
+        .set_site_zoom(&identity_a, "example.com", Some(1.5))
+        .unwrap();
+    assert_eq!(
+        store.site_zoom(&identity_a, "example.com").unwrap(),
+        Some(1.5)
+    );
+    assert_eq!(store.site_zoom(&identity_b, "example.com").unwrap(), None);
+    assert_eq!(store.site_zoom(&identity_a, "other.test").unwrap(), None);
+
+    store
+        .set_site_zoom(&identity_a, "example.com", Some(0.8))
+        .unwrap();
+    assert_eq!(
+        store.site_zoom(&identity_a, "example.com").unwrap(),
+        Some(0.8)
+    );
+    store
+        .set_site_zoom(&identity_a, "example.com", None)
+        .unwrap();
+    assert_eq!(store.site_zoom(&identity_a, "example.com").unwrap(), None);
 }

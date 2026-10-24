@@ -283,6 +283,39 @@ impl SwellCore {
         })
     }
 
+    /// The saved page zoom of `host` in the space's identity; 1.0 when none.
+    pub fn site_zoom(&self, space: String, host: String) -> Result<f64, CoreError> {
+        self.run(|inner, _| {
+            let space = inner.space(&space)?;
+            Ok(inner
+                .store
+                .site_zoom(&space.identity_id.0, &host)?
+                .unwrap_or(1.0))
+        })
+    }
+
+    /// Saves the page zoom of `host` for the space's identity. 1.0 forgets it;
+    /// other values are limited to what the engine accepts (0.3 to 5).
+    pub fn set_site_zoom(&self, space: String, host: String, factor: f64) -> Result<(), CoreError> {
+        self.run(|inner, _| {
+            let space = inner.space(&space)?;
+            if !factor.is_finite() {
+                return Err(CoreError::Invariant {
+                    reason: format!("zoom {factor} is not a number"),
+                });
+            }
+            let factor = factor.clamp(0.3, 5.0);
+            let saved = if (factor - 1.0).abs() < 1e-9 {
+                None
+            } else {
+                Some(factor)
+            };
+            Ok(inner
+                .store
+                .set_site_zoom(&space.identity_id.0, &host, saved)?)
+        })
+    }
+
     pub fn space_tree(&self, space: String) -> Result<TreeSnapshot, CoreError> {
         self.run(|inner, _| {
             let space = inner.space(&space)?;

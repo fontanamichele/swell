@@ -12,7 +12,8 @@ const DB_FILE: &str = "sidebar.db";
 
 /// Each entry upgrades the schema by one version; `PRAGMA user_version` is the
 /// number of entries already applied.
-const MIGRATIONS: &[&str] = &["
+const MIGRATIONS: &[&str] = &[
+    "
     CREATE TABLE identities (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -42,7 +43,16 @@ const MIGRATIONS: &[&str] = &["
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
     );
-"];
+",
+    "
+    CREATE TABLE site_zoom (
+        identity_id TEXT NOT NULL REFERENCES identities(id) ON DELETE CASCADE,
+        host TEXT NOT NULL,
+        factor REAL NOT NULL,
+        PRIMARY KEY (identity_id, host)
+    );
+",
+];
 
 pub struct Store {
     conn: Connection,
@@ -88,6 +98,34 @@ impl Store {
             tx.pragma_update(None, "user_version", (index + 1) as i64)?;
             tx.commit()?;
         }
+        Ok(())
+    }
+
+    /// The saved page zoom of `host` for one identity, if it is not the default.
+    pub fn site_zoom(&self, identity: &str, host: &str) -> Result<Option<f64>> {
+        Ok(self
+            .conn
+            .query_row(
+                "SELECT factor FROM site_zoom WHERE identity_id = ?1 AND host = ?2",
+                params![identity, host],
+                |row| row.get(0),
+            )
+            .optional()?)
+    }
+
+    /// Saves the zoom of `host` for one identity; `None` goes back to the default.
+    pub fn set_site_zoom(&self, identity: &str, host: &str, factor: Option<f64>) -> Result<()> {
+        match factor {
+            Some(factor) => self.conn.execute(
+                "INSERT INTO site_zoom (identity_id, host, factor) VALUES (?1, ?2, ?3)
+                 ON CONFLICT (identity_id, host) DO UPDATE SET factor = excluded.factor",
+                params![identity, host, factor],
+            )?,
+            None => self.conn.execute(
+                "DELETE FROM site_zoom WHERE identity_id = ?1 AND host = ?2",
+                params![identity, host],
+            )?,
+        };
         Ok(())
     }
 
