@@ -7,7 +7,8 @@
 #   --checkout    switch the Firefox tree to the revision in FIREFOX_REV
 #                 (fetching it first if needed). Refuses if the tree has changes
 #                 outside swell/ and the patch queue.
-#   --no-patches  do not apply patches/
+#   --no-patches  do not apply patches/ (they are otherwise applied and then committed
+#                 on the local branch "swell", see gecko-branch.sh)
 #
 # To start from nothing:
 #   git clone --filter=blob:none https://github.com/mozilla-firefox/firefox firefox
@@ -48,7 +49,7 @@ if ! grep -qx 'swell/' "$exclude" 2>/dev/null; then
 fi
 
 resolved=$(git -C "$root" rev-parse --verify --quiet "$want^{commit}" || true)
-if [ "$resolved" != "$have" ]; then
+if [ "$resolved" != "$have" ] && ! { [ -n "$resolved" ] && git -C "$root" merge-base --is-ancestor "$resolved" HEAD; }; then
   if [ "$checkout" -eq 1 ]; then
     "$here/apply-patches.sh" revert
     if [ -n "$(git -C "$root" status --porcelain --untracked-files=no)" ]; then
@@ -66,6 +67,7 @@ fi
 
 if [ "$patches" -eq 1 ]; then
   "$here/apply-patches.sh" apply
+  "$here/gecko-branch.sh" commit
 fi
 
 echo "Firefox: $(git -C "$root" rev-parse --short HEAD) ($(cat "$root/browser/config/version.txt"))"
