@@ -39,7 +39,7 @@ while IFS='|' read -r _ store state _; do
     fail=1
   fi
   case "$store" in
-    *"(default container)"*) ;; # does not depend on the two spaces
+    *"(default container)"* | *"(by id)"*) ;; # does not depend on the two spaces
     *)
       if [ "$self" != shared ]; then
         verdict="$verdict  <- self-test did not detect sharing"

@@ -37,6 +37,10 @@ prefs = [
 
 ["browser_downloads.js"]
 
+["browser_extension_install.js"]
+
+["browser_extension_ui.js"]
+
 ["browser_extensions.js"]
 
 ["browser_favicons.js"]
