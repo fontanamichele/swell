@@ -8,25 +8,6 @@
 // through Swell's own window: two spaces, one container each, the same
 // action in both.
 
-const PAGE = `${BASE}file_blank.html`;
-
-// Records one row of the audit and fails if the store is shared.
-function audit(store, isolated, detail = "") {
-  info(`AUDIT|${store}|${isolated ? "isolated" : "shared"}|${detail}`);
-  ok(isolated, `${store} is isolated between spaces. ${detail}`);
-}
-
-/** Two fresh spaces, each with the page open in its own container. */
-async function pair() {
-  const { bridge, app } = await swellApp();
-  const a = await freshSpace(app, "Isolation A");
-  const tabA = await openInSpace(bridge, a.id, PAGE);
-  const b = await freshSpace(app, "Isolation B");
-  const tabB = await openInSpace(bridge, b.id, PAGE);
-  Assert.notEqual(a.userContextId, b.userContextId);
-  return { a, b, tabA, tabB, bridge };
-}
-
 add_task(async function test_cookies() {
   const { a, b, tabA, bridge } = await pair();
   await SpecialPowers.spawn(tabA.browser, [], () => {

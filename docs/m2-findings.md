@@ -35,3 +35,21 @@ from chrome proves the capture sees requests.
   local URL.
 - Not covered yet: a capture with a page open (content may use Mozilla hosts,
   e.g. the "Firefox" compat checks), and after 24 h (daily pollers).
+
+## Step 2: isolation suite scaffolding
+
+`tests/app/isolation/browser/` is the Swell suite (the M0 audit in
+`tests/isolation` still runs only in the Firefox-app build). `head.js` loads
+the window helpers and defines `audit()` and `pair()`. `tools/isolation.sh`
+runs it twice and prints a table; the second run sets
+`swell.test.shareContainer`, which puts both "spaces" in one container, and
+every store must then report as shared, so a case that cannot fail is caught.
+Cases so far: cookies, localStorage, IndexedDB, Cache API, service workers,
+HTTP cache, HTTP auth, and the notification, geolocation, camera and
+microphone permissions. About 23 s on this machine.
+
+Gotcha: mochitest flattens `support-files` into the test directory by file
+name, so listing `../browser/head.js` overwrote the suite's own `head.js`.
+Files of another directory are served from that directory's URL (`BASE`).
+Suite directories must be named `browser/` or ESLint does not give them the
+test globals.

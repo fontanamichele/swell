@@ -1,0 +1,11 @@
+[DEFAULT]
+support-files = [
+  "head.js",
+]
+prefs = [
+  "dom.disable_open_during_load=false",
+]
+
+["browser_permissions.js"]
+
+["browser_storage.js"]

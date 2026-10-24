@@ -4,7 +4,10 @@
 
 if CONFIG["MOZ_BUILD_APP"] == "swell/app":
     DIRS += ["app"]
-    BROWSER_CHROME_MANIFESTS += ["tests/app/browser/browser.toml"]
+    BROWSER_CHROME_MANIFESTS += [
+        "tests/app/browser/browser.toml",
+        "tests/app/isolation/browser/browser.toml",
+    ]
     XPCSHELL_TESTS_MANIFESTS += ["tests/xpcshell/xpcshell.toml"]
 else:
     # The M0 audit drives gBrowser; it runs in the Firefox-app objdir until ported.

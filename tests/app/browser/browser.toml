@@ -25,8 +25,6 @@ prefs = [
 
 ["browser_import_arc.js"]
 
-["browser_isolation_storage.js"]
-
 ["browser_page_actions.js"]
 
 ["browser_permissions.js"]
