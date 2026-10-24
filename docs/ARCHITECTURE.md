@@ -98,7 +98,7 @@ Everything in the sidebar is one tree of nodes owned by the Rust core; it is the
 
 **Persistence**
 
-- One SQLite file per domain in the app profile (`sidebar.db`, `spaces.db`, `history-<identity>.db`, …): atomic writes, cheap partial updates, crash safety.
+- One SQLite file per domain in the app profile (`sidebar.db`, `history-<identity>.db`, …): atomic writes, cheap partial updates, crash safety. (M1: identities, spaces and the node tree share `sidebar.db`, because creating a space writes its roots in one transaction.)
 - Every record carries a schema `version`; migrations run in the core at startup.
 - Timestamps are Unix epoch milliseconds.
 
@@ -169,7 +169,8 @@ Our own window document replaces Firefox's `browser.xhtml` instead of hiding par
 - Shows: sidebar (Favorites for the identity, Pinned tree, Today, space switcher), page area, command bar overlay, minimal top line on hover/focus.
 - Removed, not hidden: tab strip, nav toolbar, bookmarks toolbar/menu/sidebar/Library, Firefox View, Pocket, Firefox accounts/Sync UI, Firefox's containers UI, `about:logins` (replaced by per-space passwords view).
 - Kept, restyled: permission prompts, add-on install prompt, downloads panel (fed by the core), find bar, print, devtools.
-- No framework at first (plain web components). Every interaction is a core command.
+- No framework at first (plain modules and DOM). Every interaction is a core command.
+- Built as its own Gecko application (`swell/app`, not `browser/`), so Firefox's window code is absent rather than hidden. Its main window has windowtype `navigator:browser` so the engine's window lookups, Marionette and the test harness find it. See `docs/m1-findings.md`.
 
 ## Sync and encryption (after MVP)
 
@@ -187,7 +188,7 @@ End-to-end encrypted, self-hostable; per-record LWW with hybrid logical clocks; 
 ## Milestones
 
 1. **M0 — Isolation spike.** Two containers in one window; one add-on installed twice as `X~A` and `X~B`. Exit: each copy has its own storage and sees only its own tabs and logins; memory cost measured.
-2. **M1 — Skeleton browser.** Own window replaces `browser.xhtml`; Rust core through UniFFI; sidebar tree, spaces, command bar. Exit: browse daily in two spaces with no Firefox UI visible; Arc importer works.
+2. **M1 — Skeleton browser.** *(Built; see `docs/m1-findings.md`.)* Own window replaces `browser.xhtml`; Rust core through UniFFI; sidebar tree, spaces, command bar. Exit: browse daily in two spaces with no Firefox UI visible; Arc importer works.
 3. **M2 — Full isolation alpha (macOS, Linux).** P1–P3; isolation test suite in CI. Exit: suite passes; signed macOS build and Linux Flatpak.
 4. **M3 — Sync.**
 5. **M4 — Windows and public beta.**
