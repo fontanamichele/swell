@@ -15,3 +15,5 @@ prefs = [
 ["browser_storage.js"]
 
 ["browser_zoom.js"]
+
+["browser_history.js"]

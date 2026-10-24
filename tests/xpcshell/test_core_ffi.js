@@ -176,3 +176,33 @@ add_task(async function test_site_zoom_is_per_identity_and_survives_reopen() {
     NotFound
   );
 });
+
+add_task(function test_suggestion_kinds_match_the_window_constants() {
+  // app/content/commandbar.mjs hard-codes these numbers.
+  Assert.equal(SuggestionKind.PINNED, 0);
+  Assert.equal(SuggestionKind.TODAY, 1);
+  Assert.equal(SuggestionKind.HISTORY, 2);
+  Assert.equal(SuggestionKind.URL, 3);
+  Assert.equal(SuggestionKind.SEARCH, 4);
+});
+
+add_task(async function test_history_is_kept_per_space_and_can_be_cleared() {
+  const { core } = await openCore();
+  const a = (await core.listSpaces())[0];
+  const bId = await core.createSpace("B", new Icon.Symbol({ name: "star" }));
+  await core.openWindow("w1");
+  const live = await core.openUrl("w1", a.id, "https://history.test/page");
+  await core.onNavigation(
+    live,
+    "https://history.test/page",
+    "History page",
+    Transition.TYPED
+  );
+  await core.onTabClosed(live);
+  Assert.equal(await core.historyCount(a.id), 1);
+  Assert.equal(await core.historyCount(bId), 0);
+  const found = await core.queryCommandBar(a.id, "history");
+  Assert.ok(found.some(s => s.kind == SuggestionKind.HISTORY));
+  Assert.equal(await core.clearHistory(a.id), 1);
+  Assert.equal(await core.historyCount(a.id), 0);
+});
