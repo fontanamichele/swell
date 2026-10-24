@@ -6,6 +6,7 @@ support-files = [
   "file_form.html",
   "file_address_form.html",
   "file_card_form.html",
+  "file_login.html",
   "file_opener.html",
   "file_download.sjs",
   "file_links.html",
@@ -34,6 +35,8 @@ prefs = [
 ["browser_favicons.js"]
 
 ["browser_import_arc.js"]
+
+["browser_logins.js"]
 
 ["browser_no_mozilla_services.js"]
 

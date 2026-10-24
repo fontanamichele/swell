@@ -4,6 +4,7 @@ support-files = [
 ]
 prefs = [
   "dom.disable_open_during_load=false",
+  "signon.rememberSignons=true",
 ]
 
 ["browser_autofill.js"]
@@ -13,6 +14,8 @@ prefs = [
 ["browser_form_history.js"]
 
 ["browser_history.js"]
+
+["browser_logins.js"]
 
 ["browser_permissions.js"]
 

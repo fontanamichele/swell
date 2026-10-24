@@ -12,6 +12,7 @@ const {
   Icon,
   TreeOp,
   NodeKindView,
+  LoginRecord,
   NotFound,
   Invariant,
 } = ChromeUtils.importESModule(
@@ -205,4 +206,37 @@ add_task(async function test_history_is_kept_per_space_and_can_be_cleared() {
   Assert.ok(found.some(s => s.kind == SuggestionKind.HISTORY));
   Assert.equal(await core.clearHistory(a.id), 1);
   Assert.equal(await core.historyCount(a.id), 0);
+});
+
+add_task(async function test_logins_are_kept_per_container() {
+  const { core } = await openCore();
+  const a = (await core.listSpaces())[0];
+  const bId = await core.createSpace("B", new Icon.Symbol({ name: "star" }));
+  const b = (await core.listSpaces()).find(space => space.id == bId);
+  const record = new LoginRecord({
+    guid: "{login-1}",
+    origin: "https://bank.test",
+    formActionOrigin: "https://bank.test",
+    httpRealm: null,
+    usernameField: "user",
+    passwordField: "pass",
+    encryptedUsername: "enc-user",
+    encryptedPassword: "enc-pass",
+    timeCreated: 1,
+    timeLastUsed: 1,
+    timePasswordChanged: 1,
+    timesUsed: 1,
+  });
+  await core.loginAdd(a.userContextId, record);
+  Assert.equal(await core.loginsCount(a.userContextId), 1);
+  Assert.equal(await core.loginsCount(b.userContextId), 0);
+  const [found] = await core.loginsForOrigins(a.userContextId, [
+    "https://bank.test",
+  ]);
+  Assert.equal(found.encryptedPassword, "enc-pass");
+  Assert.equal(found.httpRealm, null);
+  await Assert.rejects(core.loginsAll(0), NotFound, "container 0 has none");
+  await core.loginRecordUse(a.userContextId, "{login-1}", 99);
+  Assert.equal((await core.loginsAll(a.userContextId))[0].timesUsed, 2);
+  Assert.equal(await core.loginsClear(a.userContextId), 1);
 });
