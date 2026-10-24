@@ -1,0 +1,141 @@
+Purpose: expose swell/core/core-ffi to privileged JS through UniFFI. Hand-written part of
+the registration: exclude swell/core from the root workspace (it has its own, like gfx/wr),
+depend on core-ffi from gkrust-uniffi-components, re-export its scaffolding, and list its
+async/sync configuration under its crate name in config.toml. Cargo.lock gains only the
+four swell core crates; every third-party dependency is already vendored.
+Test: ./mach build, then ./mach test swell/tests/xpcshell (and cargo test in swell/core).
+Companion: 0021 holds the regenerated output.
+Upstreamable: no.
+
+diff --git a/Cargo.lock b/Cargo.lock
+index 4bd60e70d077..6b77b29b8155 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1163,6 +1163,17 @@ dependencies = [
+  "version_check",
+ ]
+ 
++[[package]]
++name = "core-ffi"
++version = "0.1.0"
++dependencies = [
++ "core-model",
++ "core-search",
++ "core-store",
++ "thiserror 2.0.12",
++ "uniffi",
++]
++
+ [[package]]
+ name = "core-foundation"
+ version = "0.9.999"
+@@ -1217,6 +1228,30 @@ dependencies = [
+  "libc",
+ ]
+ 
++[[package]]
++name = "core-model"
++version = "0.1.0"
++dependencies = [
++ "getrandom 0.3.3",
++ "serde",
++ "thiserror 2.0.12",
++]
++
++[[package]]
++name = "core-search"
++version = "0.1.0"
++
++[[package]]
++name = "core-store"
++version = "0.1.0"
++dependencies = [
++ "core-model",
++ "rusqlite 0.37.0",
++ "serde",
++ "serde_json",
++ "thiserror 2.0.12",
++]
++
+ [[package]]
+ name = "core-text"
+ version = "20.1.0"
+@@ -3138,6 +3173,7 @@ dependencies = [
+  "autofill",
+  "breach-alerts",
+  "context_id",
++ "core-ffi",
+  "db-crypto",
+  "error-support",
+  "filter_adult",
+diff --git a/Cargo.toml b/Cargo.toml
+index 86584577e97b..a9ada5d3a818 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -90,6 +90,7 @@ exclude = [
+   # Excluded because these crates have their own Cargo workspaces so they can't
+   # be included in the top-level one.
+   "gfx/wr",
++  "swell/core",
+ 
+   # Excluded because they are used only as dependencies, not top-level targets,
+   # so we don't need to vendor their dev-dependencies.
+diff --git a/toolkit/components/uniffi-bindgen-gecko-js/components/Cargo.toml b/toolkit/components/uniffi-bindgen-gecko-js/components/Cargo.toml
+index d3345a0950e7..133429e107a0 100644
+--- a/toolkit/components/uniffi-bindgen-gecko-js/components/Cargo.toml
++++ b/toolkit/components/uniffi-bindgen-gecko-js/components/Cargo.toml
+@@ -34,6 +34,7 @@ logins = { version = "0.1", features = ["keydb", "allow_empty_passwords", "ignor
+ init_rust_components = { version = "0.1", features = ["keydb"] }
+ breach-alerts = { version = "0.1" }
+ db-crypto = { version = "0.1", features = ["keydb"] }
++core-ffi = { path = "../../../../swell/core/core-ffi" }
+ 
+ rc_crypto = { path = "../../../../third_party/application-services/components/support/rc_crypto", optional = true }
+ 
+diff --git a/toolkit/components/uniffi-bindgen-gecko-js/components/lib.rs b/toolkit/components/uniffi-bindgen-gecko-js/components/lib.rs
+index 958a3f873102..1a01c3b42afc 100644
+--- a/toolkit/components/uniffi-bindgen-gecko-js/components/lib.rs
++++ b/toolkit/components/uniffi-bindgen-gecko-js/components/lib.rs
+@@ -19,6 +19,7 @@ mod reexport_appservices_uniffi_scaffolding {
+     init_rust_components::uniffi_reexport_scaffolding!();
+     breach_alerts::uniffi_reexport_scaffolding!();
+     db_crypto::uniffi_reexport_scaffolding!();
++    core_ffi::uniffi_reexport_scaffolding!();
+ }
+ 
+ // Define extern "C" versions of these UniFFI functions, so that they can be called from C++
+diff --git a/toolkit/components/uniffi-bindgen-gecko-js/components/moz.build b/toolkit/components/uniffi-bindgen-gecko-js/components/moz.build
+index 881433937fe1..f8173dfa087f 100644
+--- a/toolkit/components/uniffi-bindgen-gecko-js/components/moz.build
++++ b/toolkit/components/uniffi-bindgen-gecko-js/components/moz.build
+@@ -16,6 +16,7 @@ MOZ_SRC_FILES += [
+     "generated/RustRemoteSettings.sys.mjs",
+     "generated/RustSearch.sys.mjs",
+     "generated/RustSuggest.sys.mjs",
++    "generated/RustSwellCore.sys.mjs",
+     "generated/RustSync15.sys.mjs",
+     "generated/RustTabs.sys.mjs",
+     "generated/RustTracing.sys.mjs",
+diff --git a/toolkit/components/uniffi-bindgen-gecko-js/config.toml b/toolkit/components/uniffi-bindgen-gecko-js/config.toml
+index e4a8643b077e..1b31b73a5761 100644
+--- a/toolkit/components/uniffi-bindgen-gecko-js/config.toml
++++ b/toolkit/components/uniffi-bindgen-gecko-js/config.toml
+@@ -128,6 +128,18 @@ WebExtStorageStore = "AsyncWrapped"
+ "unregister_event_sink" = "Sync"
+ "EventSink.on_event" = "FireAndForget"
+ 
++[core_ffi.async_wrappers]
++SwellCore = "AsyncWrapped"
++"SwellCore.open" = "Sync"
++"SwellCore.add_listener" = "Sync"
++"SwellCore.close" = "Sync"
++"CoreListener.on_tree_changed" = "FireAndForget"
++"CoreListener.on_spaces_changed" = "FireAndForget"
++"CoreListener.on_active_space_changed" = "FireAndForget"
++"CoreListener.on_open_tab" = "FireAndForget"
++"CoreListener.on_select_tab" = "FireAndForget"
++"CoreListener.on_close_tab" = "FireAndForget"
++
+ [uniffi_bindings_tests.async_wrappers]
+ "clone_interface" = "Sync"
+ "create_async_test_trait_interface" = "AsyncWrapped"

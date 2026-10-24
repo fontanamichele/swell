@@ -1,0 +1,102 @@
+Purpose: let mach and the browser-chrome harness run in Swell. mach: add the is_swell
+condition and enable the browser-chrome flavor for it. Harness: Swell's main window has
+windowtype navigator:browser (so Marionette, the window mediator and the harness find it)
+but is not a browser.xhtml window, so loadMochitest must not call win.openLinkIn.
+Test: ./mach test swell/tests/app/browser --headless
+Upstreamable: no (names a downstream application).
+
+diff --git a/python/mozbuild/mozbuild/base.py b/python/mozbuild/mozbuild/base.py
+index 7325c8b4b847..e7f93ea5f1fc 100644
+--- a/python/mozbuild/mozbuild/base.py
++++ b/python/mozbuild/mozbuild/base.py
+@@ -1118,6 +1118,13 @@ class MachCommandConditions:
+             return build_obj.substs.get("MOZ_BUILD_APP") == "browser"
+         return False
+ 
++    @staticmethod
++    def is_swell(build_obj):
++        """Must have a Swell build."""
++        if hasattr(build_obj, "substs"):
++            return build_obj.substs.get("MOZ_BUILD_APP") == "swell/app"
++        return False
++
+     @staticmethod
+     def is_jsshell(build_obj):
+         """Must have a jsshell build."""
+diff --git a/testing/mochitest/api.js b/testing/mochitest/api.js
+index eafa0ee93a06..d6c73c0f0a16 100644
+--- a/testing/mochitest/api.js
++++ b/testing/mochitest/api.js
+@@ -68,6 +68,8 @@ function androidStartup() {
+ // Special case for Thunderbird windows.
+ const IS_THUNDERBIRD =
+   Services.appinfo.ID == "{3550f703-e582-4d05-9a08-453d09bdfdc6}";
++// Swell's main window is a navigator:browser window without openLinkIn.
++const IS_SWELL = Services.appinfo.ID == "{4e7da7f4-09d6-4575-8804-2949e41e54ea}";
+ const WINDOW_TYPE = IS_THUNDERBIRD ? "mail:3pane" : "navigator:browser";
+ 
+ var WindowListener = {
+@@ -118,7 +120,7 @@ function loadMochitest(e) {
+   win.removeEventListener("mochitest-load", loadMochitest);
+ 
+   // for mochitest-plain, navigating to the url is all we need
+-  if (!IS_THUNDERBIRD) {
++  if (!IS_THUNDERBIRD && !IS_SWELL) {
+     win.openLinkIn(url, "current", {
+       triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
+     });
+diff --git a/testing/mochitest/browser-test.js b/testing/mochitest/browser-test.js
+index 66333694ef56..588717b826aa 100644
+--- a/testing/mochitest/browser-test.js
++++ b/testing/mochitest/browser-test.js
+@@ -664,8 +664,11 @@ Tester.prototype = {
+         : "Found an unexpected {elt}";
+ 
+     // Clean up the Firefox window.
+-    // But not the Thunderbird window, it doesn't have these things!
+-    if (AppConstants.MOZ_APP_NAME != "thunderbird") {
++    // But not the Thunderbird or Swell windows, they don't have these things!
++    if (
++      AppConstants.MOZ_APP_NAME != "thunderbird" &&
++      AppConstants.MOZ_APP_NAME != "swell"
++    ) {
+       // Remove stale tabs
+       if (this.currentTest && window.gBrowser && gBrowser.tabs.length > 1) {
+         let lastURI = "";
+@@ -1225,6 +1228,10 @@ Tester.prototype = {
+    * fresh Session Restore state.
+    */
+   resetSessionState() {
++    if (!window.SessionStore) {
++      return;
++    }
++
+     // Forget all closed windows.
+     while (window.SessionStore.getClosedWindowCount() > 0) {
+       window.SessionStore.forgetClosedWindow(0);
+diff --git a/testing/mochitest/mach_commands.py b/testing/mochitest/mach_commands.py
+index 3bf3f072756c..c8b5dd587643 100644
+--- a/testing/mochitest/mach_commands.py
++++ b/testing/mochitest/mach_commands.py
+@@ -51,7 +51,7 @@ test path(s):
+ Please check spelling and make sure there are mochitests living there.
+ """.lstrip()
+ 
+-SUPPORTED_APPS = ["firefox", "android", "thunderbird", "ios"]
++SUPPORTED_APPS = ["firefox", "android", "thunderbird", "ios", "swell"]
+ 
+ parser = None
+ 
+diff --git a/testing/mochitest/mochitest_options.py b/testing/mochitest/mochitest_options.py
+index d7ba9540c8d8..13e262261f91 100644
+--- a/testing/mochitest/mochitest_options.py
++++ b/testing/mochitest/mochitest_options.py
+@@ -51,7 +51,7 @@ ALL_FLAVORS = {
+     "browser-chrome": {
+         "suite": "browser",
+         "aliases": ("browser", "browser-chrome", "mochitest-browser-chrome", "bc"),
+-        "enabled_apps": ("firefox", "thunderbird"),
++        "enabled_apps": ("firefox", "thunderbird", "swell"),
+         "extra_args": {
+             "flavor": "browser",
+         },

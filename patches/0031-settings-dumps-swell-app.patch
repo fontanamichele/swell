@@ -1,0 +1,38 @@
+Purpose: the Remote Settings dump generator only knows Firefox, Android, iOS and
+Thunderbird/SeaMonkey applications and asserts otherwise; add swell/app, and place the
+dumps in Swell's application directory (DIST_SUBDIR "app").
+Test: MOZCONFIG=swell/mozconfig ./mach build completes the misc tier.
+Upstreamable: no (names a downstream application); keep in the queue.
+
+diff --git a/services/settings/dumps/gen_last_modified.py b/services/settings/dumps/gen_last_modified.py
+index d16eaa01e394..c0d52e424629 100644
+--- a/services/settings/dumps/gen_last_modified.py
++++ b/services/settings/dumps/gen_last_modified.py
+@@ -55,6 +55,7 @@ def main(output):
+         "mobile/ios",
+         "comm/mail",
+         "comm/suite",
++        "swell/app",
+     ), (
+         "Cannot determine location of Remote Settings "
+         f"dumps for platform {buildconfig.substs['MOZ_BUILD_APP']}"
+@@ -72,6 +73,8 @@ def main(output):
+         dumps_locations += ["comm/mail/app/settings/dumps/"]
+     elif buildconfig.substs["MOZ_BUILD_APP"] == "comm/suite":
+         dumps_locations += ["services/settings/dumps/"]
++    elif buildconfig.substs["MOZ_BUILD_APP"] == "swell/app":
++        dumps_locations += ["services/settings/dumps/"]
+ 
+     remotesettings_dumps = {}
+     for dumps_location in dumps_locations:
+diff --git a/services/settings/dumps/moz.build b/services/settings/dumps/moz.build
+index a3e9e9b3f269..c9f6a88c41b7 100644
+--- a/services/settings/dumps/moz.build
++++ b/services/settings/dumps/moz.build
+@@ -15,3 +15,6 @@ FINAL_TARGET_FILES.defaults.settings += ["!%s" % dump_summary]
+ if CONFIG["MOZ_BUILD_APP"] == "browser":
+     DIST_SUBDIR = "browser"
+     export("DIST_SUBDIR")
++elif CONFIG["MOZ_BUILD_APP"] == "swell/app":
++    DIST_SUBDIR = "app"
++    export("DIST_SUBDIR")
