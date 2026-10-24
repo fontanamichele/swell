@@ -53,3 +53,23 @@ name, so listing `../browser/head.js` overwrote the suite's own `head.js`.
 Files of another directory are served from that directory's URL (`BASE`).
 Suite directories must be named `browser/` or ESLint does not give them the
 test globals.
+
+## Step 3: shared stores
+
+- **HSTS and certificate exceptions**: patch `0500` adds
+  `security.hsts.isolate_by_user_context` and
+  `security.cert_override.isolate_by_user_context` (default false; Swell sets
+  both). One patch instead of the two the plan numbered (0230/0231), and `05xx`
+  instead of `02xx` because `02xx` is reserved for history. Old HSTS entries
+  (stored without a container) are not migrated into other containers.
+  Running the cases with the prefs off makes both fail, so they test the patch.
+- **Downloads**: no patch needed. `DownloadLegacy.sys.mjs` already records
+  `source.userContextId` from the document that started the download, so the
+  list (More menu, Downloads) and the toasts are filtered by the active
+  space. The download list itself is per session; it is not persisted yet.
+- **Zoom**: Firefox's `FullZoom` is in `browser/`, so there was no zoom at all.
+  Swell now has Accel +, -, 0 (`EngineBridge.zoom`), and the core keeps the
+  zoom per identity and host (`site_zoom` table, schema version 2,
+  `SwellCore.site_zoom` / `set_site_zoom`; regenerated patch 0021). The engine
+  stores zoom as a 32-bit float, so comparisons need a margin.
+- The isolation suite now has 17 stores, about 37 s.
