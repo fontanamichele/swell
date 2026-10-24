@@ -1,0 +1,15 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+swell.jar:
+% content swell %content/swell/ contentaccessible=no
+  content/swell/window.xhtml  (window.xhtml)
+  content/swell/window.css    (window.css)
+  content/swell/window.mjs    (window.mjs)
+  content/swell/app.mjs       (app.mjs)
+  content/swell/sidebar.mjs   (sidebar.mjs)
+  content/swell/commandbar.mjs (commandbar.mjs)
+  content/swell/menu.mjs      (menu.mjs)
+  content/swell/permissions.mjs (permissions.mjs)
+  content/swell/toasts.mjs    (toasts.mjs)

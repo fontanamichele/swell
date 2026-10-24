@@ -1,0 +1,13 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+imply_option("MOZ_PLACES", True)
+imply_option("MOZ_PROFILE_MIGRATOR", False)
+imply_option("MOZ_APP_VENDOR", "Swell")
+imply_option("MOZ_APP_ID", "{4e7da7f4-09d6-4575-8804-2949e41e54ea}")
+imply_option("--with-app-basename", "Swell")
+imply_option("--with-distribution-id", "dev.swell")
+imply_option("BROWSER_CHROME_URL", "chrome://swell/content/window.xhtml")
+
+include("../../toolkit/moz.configure")

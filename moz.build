@@ -2,4 +2,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
-BROWSER_CHROME_MANIFESTS += ["tests/isolation/browser/browser.toml"]
+if CONFIG["MOZ_BUILD_APP"] == "swell/app":
+    DIRS += ["app"]
+    BROWSER_CHROME_MANIFESTS += ["tests/app/browser/browser.toml"]
+    XPCSHELL_TESTS_MANIFESTS += ["tests/xpcshell/xpcshell.toml"]
+else:
+    # The M0 audit drives gBrowser; it runs in the Firefox-app objdir until ported.
+    BROWSER_CHROME_MANIFESTS += ["tests/isolation/browser/browser.toml"]

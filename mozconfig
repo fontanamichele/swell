@@ -1,0 +1,11 @@
+# Full (non-artifact) build of the Swell application.
+# Use: MOZCONFIG=$PWD/swell/mozconfig ./mach <command>   (from the firefox/ directory)
+
+ac_add_options --enable-project=swell/app
+ac_add_options --with-ccache=sccache
+ac_add_options --enable-optimize
+ac_add_options --disable-debug
+ac_add_options --disable-updater
+ac_add_options --disable-crashreporter
+
+mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj-swell

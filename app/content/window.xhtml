@@ -1,0 +1,106 @@
+<?xml version="1.0"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  id="swell-window"
+  windowtype="navigator:browser"
+  scrolling="false"
+  width="1280"
+  height="800"
+  screenX="60"
+  screenY="40"
+  persist="screenX screenY width height sizemode"
+>
+  <head>
+    <meta charset="utf-8" />
+    <title>Swell</title>
+    <link rel="stylesheet" href="chrome://global/skin/global.css" />
+    <link rel="stylesheet" href="chrome://swell/content/window.css" />
+    <script src="chrome://global/content/customElements.js"></script>
+    <script type="module" src="chrome://swell/content/window.mjs"></script>
+  </head>
+  <body>
+    <div id="titlebar"></div>
+    <div id="app">
+      <aside id="sidebar">
+        <div id="favorites" class="favorites"></div>
+        <div id="lists">
+          <section class="list" id="pinned-section">
+            <header>
+              <span class="heading">Pinned</span>
+              <button id="new-folder" class="icon-button" title="New folder">
+                +
+              </button>
+            </header>
+            <div id="pinned" class="tree" data-root="pinned"></div>
+          </section>
+          <section class="list" id="today-section">
+            <header><span class="heading">Today</span></header>
+            <div id="today" class="tree" data-root="today"></div>
+          </section>
+        </div>
+        <footer id="sidebar-footer">
+          <button id="new-tab" class="new-tab">New tab</button>
+          <div id="footer-row">
+            <nav id="spaces" aria-label="Spaces"></nav>
+            <button id="more" class="icon-button" title="More">&#x22EF;</button>
+          </div>
+        </footer>
+      </aside>
+      <main id="content">
+        <div id="permission-bar" hidden="">
+          <span class="permission-text"></span>
+          <button id="permission-allow">Allow</button>
+          <button id="permission-block">Block</button>
+          <button id="permission-later">Not now</button>
+        </div>
+        <div id="pages"></div>
+        <div id="findbars"></div>
+        <div id="empty">
+          <p class="empty-title">Swell</p>
+          <p class="empty-hint">
+            <kbd id="new-tab-key">T</kbd> opens a new tab
+          </p>
+        </div>
+      </main>
+    </div>
+    <div id="commandbar" hidden="">
+      <div class="panel">
+        <input
+          id="commandbar-input"
+          type="text"
+          spellcheck="false"
+          autocomplete="off"
+          placeholder="Search or enter address"
+        />
+        <ul id="commandbar-list" role="listbox"></ul>
+      </div>
+    </div>
+    <div id="menu" hidden=""></div>
+    <div id="toasts"></div>
+    <dialog id="new-space-dialog">
+      <form method="dialog" id="new-space-form">
+        <label
+          >Name <input id="new-space-title" type="text" autocomplete="off"
+        /></label>
+        <label
+          >Emoji
+          <input
+            id="new-space-emoji"
+            type="text"
+            maxlength="4"
+            autocomplete="off"
+        /></label>
+        <div class="buttons">
+          <button value="cancel" type="button" id="new-space-cancel">
+            Cancel
+          </button>
+          <button value="create" id="new-space-create">Create space</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>

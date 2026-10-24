@@ -1,0 +1,40 @@
+[DEFAULT]
+support-files = [
+  "head.js",
+  "file_blank.html",
+  "file_opener.html",
+  "file_download.sjs",
+  "file_links.html",
+  "file_icon.html",
+  "file_icon.png",
+  "file_auth.sjs",
+  "file_counter.sjs",
+  "file_worker.js",
+  "../../../core/core-store/tests/fixtures/arc_sidebar_synthetic.json",
+]
+prefs = [
+  "dom.disable_open_during_load=false",
+  "dom.webnotifications.requireuserinteraction=false",
+]
+
+["browser_command_bar.js"]
+
+["browser_downloads.js"]
+
+["browser_favicons.js"]
+
+["browser_import_arc.js"]
+
+["browser_isolation_storage.js"]
+
+["browser_page_actions.js"]
+
+["browser_permissions.js"]
+
+["browser_sidebar_tree.js"]
+
+["browser_smoke_no_firefox_ui.js"]
+
+["browser_titlebar.js"]
+
+["browser_two_spaces.js"]

@@ -1,0 +1,10 @@
+[DEFAULT]
+run-if = [
+  "os != 'android'",
+]
+
+["test_core_client.js"]
+
+["test_core_ffi.js"]
+
+["test_tree_state.js"]

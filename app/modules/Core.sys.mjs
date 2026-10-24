@@ -1,0 +1,164 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+import {
+  SwellCore,
+  CoreListener,
+} from "moz-src:///toolkit/components/uniffi-bindgen-gecko-js/components/generated/RustSwellCore.sys.mjs";
+
+export * from "moz-src:///toolkit/components/uniffi-bindgen-gecko-js/components/generated/RustSwellCore.sys.mjs";
+
+const EVENTS = [
+  "treeChanged",
+  "spacesChanged",
+  "activeSpaceChanged",
+  "openTab",
+  "selectTab",
+  "closeTab",
+];
+
+const COMMANDS = [
+  "listSpaces",
+  "lastActiveSpace",
+  "spaceTree",
+  "createSpace",
+  "openWindow",
+  "closeWindow",
+  "switchSpace",
+  "openUrl",
+  "openNode",
+  "pinTab",
+  "unpinNode",
+  "moveNode",
+  "createFolder",
+  "renameNode",
+  "setCollapsed",
+  "removeNode",
+  "queryCommandBar",
+  "importArc",
+  "onNavigation",
+  "onTabClosed",
+  "onTabOpened",
+  "onFavicon",
+];
+
+/**
+ * Receives the core's callbacks, which arrive on the main thread, and hands
+ * them to subscribers.
+ */
+class Fanout extends CoreListener {
+  #subscribers = new Map(EVENTS.map(name => [name, new Set()]));
+
+  subscribe(event, callback) {
+    const subscribers = this.#subscribers.get(event);
+    if (!subscribers) {
+      throw new Error(`Unknown core event: ${event}`);
+    }
+    subscribers.add(callback);
+    return () => subscribers.delete(callback);
+  }
+
+  #emit(event, ...args) {
+    for (const callback of this.#subscribers.get(event)) {
+      try {
+        callback(...args);
+      } catch (e) {
+        console.error(`Swell core ${event} subscriber failed`, e);
+      }
+    }
+  }
+
+  onTreeChanged(diff) {
+    this.#emit("treeChanged", diff);
+  }
+  onSpacesChanged(spaces) {
+    this.#emit("spacesChanged", spaces);
+  }
+  onActiveSpaceChanged(window, space) {
+    this.#emit("activeSpaceChanged", { window, space });
+  }
+  onOpenTab(window, space, userContextId, url, liveTab, node) {
+    this.#emit("openTab", { window, space, userContextId, url, liveTab, node });
+  }
+  onSelectTab(window, liveTab) {
+    this.#emit("selectTab", { window, liveTab });
+  }
+  onCloseTab(window, liveTab) {
+    this.#emit("closeTab", { window, liveTab });
+  }
+}
+
+/**
+ * The window's handle on the Rust core. Every command runs through one
+ * promise chain, so commands take effect in the order they were issued even
+ * though the core runs them on worker threads; a failed command does not stop
+ * the ones after it.
+ */
+export class CoreClient {
+  #core;
+  #fanout = new Fanout();
+  #queue = Promise.resolve();
+
+  constructor(core) {
+    this.#core = core;
+    core.addListener(this.#fanout);
+    for (const name of COMMANDS) {
+      this[name] = (...args) => this.#run(() => core[name](...args));
+    }
+  }
+
+  #run(command) {
+    const result = this.#queue.then(command);
+    this.#queue = result.catch(() => {});
+    return result;
+  }
+
+  /**
+   * @param {string} event One of treeChanged, spacesChanged, activeSpaceChanged,
+   *   openTab, selectTab, closeTab.
+   * @param {Function} callback
+   * @returns {Function} Unsubscribes.
+   */
+  on(event, callback) {
+    return this.#fanout.subscribe(event, callback);
+  }
+
+  /**
+   * Releases the core's listeners. UniFFI aborts at shutdown if one is left,
+   * so this runs when the application starts to quit.
+   */
+  close() {
+    this.#core.close();
+  }
+
+  /** Resolves once every command issued so far has finished. */
+  settled() {
+    return this.#queue;
+  }
+}
+
+let gClient = null;
+
+Services.obs.addObserver(
+  {
+    observe() {
+      gClient?.close();
+    },
+  },
+  "quit-application"
+);
+
+export const Core = {
+  /**
+   * Opens the core on first use. The default directory is `swell` inside the
+   * profile; a test passes its own.
+   *
+   * @param {string} [dir]
+   * @returns {CoreClient}
+   */
+  get(dir = PathUtils.join(PathUtils.profileDir, "swell")) {
+    gClient ??= new CoreClient(SwellCore.open(dir));
+    return gClient;
+  },
+};
