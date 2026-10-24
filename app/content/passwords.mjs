@@ -9,11 +9,11 @@ const { LoginHelper } = ChromeUtils.importESModule(
   "resource://gre/modules/LoginHelper.sys.mjs"
 );
 
-function hostOf(origin) {
+function hostOf(site) {
   try {
-    return new URL(origin).host;
+    return new URL(site).host;
   } catch (e) {
-    return origin;
+    return site;
   }
 }
 
@@ -110,11 +110,11 @@ export class PasswordsUI {
       ["username", "User name", login?.username ?? ""],
       ["password", "Password", login?.password ?? ""],
     ];
-    const inputs = fields.map(([name, label, value]) => {
+    const inputs = fields.map(([fieldName, label, value]) => {
       const wrapper = doc.createElement("label");
       wrapper.textContent = label;
       const input = doc.createElement("input");
-      input.name = name;
+      input.name = fieldName;
       input.value = value;
       input.autocomplete = "off";
       wrapper.append(input);
@@ -135,8 +135,8 @@ export class PasswordsUI {
     this.#form.replaceChildren(...inputs, buttons);
     this.#form.onsubmit = async event => {
       event.preventDefault();
-      const value = name =>
-        this.#form.querySelector(`input[name="${name}"]`).value;
+      const value = field =>
+        this.#form.querySelector(`input[name="${field}"]`).value;
       const next = Cc["@mozilla.org/login-manager/loginInfo;1"].createInstance(
         Ci.nsILoginInfo
       );

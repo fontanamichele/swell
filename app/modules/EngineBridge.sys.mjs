@@ -100,6 +100,8 @@ class Tab {
   canGoBack = false;
   canGoForward = false;
   crashed = false;
+  // What the page shares: {camera, microphone, screen}, or null.
+  sharing = null;
   pendingTransition = null;
   zoomHost = "";
   listener = null;
@@ -125,6 +127,7 @@ class Tab {
       canGoBack: this.canGoBack,
       canGoForward: this.canGoForward,
       crashed: this.crashed,
+      sharing: this.sharing,
       selected,
     };
   }
@@ -590,6 +593,11 @@ export class EngineBridge {
 
   loadingChanged(tab, loading) {
     tab.loading = loading;
+    this.#emitState(tab);
+  }
+
+  setSharing(tab, sharing) {
+    tab.sharing = sharing;
     this.#emitState(tab);
   }
 

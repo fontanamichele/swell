@@ -108,7 +108,9 @@ button {
 }
 
 #permission-bar,
-#autofill-bar {
+#autofill-bar,
+#media-bar,
+#media-indicator {
   display: flex;
   align-items: center;
   gap: var(--space-small);
@@ -118,17 +120,23 @@ button {
 }
 
 #permission-bar[hidden],
-#autofill-bar[hidden] {
+#autofill-bar[hidden],
+#media-bar[hidden],
+#media-indicator[hidden] {
   display: none;
 }
 
 #permission-bar .permission-text,
-#autofill-bar .autofill-text {
+#autofill-bar .autofill-text,
+#media-bar .media-text,
+#media-indicator .media-indicator-text {
   flex: 1;
 }
 
 #permission-bar button,
-#autofill-bar button {
+#autofill-bar button,
+#media-bar button,
+#media-indicator button {
   border: none;
   background: var(--row-hover);
   border-radius: 6px;
@@ -136,7 +144,9 @@ button {
 }
 
 #permission-bar button:hover,
-#autofill-bar button:hover {
+#autofill-bar button:hover,
+#media-bar button:hover,
+#media-indicator button:hover {
   background: var(--accent);
   color: white;
 }
@@ -707,4 +717,14 @@ dialog .buttons {
 
 #passwords-form input {
   width: 100%;
+}
+
+#media-indicator {
+  background: #c0392b;
+  color: white;
+}
+
+.row.sharing .title::before {
+  content: "\25CF  ";
+  color: #c0392b;
 }

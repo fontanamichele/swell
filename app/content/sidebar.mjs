@@ -95,6 +95,7 @@ export class Sidebar {
     const openTab = app.openTabs.get(id);
     row.classList.toggle("open", !!openTab);
     row.classList.toggle("selected", app.selectedNode === id);
+    row.classList.toggle("sharing", !!openTab?.sharing);
 
     if (info.kind == "folder") {
       const caret = doc.createElement("span");

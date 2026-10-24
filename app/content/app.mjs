@@ -10,6 +10,7 @@ import { PermissionBar } from "chrome://swell/content/permissions.mjs";
 import { DownloadsPanel } from "chrome://swell/content/downloads.mjs";
 import { AutofillUI } from "chrome://swell/content/autofill.mjs";
 import { PasswordsUI } from "chrome://swell/content/passwords.mjs";
+import { MediaUI } from "chrome://swell/content/media.mjs";
 
 const IS_MAC = Services.appinfo.OS == "Darwin";
 
@@ -43,6 +44,7 @@ export class App {
     this.downloads = new DownloadsPanel(this);
     this.autofill = new AutofillUI(this);
     this.passwords = new PasswordsUI(this);
+    this.media = new MediaUI(this);
     this.#renderQueued = false;
   }
 

@@ -51,6 +51,34 @@ ChromeUtils.registerWindowActor("SwellPage", {
   safeForUntrustedWebProcess: true,
 });
 
+// Camera, microphone and screen sharing: Firefox's own child actor under the
+// name it looks itself up by, and ours for the parent side.
+ChromeUtils.registerWindowActor("WebRTC", {
+  parent: {
+    esModuleURI: "moz-src:///swell/app/actors/SwellMediaParent.sys.mjs",
+  },
+  child: {
+    esModuleURI: "moz-src:///browser/actors/WebRTCChild.sys.mjs",
+  },
+  allFrames: true,
+  messageManagerGroups: ["browsers"],
+  safeForUntrustedWebProcess: true,
+});
+
+ChromeUtils.registerProcessActor("SwellProcess", {
+  child: {
+    esModuleURI: "moz-src:///swell/app/actors/SwellProcessChild.sys.mjs",
+    observers: [
+      "getUserMedia:request",
+      "recording-device-stopped",
+      "PeerConnection:request",
+      "recording-device-events",
+      "recording-window-ended",
+    ],
+  },
+  safeForUntrustedWebProcess: true,
+});
+
 ChromeUtils.registerWindowActor("SwellLink", {
   parent: {
     esModuleURI: "moz-src:///swell/app/actors/SwellLinkParent.sys.mjs",

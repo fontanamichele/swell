@@ -95,7 +95,7 @@ export async function loginsOfContainer(userContextId) {
 /**
  * Forgets the keychain item of a container (when its space is deleted).
  *
- * @param userContextId
+ * @param {number} userContextId The container whose item to delete
  */
 export async function deleteLoginsKey(userContextId) {
   const label = labelFor(userContextId);

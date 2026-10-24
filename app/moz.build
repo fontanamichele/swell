@@ -7,10 +7,13 @@ DIRS += ["app", "content", "defaults", "jsm"]
 XPCOM_MANIFESTS += ["components.conf"]
 
 MOZ_SRC_FILES += [
+    "../../browser/actors/WebRTCChild.sys.mjs",
     "actors/SwellLinkChild.sys.mjs",
     "actors/SwellLinkParent.sys.mjs",
+    "actors/SwellMediaParent.sys.mjs",
     "actors/SwellPageChild.sys.mjs",
     "actors/SwellPageParent.sys.mjs",
+    "actors/SwellProcessChild.sys.mjs",
     "modules/Autofill.sys.mjs",
     "modules/AutofillPrompter.sys.mjs",
     "modules/ContentPermissionPrompt.sys.mjs",
