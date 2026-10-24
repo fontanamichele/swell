@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>media</title>
+<script>
+// The page keeps its streams: a stream nobody holds stops sharing.
+window.streams = [];
+const describe = stream => {
+  window.streams.push(stream);
+  const video = document.createElement("video");
+  video.muted = true;
+  video.srcObject = stream;
+  document.body.append(video);
+  video.play().catch(() => {});
+  return { tracks: stream.getTracks().map(t => t.kind) };
+};
+const fail = error => ({ error: error.name });
+window.ask = constraints =>
+  navigator.mediaDevices.getUserMedia(constraints).then(describe, fail);
+window.askDisplay = () =>
+  navigator.mediaDevices.getDisplayMedia({ video: true }).then(describe, fail);
+</script>

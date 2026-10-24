@@ -5,6 +5,9 @@ support-files = [
 prefs = [
   "dom.disable_open_during_load=false",
   "signon.rememberSignons=true",
+  "media.navigator.streams.fake=true",
+  "media.navigator.permission.disabled=false",
+  "media.navigator.permission.fake=true",
 ]
 
 ["browser_autofill.js"]
@@ -22,5 +25,7 @@ prefs = [
 ["browser_security.js"]
 
 ["browser_storage.js"]
+
+["browser_webrtc.js"]
 
 ["browser_zoom.js"]

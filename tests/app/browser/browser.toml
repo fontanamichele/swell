@@ -7,6 +7,7 @@ support-files = [
   "file_address_form.html",
   "file_card_form.html",
   "file_login.html",
+  "file_media.html",
   "file_opener.html",
   "file_download.sjs",
   "file_links.html",
@@ -20,6 +21,10 @@ support-files = [
 prefs = [
   "dom.disable_open_during_load=false",
   "dom.webnotifications.requireuserinteraction=false",
+  "media.navigator.streams.fake=true",
+  "media.navigator.permission.disabled=false",
+  "media.navigator.permission.fake=true",
+  "media.getusermedia.screensharing.enabled=true",
 ]
 
 ["browser_autocomplete_popup.js"]
@@ -53,5 +58,7 @@ prefs = [
 ["browser_two_spaces.js"]
 
 ["browser_visited_latency.js"]
+
+["browser_webrtc.js"]
 
 ["browser_zoom.js"]

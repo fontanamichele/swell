@@ -59,6 +59,8 @@ add_task(async function test_the_popup_offers_form_history_of_the_space() {
   await app.switchSpace(b.id);
   await TestUtils.waitForCondition(() => bridge.selectedTab === tabB, "B");
   await type(tabB, "sw");
+  // A wait for something that must not happen has no event to listen for.
+  // eslint-disable-next-line mozilla/no-arbitrary-setTimeout
   await new Promise(resolve => setTimeout(resolve, 500));
   Assert.ok(!popup().popupOpen, "nothing is offered in another space");
   await closeAllTabs(bridge);

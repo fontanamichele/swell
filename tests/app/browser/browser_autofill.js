@@ -115,6 +115,8 @@ add_task(async function test_not_now_and_other_tabs_save_nothing() {
   document.getElementById("autofill-later").click();
   Assert.ok(bar().hidden, "the bar goes away");
   const storage = await autofillStorageFor(space.userContextId);
+  // A wait for something that must not happen has no event to listen for.
+  // eslint-disable-next-line mozilla/no-arbitrary-setTimeout
   await new Promise(resolve => setTimeout(resolve, 300));
   Assert.equal((await storage.addresses.getAll()).length, 0, "nothing saved");
   await closeAllTabs(bridge);
