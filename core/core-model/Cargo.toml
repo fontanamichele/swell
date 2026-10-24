@@ -1,0 +1,12 @@
+[package]
+name = "core-model"
+description = "Swell core: entities, invariants, commands and tree diffs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true
+getrandom.workspace = true

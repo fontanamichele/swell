@@ -1,0 +1,357 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+use core_model::*;
+
+struct TestEnv {
+    counter: u64,
+}
+
+impl Env for TestEnv {
+    fn now_ms(&self) -> i64 {
+        1_000 + self.counter as i64
+    }
+
+    fn new_id(&mut self) -> String {
+        self.counter += 1;
+        format!("id{}", self.counter)
+    }
+}
+
+fn model() -> Model {
+    Model::new(Box::new(TestEnv { counter: 0 }), "test-device")
+}
+
+fn space(m: &mut Model, title: &str) -> SpaceId {
+    m.create_space(title, Icon::Symbol("star".into()), None)
+        .unwrap()
+}
+
+fn pinned(m: &Model, s: &SpaceId) -> NodeId {
+    m.space(s).unwrap().pinned_root.clone()
+}
+
+fn today(m: &Model, s: &SpaceId) -> NodeId {
+    m.space(s).unwrap().today_root.clone()
+}
+
+#[test]
+fn spaces_get_distinct_nonzero_containers() {
+    let mut m = model();
+    let a = space(&mut m, "A");
+    let b = space(&mut m, "B");
+    let ida = m.identity_of_space(&a).unwrap().gecko_user_context_id;
+    let idb = m.identity_of_space(&b).unwrap().gecko_user_context_id;
+    assert_ne!(ida, 0);
+    assert_ne!(idb, 0);
+    assert_ne!(ida, idb);
+    m.validate().unwrap();
+}
+
+#[test]
+fn spaces_can_share_an_identity() {
+    let mut m = model();
+    let a = space(&mut m, "A");
+    let identity = m.space(&a).unwrap().identity_id.clone();
+    let b = m
+        .create_space("B", Icon::Emoji("x".into()), Some(identity.clone()))
+        .unwrap();
+    assert_eq!(m.space(&b).unwrap().identity_id, identity);
+    assert_eq!(m.identities().len(), 1);
+    assert!(m.favorites_root(&identity).is_some());
+    m.validate().unwrap();
+}
+
+#[test]
+fn insert_and_move_keep_parent_and_children_in_agreement() {
+    let mut m = model();
+    let s = space(&mut m, "A");
+    let root = pinned(&m, &s);
+    let (folder, _) = m.insert_folder(&root, 0, "Work").unwrap();
+    let (t1, _) = m.insert_tab(&folder, 0, "https://a.test/", "a").unwrap();
+    let (t2, _) = m.insert_tab(&root, 1, "https://b.test/", "b").unwrap();
+    m.validate().unwrap();
+    let ops = m.move_node(&t2, &folder, 0).unwrap();
+    assert_eq!(
+        ops,
+        vec![TreeOp::Moved {
+            id: t2.clone(),
+            parent: folder.clone(),
+            index: 0
+        }]
+    );
+    assert_eq!(m.children(&folder).unwrap(), vec![t2.clone(), t1.clone()]);
+    assert_eq!(m.node(&t2).unwrap().parent_id, Some(folder));
+    m.validate().unwrap();
+}
+
+#[test]
+fn move_within_same_parent_uses_post_removal_index() {
+    let mut m = model();
+    let s = space(&mut m, "A");
+    let root = pinned(&m, &s);
+    let (a, _) = m.insert_tab(&root, 0, "https://a.test/", "a").unwrap();
+    let (b, _) = m.insert_tab(&root, 1, "https://b.test/", "b").unwrap();
+    let (c, _) = m.insert_tab(&root, 2, "https://c.test/", "c").unwrap();
+    m.move_node(&a, &root, 2).unwrap();
+    assert_eq!(m.children(&root).unwrap(), vec![b, c, a]);
+    m.validate().unwrap();
+}
+
+#[test]
+fn cycles_are_rejected() {
+    let mut m = model();
+    let s = space(&mut m, "A");
+    let root = pinned(&m, &s);
+    let (outer, _) = m.insert_folder(&root, 0, "outer").unwrap();
+    let (inner, _) = m.insert_folder(&outer, 0, "inner").unwrap();
+    assert!(matches!(
+        m.move_node(&outer, &inner, 0),
+        Err(ModelError::Invariant(_))
+    ));
+    assert!(matches!(
+        m.move_node(&outer, &outer, 0),
+        Err(ModelError::Invariant(_))
+    ));
+    m.validate().unwrap();
+}
+
+#[test]
+fn roots_cannot_move_or_be_removed_and_tabs_cannot_have_children() {
+    let mut m = model();
+    let s = space(&mut m, "A");
+    let root = pinned(&m, &s);
+    let tdy = today(&m, &s);
+    let (tab, _) = m.insert_tab(&root, 0, "https://a.test/", "a").unwrap();
+    assert!(m.move_node(&root, &tdy, 0).is_err());
+    assert!(m.remove_node(&root).is_err());
+    assert!(m.insert_tab(&tab, 0, "https://b.test/", "b").is_err());
+    assert!(m.insert_folder(&tdy, 0, "no folders in Today").is_err());
+    m.validate().unwrap();
+}
+
+#[test]
+fn index_beyond_end_is_rejected() {
+    let mut m = model();
+    let s = space(&mut m, "A");
+    let root = pinned(&m, &s);
+    assert!(m.insert_tab(&root, 1, "https://a.test/", "a").is_err());
+}
+
+#[test]
+fn removing_a_folder_removes_its_subtree_and_closes_live_tabs() {
+    let mut m = model();
+    let s = space(&mut m, "A");
+    let w = WindowId::from("w1");
+    m.open_window(w.clone());
+    let root = pinned(&m, &s);
+    let (folder, _) = m.insert_folder(&root, 0, "F").unwrap();
+    let (tab, _) = m.insert_tab(&folder, 0, "https://a.test/", "a").unwrap();
+    let live = m.open_node(&w, &s, &tab).unwrap();
+    let (ops, closed) = m.remove_node(&folder).unwrap();
+    assert_eq!(ops, vec![TreeOp::Removed { id: folder.clone() }]);
+    assert_eq!(closed, vec![live]);
+    assert!(m.node(&tab).is_none());
+    m.validate().unwrap();
+}
+
+#[test]
+fn open_url_creates_a_today_tab_in_the_space() {
+    let mut m = model();
+    let s = space(&mut m, "A");
+    let w = WindowId::from("w1");
+    m.open_window(w.clone());
+    let (live, ops) = m.open_url(&w, &s, "https://a.test/").unwrap();
+    let today_root = today(&m, &s);
+    assert!(matches!(&ops[0], TreeOp::Inserted { parent, .. } if *parent == today_root));
+    let node = m.live_tab(&live).unwrap().node.clone();
+    assert_eq!(
+        m.identity_of_node(&node).unwrap().id,
+        m.space(&s).unwrap().identity_id
+    );
+}
+
+#[test]
+fn a_tab_opens_only_in_its_own_identity() {
+    let mut m = model();
+    let a = space(&mut m, "A");
+    let b = space(&mut m, "B");
+    let w = WindowId::from("w1");
+    m.open_window(w.clone());
+    let (node, _) = m
+        .insert_tab(&pinned(&m, &a), 0, "https://a.test/", "a")
+        .unwrap();
+    assert!(matches!(
+        m.open_node(&w, &b, &node),
+        Err(ModelError::Invariant(_))
+    ));
+    assert!(m.open_node(&w, &a, &node).is_ok());
+}
+
+#[test]
+fn a_node_with_a_live_tab_cannot_move_to_another_identity() {
+    let mut m = model();
+    let a = space(&mut m, "A");
+    let b = space(&mut m, "B");
+    let w = WindowId::from("w1");
+    m.open_window(w.clone());
+    let (node, _) = m
+        .insert_tab(&pinned(&m, &a), 0, "https://a.test/", "a")
+        .unwrap();
+    m.open_node(&w, &a, &node).unwrap();
+    assert!(matches!(
+        m.move_node(&node, &pinned(&m, &b), 0),
+        Err(ModelError::Invariant(_))
+    ));
+    let (idle, _) = m
+        .insert_tab(&pinned(&m, &a), 0, "https://i.test/", "i")
+        .unwrap();
+    assert!(m.move_node(&idle, &pinned(&m, &b), 0).is_ok());
+}
+
+#[test]
+fn closing_a_today_tab_deletes_its_node_but_a_pinned_tab_keeps_it() {
+    let mut m = model();
+    let s = space(&mut m, "A");
+    let w = WindowId::from("w1");
+    m.open_window(w.clone());
+    let (live, _) = m.open_url(&w, &s, "https://a.test/").unwrap();
+    let node = m.live_tab(&live).unwrap().node.clone();
+    let ops = m.close_live_tab(&live).unwrap();
+    assert_eq!(ops, vec![TreeOp::Removed { id: node.clone() }]);
+    assert!(m.node(&node).is_none());
+
+    let (live2, _) = m.open_url(&w, &s, "https://b.test/").unwrap();
+    let node2 = m.live_tab(&live2).unwrap().node.clone();
+    m.pin_live_tab(&live2, &pinned(&m, &s), 0).unwrap();
+    let ops = m.close_live_tab(&live2).unwrap();
+    assert!(ops.is_empty());
+    assert!(m.node(&node2).is_some());
+    assert!(m.live_tab(&live2).is_none());
+    m.validate().unwrap();
+}
+
+#[test]
+fn pin_and_unpin_move_between_today_and_pinned() {
+    let mut m = model();
+    let s = space(&mut m, "A");
+    let w = WindowId::from("w1");
+    m.open_window(w.clone());
+    let (live, _) = m.open_url(&w, &s, "https://a.test/").unwrap();
+    let node = m.live_tab(&live).unwrap().node.clone();
+    m.pin_live_tab(&live, &pinned(&m, &s), 0).unwrap();
+    assert_eq!(m.node(&node).unwrap().parent_id, Some(pinned(&m, &s)));
+    m.unpin_node(&node, &s).unwrap();
+    assert_eq!(m.node(&node).unwrap().parent_id, Some(today(&m, &s)));
+    m.validate().unwrap();
+}
+
+#[test]
+fn pinning_into_another_identity_is_rejected() {
+    let mut m = model();
+    let a = space(&mut m, "A");
+    let b = space(&mut m, "B");
+    let w = WindowId::from("w1");
+    m.open_window(w.clone());
+    let (live, _) = m.open_url(&w, &a, "https://a.test/").unwrap();
+    assert!(matches!(
+        m.pin_live_tab(&live, &pinned(&m, &b), 0),
+        Err(ModelError::Invariant(_))
+    ));
+}
+
+#[test]
+fn navigation_updates_the_tab_node() {
+    let mut m = model();
+    let s = space(&mut m, "A");
+    let w = WindowId::from("w1");
+    m.open_window(w.clone());
+    let (live, _) = m.open_url(&w, &s, "https://a.test/").unwrap();
+    let ops = m.navigated(&live, "https://a.test/next", "Next").unwrap();
+    let node = m.live_tab(&live).unwrap().node.clone();
+    match &m.node(&node).unwrap().kind {
+        NodeKind::Tab(t) => {
+            assert_eq!(t.url, "https://a.test/next");
+            assert_eq!(t.title, "Next");
+        }
+        _ => panic!("not a tab"),
+    }
+    assert!(matches!(ops.as_slice(), [TreeOp::Updated { .. }]));
+}
+
+#[test]
+fn a_tabs_icon_can_be_set_and_cleared() {
+    let mut m = model();
+    let s = space(&mut m, "A");
+    let w = WindowId::from("w1");
+    m.open_window(w.clone());
+    let (live, _) = m.open_url(&w, &s, "https://a.test/").unwrap();
+    let node = m.live_tab(&live).unwrap().node.clone();
+    let ops = m
+        .set_tab_icon(&live, Some("https://a.test/icon.png"))
+        .unwrap();
+    assert!(matches!(ops.as_slice(), [TreeOp::Updated { .. }]));
+    match &m.node(&node).unwrap().kind {
+        NodeKind::Tab(t) => assert_eq!(t.icon.as_deref(), Some("https://a.test/icon.png")),
+        _ => panic!("not a tab"),
+    }
+    m.set_tab_icon(&live, None).unwrap();
+    match &m.node(&node).unwrap().kind {
+        NodeKind::Tab(t) => assert_eq!(t.icon, None),
+        _ => panic!("not a tab"),
+    }
+    assert!(m.set_tab_icon(&LiveTabId::from("nope"), None).is_err());
+}
+
+#[test]
+fn switch_space_requires_an_existing_space_and_window() {
+    let mut m = model();
+    let s = space(&mut m, "A");
+    let w = WindowId::from("w1");
+    assert!(m.switch_space(&w, &s).is_err());
+    m.open_window(w.clone());
+    assert!(m.switch_space(&w, &SpaceId::from("nope")).is_err());
+    m.switch_space(&w, &s).unwrap();
+    assert_eq!(m.window(&w).unwrap().active_space, Some(s));
+}
+
+#[test]
+fn validate_catches_a_corrupted_tree() {
+    let mut m = model();
+    let s = space(&mut m, "A");
+    let root = pinned(&m, &s);
+    let (tab, _) = m.insert_tab(&root, 0, "https://a.test/", "a").unwrap();
+    let mut nodes = m.nodes();
+    for n in nodes.iter_mut() {
+        if n.id == tab {
+            n.parent_id = Some(today(&m, &s));
+        }
+    }
+    let broken = Model::from_parts(
+        Box::new(TestEnv { counter: 100 }),
+        "d",
+        m.identities(),
+        m.spaces(),
+        nodes,
+    );
+    assert!(matches!(broken, Err(ModelError::Invariant(_))));
+}
+
+#[test]
+fn from_parts_round_trips() {
+    let mut m = model();
+    let s = space(&mut m, "A");
+    m.insert_tab(&pinned(&m, &s), 0, "https://a.test/", "a")
+        .unwrap();
+    let copy = Model::from_parts(
+        Box::new(TestEnv { counter: 100 }),
+        "d",
+        m.identities(),
+        m.spaces(),
+        m.nodes(),
+    )
+    .unwrap();
+    assert_eq!(copy.spaces(), m.spaces());
+    assert_eq!(copy.nodes().len(), m.nodes().len());
+}

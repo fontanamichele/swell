@@ -1,0 +1,1129 @@
+{
+ "sidebar": {
+  "containers": [
+   {
+    "global": {}
+   },
+   {
+    "items": [
+     "s1-pinned",
+     {
+      "id": "s1-pinned",
+      "parentID": null,
+      "childrenIds": [
+       "s1-f-docs",
+       "s1-t-mail",
+       "missing-id",
+       "s1-easel"
+      ],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "itemContainer": {
+        "containerType": {
+         "spaceItems": {
+          "_0": "s1"
+         }
+        }
+       }
+      }
+     },
+     "s1-today",
+     {
+      "id": "s1-today",
+      "parentID": null,
+      "childrenIds": [
+       "s1-t-today1",
+       "s1-t-empty",
+       "s1-t-today2"
+      ],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "itemContainer": {
+        "containerType": {
+         "spaceItems": {
+          "_0": "s1"
+         }
+        }
+       }
+      }
+     },
+     "s2-pinned",
+     {
+      "id": "s2-pinned",
+      "parentID": null,
+      "childrenIds": [
+       "s2-t-1",
+       "s2-f-a"
+      ],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "itemContainer": {
+        "containerType": {
+         "spaceItems": {
+          "_0": "s2"
+         }
+        }
+       }
+      }
+     },
+     "s2-today",
+     {
+      "id": "s2-today",
+      "parentID": null,
+      "childrenIds": [
+       "s2-f-today"
+      ],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "itemContainer": {
+        "containerType": {
+         "spaceItems": {
+          "_0": "s2"
+         }
+        }
+       }
+      }
+     },
+     "s3-pinned",
+     {
+      "id": "s3-pinned",
+      "parentID": null,
+      "childrenIds": [
+       "s3-t-1"
+      ],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "itemContainer": {
+        "containerType": {
+         "spaceItems": {
+          "_0": "s3"
+         }
+        }
+       }
+      }
+     },
+     "s3-today",
+     {
+      "id": "s3-today",
+      "parentID": null,
+      "childrenIds": [
+       "s3-t-today"
+      ],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "itemContainer": {
+        "containerType": {
+         "spaceItems": {
+          "_0": "s3"
+         }
+        }
+       }
+      }
+     },
+     "top-default",
+     {
+      "id": "top-default",
+      "parentID": null,
+      "childrenIds": [
+       "fav-default-1",
+       "fav-default-2"
+      ],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "itemContainer": {
+        "containerType": {
+         "topApps": {
+          "_0": {
+           "default": true
+          }
+         }
+        }
+       }
+      }
+     },
+     "top-custom",
+     {
+      "id": "top-custom",
+      "parentID": null,
+      "childrenIds": [
+       "fav-custom-1"
+      ],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "itemContainer": {
+        "containerType": {
+         "topApps": {
+          "_0": {
+           "custom": {
+            "_0": {
+             "directoryBasename": "Profile 1",
+             "machineID": "m1"
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "s1-f-docs",
+     {
+      "id": "s1-f-docs",
+      "parentID": "s1-pinned",
+      "childrenIds": [
+       "s1-t-doc",
+       "s1-t-drive"
+      ],
+      "title": "Docs été",
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "list": {}
+      }
+     },
+     "s1-t-doc",
+     {
+      "id": "s1-t-doc",
+      "parentID": "s1-f-docs",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://docs.example.test/a",
+        "savedTitle": "Doc A",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "s1-t-drive",
+     {
+      "id": "s1-t-drive",
+      "parentID": "s1-f-docs",
+      "childrenIds": [],
+      "title": "My Drive",
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://drive.example.test/",
+        "savedTitle": "Drive",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "s1-t-mail",
+     {
+      "id": "s1-t-mail",
+      "parentID": "s1-pinned",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://mail.example.test/",
+        "savedTitle": "中文 Mail",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "s1-easel",
+     {
+      "id": "s1-easel",
+      "parentID": "s1-pinned",
+      "childrenIds": [],
+      "title": "Easel",
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "easel": {}
+      }
+     },
+     "s1-t-today1",
+     {
+      "id": "s1-t-today1",
+      "parentID": "s1-today",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://news.example.test/",
+        "savedTitle": "News",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "s1-t-empty",
+     {
+      "id": "s1-t-empty",
+      "parentID": "s1-today",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "",
+        "savedTitle": "Empty",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "s1-t-today2",
+     {
+      "id": "s1-t-today2",
+      "parentID": "s1-today",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://blog.example.test/post",
+        "savedTitle": "Post",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "s2-t-1",
+     {
+      "id": "s2-t-1",
+      "parentID": "s2-pinned",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://home.example.test/",
+        "savedTitle": "Home",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "s2-f-a",
+     {
+      "id": "s2-f-a",
+      "parentID": "s2-pinned",
+      "childrenIds": [
+       "s2-f-b"
+      ],
+      "title": "A",
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "list": {}
+      }
+     },
+     "s2-f-b",
+     {
+      "id": "s2-f-b",
+      "parentID": "s2-f-a",
+      "childrenIds": [
+       "s2-t-deep"
+      ],
+      "title": "B",
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "list": {}
+      }
+     },
+     "s2-t-deep",
+     {
+      "id": "s2-t-deep",
+      "parentID": "s2-f-b",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://deep.example.test/",
+        "savedTitle": "Deep",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "s2-f-today",
+     {
+      "id": "s2-f-today",
+      "parentID": "s2-today",
+      "childrenIds": [
+       "s2-t-today"
+      ],
+      "title": "Stray folder",
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "list": {}
+      }
+     },
+     "s2-t-today",
+     {
+      "id": "s2-t-today",
+      "parentID": "s2-f-today",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://stray.example.test/",
+        "savedTitle": "Stray",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "s3-t-1",
+     {
+      "id": "s3-t-1",
+      "parentID": "s3-pinned",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://client.example.test/",
+        "savedTitle": "Client",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "s3-t-today",
+     {
+      "id": "s3-t-today",
+      "parentID": "s3-today",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://client.example.test/today",
+        "savedTitle": "Client Today",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "fav-default-1",
+     {
+      "id": "fav-default-1",
+      "parentID": "top-default",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://fav1.example.test/",
+        "savedTitle": "Fav 1",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "fav-default-2",
+     {
+      "id": "fav-default-2",
+      "parentID": "top-default",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://fav2.example.test/",
+        "savedTitle": "Fav 2",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "fav-custom-1",
+     {
+      "id": "fav-custom-1",
+      "parentID": "top-custom",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://favc.example.test/",
+        "savedTitle": "Fav C",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     }
+    ],
+    "spaces": [
+     "s1",
+     {
+      "id": "s1",
+      "title": "Work",
+      "customInfo": {
+       "iconType": {
+        "emoji_v2": "💼",
+        "emoji": 0
+       }
+      },
+      "profile": {
+       "default": true
+      },
+      "newContainerIDs": [
+       {
+        "pinned": {}
+       },
+       "s1-pinned",
+       {
+        "unpinned": {
+         "_0": {
+          "shared": {}
+         }
+        }
+       },
+       "s1-today"
+      ]
+     },
+     "s2",
+     {
+      "id": "s2",
+      "title": "Home",
+      "customInfo": {
+       "iconType": {
+        "icon": "house"
+       }
+      },
+      "profile": {
+       "default": true
+      },
+      "newContainerIDs": [
+       {
+        "pinned": {}
+       },
+       "s2-pinned",
+       {
+        "unpinned": {
+         "_0": {
+          "shared": {}
+         }
+        }
+       },
+       "s2-today"
+      ]
+     },
+     "s3",
+     {
+      "id": "s3",
+      "title": "Client",
+      "customInfo": {
+       "iconType": {
+        "icon": "star"
+       }
+      },
+      "profile": {
+       "custom": {
+        "_0": {
+         "directoryBasename": "Profile 1",
+         "machineID": "m1"
+        }
+       }
+      },
+      "containerIDs": [
+       "pinned",
+       "s3-pinned",
+       "unpinned",
+       "s3-today"
+      ]
+     }
+    ],
+    "topAppsContainerIDs": [
+     {
+      "default": true
+     },
+     "top-default",
+     {
+      "custom": {
+       "_0": {
+        "directoryBasename": "Profile 1",
+        "machineID": "m1"
+       }
+      }
+     },
+     "top-custom"
+    ]
+   }
+  ]
+ },
+ "firebaseSyncState": {
+  "syncData": {
+   "orderedSpaceIDs": {
+    "value": [
+     "s2",
+     "s1"
+    ]
+   },
+   "items": [
+    "s1-pinned",
+    {
+     "value": {
+      "id": "s1-pinned",
+      "parentID": null,
+      "childrenIds": [
+       "s1-f-docs",
+       "s1-t-mail",
+       "missing-id",
+       "s1-easel"
+      ],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "itemContainer": {
+        "containerType": {
+         "spaceItems": {
+          "_0": "s1"
+         }
+        }
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "s1-today",
+    {
+     "value": {
+      "id": "s1-today",
+      "parentID": null,
+      "childrenIds": [
+       "s1-t-today1",
+       "s1-t-empty",
+       "s1-t-today2"
+      ],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "itemContainer": {
+        "containerType": {
+         "spaceItems": {
+          "_0": "s1"
+         }
+        }
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "s2-pinned",
+    {
+     "value": {
+      "id": "s2-pinned",
+      "parentID": null,
+      "childrenIds": [
+       "s2-t-1",
+       "s2-f-a"
+      ],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "itemContainer": {
+        "containerType": {
+         "spaceItems": {
+          "_0": "s2"
+         }
+        }
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "s2-today",
+    {
+     "value": {
+      "id": "s2-today",
+      "parentID": null,
+      "childrenIds": [
+       "s2-f-today"
+      ],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "itemContainer": {
+        "containerType": {
+         "spaceItems": {
+          "_0": "s2"
+         }
+        }
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "top-default",
+    {
+     "value": {
+      "id": "top-default",
+      "parentID": null,
+      "childrenIds": [
+       "fav-default-1",
+       "fav-default-2"
+      ],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "itemContainer": {
+        "containerType": {
+         "topApps": {
+          "_0": {
+           "default": true
+          }
+         }
+        }
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "top-custom",
+    {
+     "value": {
+      "id": "top-custom",
+      "parentID": null,
+      "childrenIds": [
+       "fav-custom-1"
+      ],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "itemContainer": {
+        "containerType": {
+         "topApps": {
+          "_0": {
+           "custom": {
+            "_0": {
+             "directoryBasename": "Profile 1",
+             "machineID": "m1"
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "s1-f-docs",
+    {
+     "value": {
+      "id": "s1-f-docs",
+      "parentID": "s1-pinned",
+      "childrenIds": [
+       "s1-t-doc",
+       "s1-t-drive"
+      ],
+      "title": "Docs été",
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "list": {}
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "s1-t-doc",
+    {
+     "value": {
+      "id": "s1-t-doc",
+      "parentID": "s1-f-docs",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://docs.example.test/a",
+        "savedTitle": "Doc A",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "s1-t-drive",
+    {
+     "value": {
+      "id": "s1-t-drive",
+      "parentID": "s1-f-docs",
+      "childrenIds": [],
+      "title": "My Drive",
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://drive.example.test/",
+        "savedTitle": "Drive",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "s1-t-mail",
+    {
+     "value": {
+      "id": "s1-t-mail",
+      "parentID": "s1-pinned",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://mail.example.test/",
+        "savedTitle": "中文 Mail",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "s1-easel",
+    {
+     "value": {
+      "id": "s1-easel",
+      "parentID": "s1-pinned",
+      "childrenIds": [],
+      "title": "Easel",
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "easel": {}
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "s1-t-today1",
+    {
+     "value": {
+      "id": "s1-t-today1",
+      "parentID": "s1-today",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://news.example.test/",
+        "savedTitle": "News",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "s1-t-empty",
+    {
+     "value": {
+      "id": "s1-t-empty",
+      "parentID": "s1-today",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "",
+        "savedTitle": "Empty",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "s1-t-today2",
+    {
+     "value": {
+      "id": "s1-t-today2",
+      "parentID": "s1-today",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://blog.example.test/post",
+        "savedTitle": "Post",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "s2-t-1",
+    {
+     "value": {
+      "id": "s2-t-1",
+      "parentID": "s2-pinned",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://home.example.test/",
+        "savedTitle": "Home",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "s2-f-a",
+    {
+     "value": {
+      "id": "s2-f-a",
+      "parentID": "s2-pinned",
+      "childrenIds": [
+       "s2-f-b"
+      ],
+      "title": "A",
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "list": {}
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "s2-f-b",
+    {
+     "value": {
+      "id": "s2-f-b",
+      "parentID": "s2-f-a",
+      "childrenIds": [
+       "s2-t-deep"
+      ],
+      "title": "B",
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "list": {}
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "s2-t-deep",
+    {
+     "value": {
+      "id": "s2-t-deep",
+      "parentID": "s2-f-b",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://deep.example.test/",
+        "savedTitle": "Deep",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "s2-f-today",
+    {
+     "value": {
+      "id": "s2-f-today",
+      "parentID": "s2-today",
+      "childrenIds": [
+       "s2-t-today"
+      ],
+      "title": "Stray folder",
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "list": {}
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "s2-t-today",
+    {
+     "value": {
+      "id": "s2-t-today",
+      "parentID": "s2-f-today",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://stray.example.test/",
+        "savedTitle": "Stray",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "fav-default-1",
+    {
+     "value": {
+      "id": "fav-default-1",
+      "parentID": "top-default",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://fav1.example.test/",
+        "savedTitle": "Fav 1",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "fav-default-2",
+    {
+     "value": {
+      "id": "fav-default-2",
+      "parentID": "top-default",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://fav2.example.test/",
+        "savedTitle": "Fav 2",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    },
+    "fav-custom-1",
+    {
+     "value": {
+      "id": "fav-custom-1",
+      "parentID": "top-custom",
+      "childrenIds": [],
+      "title": null,
+      "createdAt": 700000000.0,
+      "isUnread": false,
+      "originatingDevice": "dev-1",
+      "data": {
+       "tab": {
+        "savedURL": "https://favc.example.test/",
+        "savedTitle": "Fav C",
+        "timeLastActiveAt": 700000100.0
+       }
+      }
+     },
+     "lastChangeDate": 1.0,
+     "lastChangedDevice": "dev-1"
+    }
+   ]
+  }
+ }
+}
