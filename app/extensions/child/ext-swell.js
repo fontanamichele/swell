@@ -4,6 +4,8 @@
 
 "use strict";
 
+/* global extensions */
+
 // The parts of Swell's extension APIs that live in the extension's own
 // process (tabs.connect and tabs.sendMessage talk to the messenger there).
 

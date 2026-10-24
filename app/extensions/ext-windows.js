@@ -4,6 +4,8 @@
 
 "use strict";
 
+/* global ExtensionAPIPersistent, ExtensionError, EventManager, windowTracker */
+
 // The windows API for an application with one window: it can be read and
 // focused, and made bigger or smaller, but not opened or closed by an
 // extension.

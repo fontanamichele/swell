@@ -4,6 +4,9 @@
 
 "use strict";
 
+/* global ExtensionAPIPersistent, ExtensionError, ExtensionUtils, EventManager,
+   getUserContextIdForCookieStoreId, tabTracker, windowTracker */
+
 // The tabs API on Swell's tabs (see ext-swell.js). The shape follows the
 // application-neutral parts of Firefox's and GeckoView's implementations;
 // there is one window, a tab belongs to one space, and a space is one

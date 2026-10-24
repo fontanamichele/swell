@@ -4,6 +4,10 @@
 
 "use strict";
 
+/* global global, extensions, WindowTrackerBase, TabTrackerBase, TabBase,
+   WindowBase, TabManagerBase, WindowManagerBase, EventEmitter,
+   getCookieStoreIdForTab, isContainerCookieStoreId, CONTAINER_STORE */
+
 // The platform layer the toolkit's WebExtension code expects of an
 // application: how to find windows and tabs, and how to describe them to an
 // extension. Firefox does this in browser/components/extensions/parent/

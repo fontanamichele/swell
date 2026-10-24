@@ -4,6 +4,8 @@
 
 "use strict";
 
+/* global browser */
+
 // WebExtensions on Swell's own tabs and window (app/extensions).
 
 const PAGE = `${BASE}file_blank.html`;
