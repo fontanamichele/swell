@@ -34,6 +34,18 @@ pref(
 );
 pref("extensions.formautofill.addresses.storage.rust.runMigrationTest", false);
 
+// Saved logins are kept per space in the core, encrypted with a key of the
+// space that the system keychain holds (patch 0220).
+pref("signon.isolate_by_user_context", true);
+pref(
+  "signon.storageModuleURI",
+  "moz-src:///swell/app/modules/SwellLoginStorage.sys.mjs"
+);
+pref(
+  "signon.prompterModuleURI",
+  "moz-src:///swell/app/modules/LoginPrompter.sys.mjs"
+);
+
 // HSTS state and certificate exceptions belong to one space (patch 0500).
 pref("security.hsts.isolate_by_user_context", true);
 pref("security.cert_override.isolate_by_user_context", true);

@@ -652,7 +652,8 @@ dialog .buttons {
   opacity: 0.7;
 }
 
-#autofill-dialog {
+#autofill-dialog,
+#passwords-dialog {
   min-width: 480px;
   max-height: 80vh;
   overflow: auto;
@@ -681,5 +682,29 @@ dialog .buttons {
 }
 
 #autofill-form input {
+  width: 100%;
+}
+
+.password-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-small);
+  margin-bottom: var(--space-small);
+}
+
+.password-site,
+.password-user,
+.password-secret {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#passwords-form label {
+  margin-bottom: var(--space-small);
+}
+
+#passwords-form input {
   width: 100%;
 }

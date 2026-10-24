@@ -5,6 +5,9 @@
 const { AutofillPromptHandler } = ChromeUtils.importESModule(
   "moz-src:///swell/app/modules/AutofillPrompter.sys.mjs"
 );
+const { LoginPromptHandler } = ChromeUtils.importESModule(
+  "moz-src:///swell/app/modules/LoginPrompter.sys.mjs"
+);
 const { autofillStorageFor } = ChromeUtils.importESModule(
   "moz-src:///swell/app/modules/Autofill.sys.mjs"
 );
@@ -85,24 +88,53 @@ export class AutofillUI {
     app.bridge.on("selected", () => this.#answer("later"));
     app.bridge.on("tabclosed", () => this.#answer("later"));
     AutofillPromptHandler.set(request => this.#ask(request));
+    LoginPromptHandler.set(async request => {
+      const answer = await this.#askLogin(request);
+      return answer == "disable" ? "never" : answer;
+    });
   }
 
   #ask({ type, browser, update, newRecord }) {
+    const what = type == ADDRESS ? "address" : "card";
+    const summary =
+      type == ADDRESS ? summarizeAddress(newRecord) : summarizeCard(newRecord);
+    return this.#showBar(browser, {
+      text: `${update ? "Update" : "Save"} this ${what}${summary ? ` (${summary})` : ""}?`,
+      update,
+      never: "Never",
+    });
+  }
+
+  #askLogin({ browser, update, login }) {
+    let site = login.origin;
+    try {
+      site = new URL(login.origin).host;
+    } catch (e) {
+      // keep the origin as it is
+    }
+    const who = login.username ? ` for ${login.username}` : "";
+    return this.#showBar(browser, {
+      text: `${update ? "Update" : "Save"} the password${who} on ${site}?`,
+      update: false,
+      never: "Never for this site",
+      save: update ? "Update" : "Save",
+    });
+  }
+
+  // Shows the bar for the page in front; resolves with "save", "create",
+  // "disable" or "later". A page that is not in front is not asked.
+  #showBar(browser, { text, update, never, save }) {
     const tab = this.#app.bridge.tabForBrowser(browser);
     if (!tab || tab !== this.#app.bridge.selectedTab) {
       return Promise.resolve("later");
     }
     this.#answer("later");
     const doc = this.#app.document;
-    const what = type == ADDRESS ? "address" : "card";
-    const summary =
-      type == ADDRESS ? summarizeAddress(newRecord) : summarizeCard(newRecord);
-    doc.querySelector("#autofill-bar .autofill-text").textContent =
-      `${update ? "Update" : "Save"} this ${what}${summary ? ` (${summary})` : ""}?`;
-    doc.getElementById("autofill-save").textContent = update
-      ? "Update"
-      : "Save";
+    doc.querySelector("#autofill-bar .autofill-text").textContent = text;
+    doc.getElementById("autofill-save").textContent =
+      save ?? (update ? "Update" : "Save");
     doc.getElementById("autofill-create").hidden = !update;
+    doc.getElementById("autofill-never").textContent = never;
     this.#bar.hidden = false;
     return new Promise(resolve => {
       this.#pending = resolve;

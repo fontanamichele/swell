@@ -46,6 +46,7 @@ export class Sidebar {
       const { left, top: y } = more.getBoundingClientRect();
       app.menu.show(left, y - 40, [
         { label: "Downloads", action: () => app.downloads.show() },
+        { label: "Passwords", action: () => app.passwords.show() },
         { label: "Addresses and cards", action: () => app.autofill.show() },
         { label: "Import from Arc\u2026", action: () => app.chooseArcFile() },
       ]);

@@ -9,6 +9,7 @@ import { Toasts } from "chrome://swell/content/toasts.mjs";
 import { PermissionBar } from "chrome://swell/content/permissions.mjs";
 import { DownloadsPanel } from "chrome://swell/content/downloads.mjs";
 import { AutofillUI } from "chrome://swell/content/autofill.mjs";
+import { PasswordsUI } from "chrome://swell/content/passwords.mjs";
 
 const IS_MAC = Services.appinfo.OS == "Darwin";
 
@@ -41,6 +42,7 @@ export class App {
     this.permissions = new PermissionBar(this);
     this.downloads = new DownloadsPanel(this);
     this.autofill = new AutofillUI(this);
+    this.passwords = new PasswordsUI(this);
     this.#renderQueued = false;
   }
 

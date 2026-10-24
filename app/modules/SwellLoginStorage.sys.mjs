@@ -1,0 +1,426 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+// The storage the login manager uses in Swell (signon.storageModuleURI). The
+// logins live in the core, one set per container; the user name and password
+// are encrypted here with a key of the container that the system keychain
+// holds (Gecko's nsIOSKeyStore: the macOS Keychain, the Windows Credential
+// Manager, libsecret on Linux), so the core never sees a key.
+//
+// Every call must name its container: searches carry `userContextId` in the
+// match data and logins carry it as a property (LoginHelper.loginsFor adds
+// both). A call without one finds nothing and changes nothing.
+
+import { Core, LoginRecord } from "moz-src:///swell/app/modules/Core.sys.mjs";
+import { LoginHelper } from "resource://gre/modules/LoginHelper.sys.mjs";
+
+const lazy = {};
+ChromeUtils.defineLazyGetter(lazy, "keystore", () =>
+  Cc["@mozilla.org/security/oskeystore;1"].getService(Ci.nsIOSKeyStore)
+);
+
+// The prefix of the keychain items, one per container. A test changes it so
+// that it never touches the user's items.
+const LABEL_PREFIX_PREF = "swell.logins.keyLabelPrefix";
+
+const MATCH_OPTIONS = new Set([
+  "acceptDifferentSubdomains",
+  "schemeUpgrades",
+  "acceptRelatedRealms",
+  "relatedRealms",
+]);
+
+const ensuredKeys = new Set();
+
+function labelFor(userContextId) {
+  const prefix = Services.prefs.getStringPref(
+    LABEL_PREFIX_PREF,
+    "Swell logins"
+  );
+  return `${prefix} ${userContextId}`;
+}
+
+async function ensureKey(userContextId) {
+  const label = labelFor(userContextId);
+  if (ensuredKeys.has(label)) {
+    return label;
+  }
+  if (!(await lazy.keystore.asyncSecretAvailable(label))) {
+    await lazy.keystore.asyncGenerateSecret(label);
+  }
+  ensuredKeys.add(label);
+  return label;
+}
+
+async function encrypt(userContextId, text) {
+  if (!text) {
+    return "";
+  }
+  const label = await ensureKey(userContextId);
+  return lazy.keystore.asyncEncryptBytes(
+    label,
+    Array.from(new TextEncoder().encode(text))
+  );
+}
+
+async function decrypt(userContextId, encrypted) {
+  if (!encrypted) {
+    return "";
+  }
+  const bytes = await lazy.keystore.asyncDecryptBytes(
+    labelFor(userContextId),
+    encrypted
+  );
+  return new TextDecoder().decode(new Uint8Array(bytes));
+}
+
+/**
+ * Every login of a container, decrypted: what the passwords view lists.
+ *
+ * @param {number} userContextId
+ */
+export async function loginsOfContainer(userContextId) {
+  const storage = new SwellLoginStorage();
+  const logins = [];
+  for (const record of await Core.get().loginsAll(userContextId)) {
+    const login = await storage.decryptedLogin(userContextId, record);
+    if (login) {
+      logins.push(login);
+    }
+  }
+  return logins;
+}
+
+/**
+ * Forgets the keychain item of a container (when its space is deleted).
+ *
+ * @param userContextId
+ */
+export async function deleteLoginsKey(userContextId) {
+  const label = labelFor(userContextId);
+  ensuredKeys.delete(label);
+  if (await lazy.keystore.asyncSecretAvailable(label)) {
+    await lazy.keystore.asyncDeleteSecret(label);
+  }
+}
+
+// The container a login was tagged with (LoginHelper.loginsFor sets it on the
+// object behind the XPCOM wrapper).
+function containerOf(login) {
+  const id = (login?.wrappedJSObject ?? login)?.userContextId;
+  if (!id) {
+    throw new Error("A login needs the container it belongs to");
+  }
+  return id;
+}
+
+function makeLogin(userContextId, record, username, password) {
+  const login = Cc["@mozilla.org/login-manager/loginInfo;1"].createInstance(
+    Ci.nsILoginInfo
+  );
+  login.init(
+    record.origin,
+    record.formActionOrigin ?? null,
+    record.httpRealm ?? null,
+    username,
+    password,
+    record.usernameField,
+    record.passwordField
+  );
+  login.QueryInterface(Ci.nsILoginMetaInfo);
+  login.guid = record.guid;
+  login.timeCreated = record.timeCreated;
+  login.timeLastUsed = record.timeLastUsed;
+  login.timePasswordChanged = record.timePasswordChanged;
+  login.timesUsed = record.timesUsed;
+  (login.wrappedJSObject ?? login).userContextId = userContextId;
+  return login;
+}
+
+function toRecord(login, encryptedUsername, encryptedPassword) {
+  login.QueryInterface(Ci.nsILoginMetaInfo);
+  return new LoginRecord({
+    guid: login.guid,
+    origin: login.origin,
+    formActionOrigin: login.formActionOrigin ?? null,
+    httpRealm: login.httpRealm ?? null,
+    usernameField: login.usernameField ?? "",
+    passwordField: login.passwordField ?? "",
+    encryptedUsername,
+    encryptedPassword,
+    timeCreated: login.timeCreated,
+    timeLastUsed: login.timeLastUsed,
+    timePasswordChanged: login.timePasswordChanged,
+    timesUsed: login.timesUsed,
+  });
+}
+
+// The match rules of Firefox's own store (storage-json.sys.mjs #matchLogin),
+// on a record of the core.
+function matches(record, matchData, options) {
+  for (const field in matchData) {
+    const wanted = matchData[field];
+    switch (field) {
+      case "formActionOrigin":
+        if (wanted != null) {
+          if (
+            record.formActionOrigin == "" ||
+            (wanted == "" && Object.keys(matchData).length != 1)
+          ) {
+            break;
+          }
+          if (
+            !LoginHelper.isOriginMatching(
+              record.formActionOrigin,
+              wanted,
+              options
+            )
+          ) {
+            return false;
+          }
+          break;
+        }
+      // fall through
+      case "origin":
+        if (wanted != null) {
+          if (!LoginHelper.isOriginMatching(record.origin, wanted, options)) {
+            return false;
+          }
+          break;
+        }
+      // fall through
+      case "httpRealm":
+      case "guid":
+      case "usernameField":
+      case "passwordField":
+      case "timeCreated":
+      case "timeLastUsed":
+      case "timePasswordChanged":
+      case "timesUsed": {
+        const stored = record[field] ?? null;
+        if (wanted == null && stored) {
+          return false;
+        } else if (stored != wanted) {
+          return false;
+        }
+        break;
+      }
+      default:
+        throw new Error("Unexpected field: " + field);
+    }
+  }
+  return true;
+}
+
+/**
+ *
+ */
+class SwellLoginStorage {
+  backendName = "swell";
+  isLoggedIn = true;
+  uiBusy = false;
+
+  async initialize() {}
+
+  async finalize() {}
+
+  async testSaveForReplace() {}
+
+  async decryptedLogin(userContextId, record) {
+    try {
+      return makeLogin(
+        userContextId,
+        record,
+        await decrypt(userContextId, record.encryptedUsername),
+        await decrypt(userContextId, record.encryptedPassword)
+      );
+    } catch (e) {
+      console.error(`Swell: cannot decrypt login ${record.guid}`, e);
+      return null;
+    }
+  }
+
+  async searchLoginsAsync(matchData) {
+    const userContextId = matchData.userContextId;
+    if (!userContextId) {
+      return [];
+    }
+    const wanted = {};
+    const options = {};
+    if ("guid" in matchData) {
+      wanted.guid = matchData.guid;
+    } else {
+      for (const name in matchData) {
+        if (name == "userContextId") {
+          continue;
+        }
+        if (MATCH_OPTIONS.has(name)) {
+          options[name] = matchData[name];
+        } else {
+          wanted[name] = matchData[name];
+        }
+      }
+    }
+    const logins = [];
+    for (const record of await Core.get().loginsAll(userContextId)) {
+      if (matches(record, wanted, options)) {
+        const login = await this.decryptedLogin(userContextId, record);
+        if (login) {
+          logins.push(login);
+        }
+      }
+    }
+    return logins;
+  }
+
+  async countLoginsAsync() {
+    return 0;
+  }
+
+  async getAllLogins() {
+    // Nothing lists the logins of every container together.
+    return [];
+  }
+
+  async addLoginsAsync(logins, continueOnDuplicates = false) {
+    const added = [];
+    for (const login of logins) {
+      const userContextId = containerOf(login);
+      const existing = await this.searchLoginsAsync({
+        userContextId,
+        origin: login.origin,
+        formActionOrigin: login.formActionOrigin,
+        httpRealm: login.httpRealm,
+      });
+      const duplicate = existing.find(other => login.matches(other, true));
+      if (duplicate) {
+        if (continueOnDuplicates) {
+          continue;
+        }
+        throw LoginHelper.createLoginAlreadyExistsError(duplicate.guid);
+      }
+      const stored = login.clone();
+      stored.QueryInterface(Ci.nsILoginMetaInfo);
+      const now = Date.now();
+      stored.guid ||= Services.uuid.generateUUID().toString();
+      stored.timeCreated ||= now;
+      stored.timeLastUsed ||= now;
+      stored.timePasswordChanged ||= now;
+      stored.timesUsed ||= 1;
+      await Core.get().loginAdd(
+        userContextId,
+        toRecord(
+          stored,
+          await encrypt(userContextId, login.username),
+          await encrypt(userContextId, login.password)
+        )
+      );
+      (stored.wrappedJSObject ?? stored).userContextId = userContextId;
+      LoginHelper.notifyStorageChanged("addLogin", stored);
+      added.push(stored);
+    }
+    return added;
+  }
+
+  async #stored(login) {
+    const userContextId = containerOf(login);
+    login.QueryInterface(Ci.nsILoginMetaInfo);
+    const [found] = await this.searchLoginsAsync({
+      userContextId,
+      guid: login.guid,
+    });
+    if (!found) {
+      throw new Error("No matching logins");
+    }
+    return [userContextId, found];
+  }
+
+  async removeLoginAsync(login) {
+    const [userContextId, stored] = await this.#stored(login);
+    await Core.get().loginRemove(userContextId, stored.guid);
+    LoginHelper.notifyStorageChanged("removeLogin", stored);
+  }
+
+  async modifyLoginAsync(oldLogin, newLoginData) {
+    const [userContextId, stored] = await this.#stored(oldLogin);
+    const changed = LoginHelper.buildModifiedLogin(stored, newLoginData);
+    if (!changed.matches(stored, true)) {
+      const others = await this.searchLoginsAsync({
+        userContextId,
+        origin: changed.origin,
+        formActionOrigin: changed.formActionOrigin,
+        httpRealm: changed.httpRealm,
+      });
+      const other = others.find(
+        l => l.guid != stored.guid && changed.matches(l, true)
+      );
+      if (other) {
+        throw LoginHelper.createLoginAlreadyExistsError(other.guid);
+      }
+    }
+    await Core.get().loginUpdate(
+      userContextId,
+      toRecord(
+        changed,
+        await encrypt(userContextId, changed.username),
+        await encrypt(userContextId, changed.password)
+      )
+    );
+    (changed.wrappedJSObject ?? changed).userContextId = userContextId;
+    LoginHelper.notifyStorageChanged("modifyLogin", [stored, changed]);
+  }
+
+  async recordPasswordUseAsync(login) {
+    const [userContextId, stored] = await this.#stored(login);
+    await Core.get().loginRecordUse(userContextId, stored.guid, Date.now());
+    const [updated] = await this.searchLoginsAsync({
+      userContextId,
+      guid: stored.guid,
+    });
+    LoginHelper.notifyStorageChanged("modifyLogin", [stored, updated]);
+  }
+
+  async removeAllUserFacingLoginsAsync() {}
+
+  async removeAllLoginsAsync() {}
+
+  async reencryptAllLogins() {}
+
+  // Nothing of Sync, breach alerts or vulnerable-password checks is kept.
+  async getSyncID() {
+    return "";
+  }
+
+  async setSyncID() {}
+
+  async getLastSync() {
+    return 0;
+  }
+
+  async setLastSync() {}
+
+  async addPotentiallyVulnerablePassword() {}
+
+  async isPotentiallyVulnerablePassword() {
+    return false;
+  }
+
+  async arePotentiallyVulnerablePasswords(passwords) {
+    return passwords.map(() => false);
+  }
+
+  async clearAllPotentiallyVulnerablePasswords() {}
+
+  async recordBreachAlertDismissal() {}
+
+  async getBreachAlertDismissalsByLoginGUID() {
+    return {};
+  }
+}
+
+export const LoginManagerStorage = {
+  create() {
+    return Promise.resolve(new SwellLoginStorage());
+  },
+};

@@ -45,6 +45,14 @@ const COMMANDS = [
   "setSiteZoom",
   "historyCount",
   "clearHistory",
+  "loginsAll",
+  "loginsForOrigins",
+  "loginsCount",
+  "loginAdd",
+  "loginUpdate",
+  "loginRemove",
+  "loginRecordUse",
+  "loginsClear",
 ];
 
 /**
