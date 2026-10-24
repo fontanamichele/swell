@@ -25,6 +25,8 @@ prefs = [
 
 ["browser_import_arc.js"]
 
+["browser_no_mozilla_services.js"]
+
 ["browser_page_actions.js"]
 
 ["browser_permissions.js"]
@@ -36,5 +38,3 @@ prefs = [
 ["browser_titlebar.js"]
 
 ["browser_two_spaces.js"]
-
-["browser_no_mozilla_services.js"]

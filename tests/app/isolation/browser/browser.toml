@@ -6,6 +6,8 @@ prefs = [
   "dom.disable_open_during_load=false",
 ]
 
+["browser_downloads.js"]
+
 ["browser_permissions.js"]
 
 ["browser_security.js"]

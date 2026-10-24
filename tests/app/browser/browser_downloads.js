@@ -59,5 +59,16 @@ add_task(async function test_an_attachment_is_saved_without_asking() {
       ),
     "a toast says the download finished"
   );
+
+  await app.downloads.show();
+  const dialog = document.getElementById("downloads-dialog");
+  Assert.ok(dialog.open, "the downloads dialog opens");
+  Assert.deepEqual(
+    [...dialog.querySelectorAll(".download-name")].map(n => n.textContent),
+    ["swell-test.bin"],
+    "the dialog lists this space's download"
+  );
+  document.getElementById("downloads-close").click();
+  Assert.ok(!dialog.open, "Close closes it");
   await closeAllTabs(bridge);
 });
