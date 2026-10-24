@@ -107,7 +107,8 @@ button {
   display: flex;
 }
 
-#permission-bar {
+#permission-bar,
+#autofill-bar {
   display: flex;
   align-items: center;
   gap: var(--space-small);
@@ -116,22 +117,26 @@ button {
   border-bottom: 1px solid var(--panel-border);
 }
 
-#permission-bar[hidden] {
+#permission-bar[hidden],
+#autofill-bar[hidden] {
   display: none;
 }
 
-#permission-bar .permission-text {
+#permission-bar .permission-text,
+#autofill-bar .autofill-text {
   flex: 1;
 }
 
-#permission-bar button {
+#permission-bar button,
+#autofill-bar button {
   border: none;
   background: var(--row-hover);
   border-radius: 6px;
   padding: var(--space-xsmall) var(--space-medium);
 }
 
-#permission-bar button:hover {
+#permission-bar button:hover,
+#autofill-bar button:hover {
   background: var(--accent);
   color: white;
 }
@@ -645,4 +650,36 @@ dialog .buttons {
 .download-state,
 .downloads-empty {
   opacity: 0.7;
+}
+
+#autofill-dialog {
+  min-width: 480px;
+  max-height: 80vh;
+  overflow: auto;
+}
+
+#autofill-dialog h3 {
+  margin: var(--space-medium) 0 var(--space-small);
+}
+
+.autofill-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-small);
+  margin-bottom: var(--space-small);
+}
+
+.autofill-summary {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#autofill-form label {
+  margin-bottom: var(--space-small);
+}
+
+#autofill-form input {
+  width: 100%;
 }

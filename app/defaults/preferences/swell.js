@@ -18,6 +18,22 @@ pref("places.semanticHistory.featureGate", false);
 // What was typed into forms stays with the space it was typed in (patch 0210).
 pref("browser.formfill.isolate_by_user_context", true);
 
+// Addresses and cards are kept per space (patch 0211), the prompt to save
+// them is Swell's own, and autofill is on everywhere.
+pref("extensions.formautofill.isolate_by_user_context", true);
+pref(
+  "extensions.formautofill.prompterModuleURI",
+  "moz-src:///swell/app/modules/AutofillPrompter.sys.mjs"
+);
+pref("extensions.formautofill.addresses.supported", "on");
+pref("extensions.formautofill.creditCards.supported", "on");
+// Firefox's trial copy of cards into its Rust store; Swell keeps its own files.
+pref(
+  "extensions.formautofill.creditCards.storage.rust.runMigrationTest",
+  false
+);
+pref("extensions.formautofill.addresses.storage.rust.runMigrationTest", false);
+
 // HSTS state and certificate exceptions belong to one space (patch 0500).
 pref("security.hsts.isolate_by_user_context", true);
 pref("security.cert_override.isolate_by_user_context", true);

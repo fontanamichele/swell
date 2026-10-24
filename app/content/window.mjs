@@ -14,6 +14,12 @@ if (Services.appinfo.OS == "Darwin") {
 // popup blocking, media controls); nothing else in this application does.
 ChromeUtils.importESModule("resource://gre/modules/ActorManagerParent.sys.mjs");
 
+// Address and credit card autofill, with its own prompt (see AutofillPrompter).
+const { startAutofill } = ChromeUtils.importESModule(
+  "moz-src:///swell/app/modules/Autofill.sys.mjs"
+);
+startAutofill();
+
 // Loaded into the shared system global, not this window's module map: the
 // UniFFI bindings only work there.
 const { Core, Icon } = ChromeUtils.importESModule(

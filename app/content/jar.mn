@@ -14,3 +14,7 @@ swell.jar:
   content/swell/permissions.mjs (permissions.mjs)
   content/swell/toasts.mjs    (toasts.mjs)
   content/swell/downloads.mjs (downloads.mjs)
+  content/swell/autofill.mjs  (autofill.mjs)
+% content formautofill %content/formautofill/ contentaccessible=no
+  content/formautofill/formautofill.css (../../../browser/extensions/formautofill/content/formautofill.css)
+  content/formautofill/icon-credit-card-generic.svg (../../../browser/extensions/formautofill/content/icon-credit-card-generic.svg)

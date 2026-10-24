@@ -8,6 +8,7 @@ import { ContextMenu } from "chrome://swell/content/menu.mjs";
 import { Toasts } from "chrome://swell/content/toasts.mjs";
 import { PermissionBar } from "chrome://swell/content/permissions.mjs";
 import { DownloadsPanel } from "chrome://swell/content/downloads.mjs";
+import { AutofillUI } from "chrome://swell/content/autofill.mjs";
 
 const IS_MAC = Services.appinfo.OS == "Darwin";
 
@@ -39,6 +40,7 @@ export class App {
     this.commandBar = new CommandBar(this);
     this.permissions = new PermissionBar(this);
     this.downloads = new DownloadsPanel(this);
+    this.autofill = new AutofillUI(this);
     this.#renderQueued = false;
   }
 
