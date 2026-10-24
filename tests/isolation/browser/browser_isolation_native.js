@@ -8,7 +8,10 @@
 
 const ORIGINAL_ID = "fixture@swell.test";
 const COPY_IDS = ["fixture--sa@swell.test", "fixture--sb@swell.test"];
-const SLUG = AppConstants.platform === "linux" ? "native-messaging-hosts" : "NativeMessagingHosts";
+const SLUG =
+  AppConstants.platform === "linux"
+    ? "native-messaging-hosts"
+    : "NativeMessagingHosts";
 
 const HOST = `#!/usr/bin/env python3
 import json, os, struct, sys
@@ -94,8 +97,13 @@ async function tryNative(ids) {
 
 add_task(async function test_without_mapping() {
   let [r] = await tryNative([COPY_IDS[0]]);
-  info(`OBS|native|a|rejected without id mapping|${r.ok ? "connected" : "rejected"}|${JSON.stringify(r)}`);
-  ok(!r.ok, "A derived ID is rejected by a host that lists only the original ID");
+  info(
+    `OBS|native|a|rejected without id mapping|${r.ok ? "connected" : "rejected"}|${JSON.stringify(r)}`
+  );
+  ok(
+    !r.ok,
+    "A derived ID is rejected by a host that lists only the original ID"
+  );
 });
 
 add_task(async function test_with_mapping_two_copies() {
@@ -103,8 +111,17 @@ add_task(async function test_with_mapping_two_copies() {
     set: COPY_IDS.map(id => [`swell.spike.originalId.${id}`, ORIGINAL_ID]),
   });
   let results = await tryNative(COPY_IDS);
-  info(`OBS|native|a+b|connect with id mapping|${results.every(r => r.ok) ? "connected" : "rejected"}|${JSON.stringify(results)}`);
-  ok(results.every(r => r.ok), "Both copies reach the host when mapped back to the original ID");
-  isnot(results[0].reply?.pid, results[1].reply?.pid, "Each copy gets its own host process");
+  info(
+    `OBS|native|a+b|connect with id mapping|${results.every(r => r.ok) ? "connected" : "rejected"}|${JSON.stringify(results)}`
+  );
+  ok(
+    results.every(r => r.ok),
+    "Both copies reach the host when mapped back to the original ID"
+  );
+  isnot(
+    results[0].reply?.pid,
+    results[1].reply?.pid,
+    "Each copy gets its own host process"
+  );
   await SpecialPowers.popPrefEnv();
 });

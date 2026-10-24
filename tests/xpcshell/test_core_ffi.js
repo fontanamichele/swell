@@ -146,3 +146,33 @@ add_task(async function test_command_bar_state_and_persistence() {
   Assert.equal(roots.length, 2, "pinned tab and folder survive a reopen");
   Assert.equal(await reopened.lastActiveSpace(), a.id);
 });
+
+add_task(async function test_site_zoom_is_per_identity_and_survives_reopen() {
+  const dir = await IOUtils.createUniqueDirectory(
+    PathUtils.tempDir,
+    "swell-zoom"
+  );
+  let core = SwellCore.open(dir);
+  const a = (await core.listSpaces())[0];
+  const bId = await core.createSpace("B", new Icon.Symbol({ name: "star" }));
+  const b = (await core.listSpaces()).find(space => space.id == bId);
+  Assert.notEqual(a.userContextId, b.userContextId);
+
+  Assert.equal(await core.siteZoom(a.id, "example.com"), 1, "default zoom");
+  await core.setSiteZoom(a.id, "example.com", 1.5);
+  Assert.equal(await core.siteZoom(a.id, "example.com"), 1.5);
+  Assert.equal(await core.siteZoom(b.id, "example.com"), 1, "other identity");
+  Assert.equal(await core.siteZoom(a.id, "other.test"), 1, "other host");
+
+  await core.setSiteZoom(a.id, "huge.test", 50);
+  Assert.equal(await core.siteZoom(a.id, "huge.test"), 5, "limited to 500%");
+
+  core = SwellCore.open(dir);
+  Assert.equal(await core.siteZoom(a.id, "example.com"), 1.5, "after reopen");
+  await core.setSiteZoom(a.id, "example.com", 1);
+  Assert.equal(await core.siteZoom(a.id, "example.com"), 1, "1 forgets it");
+  await Assert.rejects(
+    core.setSiteZoom("no-such-space", "example.com", 2),
+    NotFound
+  );
+});

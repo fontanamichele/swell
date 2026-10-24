@@ -13,7 +13,11 @@ const COPIES = {
   a: { id: "fixture--sa@swell.test", store: "firefox-container-1", ucid: 1 },
   b: { id: "fixture--sb@swell.test", store: "firefox-container-2", ucid: 2 },
 };
-const STORES = ["firefox-default", "firefox-container-1", "firefox-container-2"];
+const STORES = [
+  "firefox-default",
+  "firefox-container-1",
+  "firefox-container-2",
+];
 
 function background() {
   const seen = {
@@ -123,7 +127,9 @@ function loadCopy({ id }) {
 }
 
 function obs(config, copy, question, foreign, detail) {
-  info(`OBS|${config}|${copy}|${question}|${foreign.length ? "leaks" : "isolated"}|${detail}`);
+  info(
+    `OBS|${config}|${copy}|${question}|${foreign.length ? "leaks" : "isolated"}|${detail}`
+  );
   ok(
     !foreign.length,
     `${config} copy ${copy}: ${question} sees only its own space. ${detail}`
@@ -141,13 +147,19 @@ async function runScenario(config, prefs = []) {
 
   let uuidA = WebExtensionPolicy.getByID(COPIES.a.id).mozExtensionHostname;
   let uuidB = WebExtensionPolicy.getByID(COPIES.b.id).mozExtensionHostname;
-  isnot(uuidA, uuidB, `${config}: the copies get different moz-extension UUIDs`);
+  isnot(
+    uuidA,
+    uuidB,
+    `${config}: the copies get different moz-extension UUIDs`
+  );
 
   exts.a.sendMessage("set", "from-a");
   await exts.a.awaitMessage("set-done");
   exts.b.sendMessage("get");
   let leaked = await exts.b.awaitMessage("get-done");
-  info(`OBS|${config}|b|storage.local|${leaked === null ? "isolated" : "leaks"}|b reads ${leaked}`);
+  info(
+    `OBS|${config}|b|storage.local|${leaked === null ? "isolated" : "leaks"}|b reads ${leaked}`
+  );
   is(leaked, null, `${config}: storage.local is separate per copy`);
 
   let tabs = [];
@@ -176,19 +188,69 @@ async function runScenario(config, prefs = []) {
   }
 
   for (let [name, copy] of Object.entries(COPIES)) {
-    exts[name].sendMessage("observe", { stores: STORES, page: PAGE, echo: ECHO });
+    exts[name].sendMessage("observe", {
+      stores: STORES,
+      page: PAGE,
+      echo: ECHO,
+    });
     let r = await exts[name].awaitMessage("observed");
     const foreign = list => list.filter(s => s != copy.store);
-    obs(config, name, "content script injected", foreign(injected[name]), JSON.stringify(injected[name]));
-    obs(config, name, "content script messages", foreign(r.contentScripts), JSON.stringify(r.contentScripts));
+    obs(
+      config,
+      name,
+      "content script injected",
+      foreign(injected[name]),
+      JSON.stringify(injected[name])
+    );
+    obs(
+      config,
+      name,
+      "content script messages",
+      foreign(r.contentScripts),
+      JSON.stringify(r.contentScripts)
+    );
     obs(config, name, "tabs.query", foreign(r.tabs), JSON.stringify(r.tabs));
-    obs(config, name, "cookies.getAllCookieStores", foreign(r.stores), JSON.stringify(r.stores));
-    obs(config, name, "cookies.getAll", foreign(Object.keys(r.cookies).filter(k => !String(r.cookies[k]).startsWith("error"))), JSON.stringify(r.cookies));
-    obs(config, name, "cookies.onChanged", foreign(r.cookieChanges), JSON.stringify(r.cookieChanges));
-    obs(config, name, "webRequest", foreign(r.webRequest), JSON.stringify(r.webRequest));
+    obs(
+      config,
+      name,
+      "cookies.getAllCookieStores",
+      foreign(r.stores),
+      JSON.stringify(r.stores)
+    );
+    obs(
+      config,
+      name,
+      "cookies.getAll",
+      foreign(
+        Object.keys(r.cookies).filter(
+          k => !String(r.cookies[k]).startsWith("error")
+        )
+      ),
+      JSON.stringify(r.cookies)
+    );
+    obs(
+      config,
+      name,
+      "cookies.onChanged",
+      foreign(r.cookieChanges),
+      JSON.stringify(r.cookieChanges)
+    );
+    obs(
+      config,
+      name,
+      "webRequest",
+      foreign(r.webRequest),
+      JSON.stringify(r.webRequest)
+    );
     // The background page's own request: which container's cookie did it carry?
     const owner = `swell=c${copy.ucid}`;
-    obs(config, name, "background fetch", r.fetch == owner ? [] : [r.fetch], `Cookie header: "${r.fetch}" (own would be "${owner}")`);
+    obs(
+      config,
+      name,
+      "background fetch",
+      r.fetch == owner ? [] : [r.fetch],
+      `Cookie header: "${r.fetch}" (own would be "${owner}")`
+    );
   }
 
   // Dynamically registered content scripts and tabs.create into a foreign space.
@@ -215,8 +277,20 @@ async function runScenario(config, prefs = []) {
     }
   }
   for (let [name, copy] of Object.entries(COPIES)) {
-    obs(config, name, "dynamic content script injected", dynamic[name].filter(s => s != copy.store), JSON.stringify(dynamic[name]));
-    obs(config, name, "tabs.create in a foreign space", created[name] == "created" ? [created[name]] : [], created[name]);
+    obs(
+      config,
+      name,
+      "dynamic content script injected",
+      dynamic[name].filter(s => s != copy.store),
+      JSON.stringify(dynamic[name])
+    );
+    obs(
+      config,
+      name,
+      "tabs.create in a foreign space",
+      created[name] == "created" ? [created[name]] : [],
+      created[name]
+    );
   }
 
   for (let tab of [...tabs, ...fresh]) {
