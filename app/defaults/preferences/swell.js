@@ -17,6 +17,25 @@ pref("browser.link.open_newwindow.restriction", 0);
 pref("browser.download.useDownloadDir", true);
 pref("browser.download.folderList", 1);
 
+// Nothing here talks to Mozilla or Google on its own. An idle first run makes
+// no request (tests/e2e/network_silence.py); these keep it so if a service
+// that is currently not started ever gets started. Remote Settings stays:
+// read-only blocklist and revocation downloads.
+pref("network.connectivity-service.enabled", false);
+pref("network.captive-portal-service.enabled", false);
+pref("captivedetect.canonicalURL", "");
+pref("browser.region.update.enabled", false);
+pref("geo.provider.network.url", "");
+pref("dom.push.enabled", false);
+pref("toolkit.telemetry.server", "");
+pref("toolkit.telemetry.unified", false);
+pref("datareporting.healthreport.uploadEnabled", false);
+pref("media.gmp-manager.url", "");
+pref("media.gmp-manager.url.override", "");
+pref("browser.safebrowsing.downloads.enabled", false);
+pref("browser.safebrowsing.downloads.remote.enabled", false);
+pref("network.trr.mode", 5);
+
 // Find in page.
 pref("accessibility.typeaheadfind", false);
 pref("accessibility.typeaheadfind.timeout", 5000);
