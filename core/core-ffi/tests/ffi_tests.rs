@@ -627,25 +627,9 @@ fn logins_belong_to_the_container_of_a_space() {
     assert_eq!(found[0].guid, "g1");
     assert!(f.core.login_remove(b.user_context_id, "g1".into()).is_err());
 
-    f.core
-        .set_login_saving_disabled(a.user_context_id, "https://x.test".into(), true)
-        .unwrap();
-    assert!(f
-        .core
-        .login_saving_disabled(a.user_context_id, "https://x.test".into())
-        .unwrap());
-    assert!(!f
-        .core
-        .login_saving_disabled(b.user_context_id, "https://x.test".into())
-        .unwrap());
-
     let f = reopen(f);
     assert_eq!(f.core.logins_count(a.user_context_id).unwrap(), 1, "kept");
     assert_eq!(f.core.logins_clear(a.user_context_id).unwrap(), 1);
-    assert!(!f
-        .core
-        .login_saving_disabled(a.user_context_id, "https://x.test".into())
-        .unwrap());
 }
 
 #[test]

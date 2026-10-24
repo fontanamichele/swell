@@ -7,7 +7,8 @@
 //! already encrypted strings: this crate has no key and does no crypto (the
 //! window encrypts with a key of the identity that the system keychain
 //! holds). Origins, field names and times are plain, like in Firefox's own
-//! store, so logins can be found without decrypting everything.
+//! store, so logins can be found without decrypting everything. "Never save
+//! for this site" is kept by the engine's permission manager, not here.
 
 use rusqlite::{params, Connection, OptionalExtension, Row};
 use std::path::Path;
@@ -32,11 +33,6 @@ const MIGRATIONS: &[&str] = &["
         PRIMARY KEY (identity_id, guid)
     ) WITHOUT ROWID;
     CREATE INDEX logins_by_origin ON logins(identity_id, origin);
-    CREATE TABLE saving_disabled (
-        identity_id TEXT NOT NULL,
-        origin TEXT NOT NULL,
-        PRIMARY KEY (identity_id, origin)
-    ) WITHOUT ROWID;
 "];
 
 #[derive(Debug, thiserror::Error)]
@@ -254,12 +250,8 @@ impl Logins {
         Ok(())
     }
 
-    /// Forgets every login and every "never save" choice of one identity.
+    /// Forgets every login of one identity.
     pub fn clear(&self, identity: &str) -> Result<usize> {
-        self.conn.execute(
-            "DELETE FROM saving_disabled WHERE identity_id = ?1",
-            params![identity],
-        )?;
         Ok(self.conn.execute(
             "DELETE FROM logins WHERE identity_id = ?1",
             params![identity],
@@ -276,41 +268,5 @@ impl Logins {
             return Err(LoginsError::NotFound(guid.to_owned()));
         }
         Ok(())
-    }
-
-    /// "Never save passwords for this site".
-    pub fn set_saving_disabled(&self, identity: &str, origin: &str, disabled: bool) -> Result<()> {
-        if disabled {
-            self.conn.execute(
-                "INSERT OR IGNORE INTO saving_disabled (identity_id, origin) VALUES (?1, ?2)",
-                params![identity, origin],
-            )?;
-        } else {
-            self.conn.execute(
-                "DELETE FROM saving_disabled WHERE identity_id = ?1 AND origin = ?2",
-                params![identity, origin],
-            )?;
-        }
-        Ok(())
-    }
-
-    pub fn saving_disabled(&self, identity: &str, origin: &str) -> Result<bool> {
-        Ok(self
-            .conn
-            .query_row(
-                "SELECT 1 FROM saving_disabled WHERE identity_id = ?1 AND origin = ?2",
-                params![identity, origin],
-                |_| Ok(()),
-            )
-            .optional()?
-            .is_some())
-    }
-
-    pub fn disabled_origins(&self, identity: &str) -> Result<Vec<String>> {
-        let mut stmt = self
-            .conn
-            .prepare("SELECT origin FROM saving_disabled WHERE identity_id = ?1 ORDER BY origin")?;
-        let rows = stmt.query_map(params![identity], |row| row.get(0))?;
-        Ok(rows.collect::<std::result::Result<Vec<_>, _>>()?)
     }
 }

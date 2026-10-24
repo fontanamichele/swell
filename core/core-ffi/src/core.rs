@@ -799,43 +799,11 @@ impl SwellCore {
         })
     }
 
-    /// Forgets the logins and "never save" choices of the container's identity.
+    /// Forgets the logins of the container's identity.
     pub fn logins_clear(&self, user_context_id: u32) -> Result<u32, CoreError> {
         self.run(|inner, _| {
             let identity = inner.identity_for_context(user_context_id)?;
             Ok(inner.logins.clear(&identity)? as u32)
-        })
-    }
-
-    pub fn login_saving_disabled(
-        &self,
-        user_context_id: u32,
-        origin: String,
-    ) -> Result<bool, CoreError> {
-        self.run(|inner, _| {
-            let identity = inner.identity_for_context(user_context_id)?;
-            Ok(inner.logins.saving_disabled(&identity, &origin)?)
-        })
-    }
-
-    pub fn set_login_saving_disabled(
-        &self,
-        user_context_id: u32,
-        origin: String,
-        disabled: bool,
-    ) -> Result<(), CoreError> {
-        self.run(|inner, _| {
-            let identity = inner.identity_for_context(user_context_id)?;
-            Ok(inner
-                .logins
-                .set_saving_disabled(&identity, &origin, disabled)?)
-        })
-    }
-
-    pub fn login_disabled_origins(&self, user_context_id: u32) -> Result<Vec<String>, CoreError> {
-        self.run(|inner, _| {
-            let identity = inner.identity_for_context(user_context_id)?;
-            Ok(inner.logins.disabled_origins(&identity)?)
         })
     }
 

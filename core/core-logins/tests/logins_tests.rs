@@ -106,35 +106,14 @@ fn http_auth_logins_keep_a_realm_and_no_form_action() {
 }
 
 #[test]
-fn never_save_choices_are_per_identity() {
-    let logins = Logins::open_in_memory().unwrap();
-    logins
-        .set_saving_disabled("a", "https://x.test", true)
-        .unwrap();
-    assert!(logins.saving_disabled("a", "https://x.test").unwrap());
-    assert!(!logins.saving_disabled("b", "https://x.test").unwrap());
-    assert!(!logins.saving_disabled("a", "https://y.test").unwrap());
-    assert_eq!(logins.disabled_origins("a").unwrap(), ["https://x.test"]);
-    logins
-        .set_saving_disabled("a", "https://x.test", false)
-        .unwrap();
-    assert!(!logins.saving_disabled("a", "https://x.test").unwrap());
-}
-
-#[test]
 fn clear_forgets_one_identity_only() {
     let logins = Logins::open_in_memory().unwrap();
     for id in ["a", "b"] {
         logins.add(id, &login("g", "https://x.test", 1)).unwrap();
-        logins
-            .set_saving_disabled(id, "https://y.test", true)
-            .unwrap();
     }
     assert_eq!(logins.clear("a").unwrap(), 1);
     assert_eq!(logins.count("a").unwrap(), 0);
-    assert!(!logins.saving_disabled("a", "https://y.test").unwrap());
     assert_eq!(logins.count("b").unwrap(), 1);
-    assert!(logins.saving_disabled("b", "https://y.test").unwrap());
 }
 
 #[test]
