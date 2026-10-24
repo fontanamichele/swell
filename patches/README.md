@@ -33,6 +33,7 @@ Every patch starts with a header (text before the first `diff`/`---` line is ign
 | `0100-p4-prototype.patch` | M0 spike: bind an extension copy to one container | prototype |
 | `0200-places-visited-per-container.patch` | `:visited` and visit notifications per container, behind `places.history.isolate_by_user_context` | M2, partly upstreamable |
 | `0210-satchel-form-history-per-container.patch` | form history keeps a container per entry, behind `browser.formfill.isolate_by_user_context` | M2, upstreamable |
+| `0211-formautofill-per-container.patch` | address and card storage per container (own file), pluggable save prompt, behind `extensions.formautofill.isolate_by_user_context` | M2, upstreamable |
 | `0500-isolate-hsts-cert-overrides.patch` | HSTS and certificate exceptions keyed by container, behind two prefs | M2, upstreamable |
 
 Numbering: `00xx` build and tooling (`0000` is the local top-level `moz.build` hook, `0010` test tooling, `0030` build fixes), `01xx` extensions (P4), `02xx` Places and form history (P1, P2),

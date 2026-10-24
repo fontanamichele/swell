@@ -114,3 +114,48 @@ test globals.
   clean up on deletion (Places rows would go through
   `PlacesUtils.history.removeVisitsByFilter`); Places expiration and a
   history UI.
+
+## Step 5: form history and autofill
+
+- **Form history** (patch `0210`, pref `browser.formfill.isolate_by_user_context`):
+  `moz_formhistory` gets a `userContextId` column (schema 6; rows of older
+  versions belong to the default container; a newer database that lacks the
+  column gets it when downgraded, which the v999 fixtures of the upstream
+  tests need), and lookups, bumps, removals and autocomplete take the
+  container into account. The 11 upstream satchel xpcshell tests pass (their
+  `CURRENT_SCHEMA` constant is 6 now), plus `test_history_container.js`. The
+  first version passed an undefined `userContextId` to the SQL as a named
+  parameter, which breaks Firefox's default (pref off) case; a test that
+  runs with the pref off would have caught it.
+- **M1 gap found: the window had no autocomplete popup.** The toolkit's
+  actors were registered but nothing could show a suggestion, so form
+  history, saved logins and autofill could never appear. The window has the
+  `PopupAutoComplete` panel now and every tab points at it
+  (`autocompletepopup`). Lit leaves `window.litPropertyMetadata` behind; the
+  test head deletes it.
+- **Address and card autofill** (patch `0211`, pref
+  `extensions.formautofill.isolate_by_user_context`): `FormAutofillParent`
+  serves a page from the storage of its container, kept in
+  `autofill-profiles-<id>.json` next to the default file; the "saved field
+  names" gate that tells content processes whether autofill is worth
+  running is the union over all containers (it names field kinds, not
+  values). Firefox starts autofill from a built-in add-on that Swell does not
+  have, so `app/modules/Autofill.sys.mjs` registers the actor and calls
+  `FormAutofillStatus.init()`. The save prompt (a 1,800-line doorhanger on
+  `PopupNotifications` and `browser/` strings) is replaced through a new pref,
+  `extensions.formautofill.prompterModuleURI`, by `AutofillPrompter.sys.mjs`
+  and a bar in the window (`autofill.mjs`: Save / Update / Save as new /
+  Never / Not now). The More menu has "Addresses and cards": list, add, edit
+  and remove for the active space. Cards are encrypted with `OSKeyStore`, whose
+  single key is shared by all spaces, so only the files isolate, not the
+  encryption (tests use `OSKeyStoreTestUtils`). Not done: Firefox's own
+  manage dialogs and their l10n, country-specific address forms, passports,
+  the Rust autofill store (left off, and its trial-migration prefs too).
+- The upstream autofill unit tests live under `browser/extensions/formautofill`,
+  which Swell does not build, so 0211 is covered only by the Swell tests
+  (save prompt for an address and a card, "Not now", the dialog, and the
+  isolation cases for addresses and cards).
+- `tools/lint/extra-js-modules` refuses new files in `EXTRA_JS_MODULES`, which
+  the `BrowserWindowTracker` stub needs (Places imports it from
+  `resource:///modules/`); `mach lint swell/app` reports it. Expected, not
+  worth a patch to Mozilla's allowlist.
