@@ -38,3 +38,5 @@ prefs = [
 ["browser_titlebar.js"]
 
 ["browser_two_spaces.js"]
+
+["browser_no_mozilla_services.js"]
