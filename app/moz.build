@@ -19,6 +19,7 @@ MOZ_SRC_FILES += [
     "modules/ContentPermissionPrompt.sys.mjs",
     "modules/Core.sys.mjs",
     "modules/EngineBridge.sys.mjs",
+    "modules/ExtensionInstaller.sys.mjs",
     "modules/LoginPrompter.sys.mjs",
     "modules/SwellLoginStorage.sys.mjs",
     "modules/SwellWindows.sys.mjs",

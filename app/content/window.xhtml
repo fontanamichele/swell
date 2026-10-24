@@ -122,6 +122,21 @@
       locationspecific="true"
     />
     <div id="toasts"></div>
+    <dialog id="extensions-dialog">
+      <div id="extensions-list"></div>
+      <div class="buttons">
+        <button type="button" id="extensions-close">Close</button>
+      </div>
+    </dialog>
+    <dialog id="extension-prompt">
+      <h3 id="extension-prompt-title"></h3>
+      <p>It will be able to use:</p>
+      <ul id="extension-prompt-permissions"></ul>
+      <div class="buttons">
+        <button type="button" id="extension-prompt-cancel">Cancel</button>
+        <button type="button" id="extension-prompt-add">Add</button>
+      </div>
+    </dialog>
     <dialog id="passwords-dialog">
       <div id="passwords-list"></div>
       <form id="passwords-form" hidden="" method="dialog"></form>

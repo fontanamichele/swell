@@ -663,7 +663,8 @@ dialog .buttons {
 }
 
 #autofill-dialog,
-#passwords-dialog {
+#passwords-dialog,
+#extensions-dialog {
   min-width: 480px;
   max-height: 80vh;
   overflow: auto;
@@ -727,4 +728,32 @@ dialog .buttons {
 .row.sharing .title::before {
   content: "\25CF  ";
   color: #c0392b;
+}
+
+.extension-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-small);
+  margin-bottom: var(--space-small);
+}
+
+.extension-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.extension-install {
+  display: flex;
+  gap: var(--space-small);
+  margin: var(--space-medium) 0;
+}
+
+.extension-install input {
+  flex: 1;
+}
+
+#extension-prompt {
+  max-width: 420px;
 }

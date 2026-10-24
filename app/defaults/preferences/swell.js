@@ -46,6 +46,11 @@ pref(
   "moz-src:///swell/app/modules/LoginPrompter.sys.mjs"
 );
 
+// An add-on is installed once per space, as a copy with an id of its own that
+// carries the space's container. The copy is not signed (its id changed), so
+// signatures are not required; ExtensionInstaller checks the original's.
+pref("xpinstall.signatures.required", false);
+
 // HSTS state and certificate exceptions belong to one space (patch 0500).
 pref("security.hsts.isolate_by_user_context", true);
 pref("security.cert_override.isolate_by_user_context", true);
