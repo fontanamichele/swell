@@ -9,12 +9,11 @@ The Firefox clone has a local branch `swell` (never pushed to Mozilla) with one 
 per patch, so its `git status` is clean. These files stay the source of truth for CI and
 releases; `tools/gecko-branch.sh` keeps both in step:
 
-- Edit the Firefox files as usual and test. Then `tools/gecko-branch.sh fixup NNNN` folds
-  the uncommitted edits into patch NNNN's commit and rewrites `patches/NNNN-*.patch`.
-  Edit one patch's files at a time.
-- A new patch: commit it on `swell` with the subject `NNNN-name: purpose` and the header
-  (purpose, test) as the commit body, then `tools/gecko-branch.sh export`.
-- Then commit the changed patch files in this repository.
+- Edit the Firefox files as usual and test. Then `tools/gecko-branch.sh save NNNN "<what>"`
+  folds the uncommitted edits into patch NNNN's commit, rewrites `patches/NNNN-*.patch` and
+  commits it here as `patch(firefox): NNNN-name <what>`. Edit one patch's files at a time.
+- A new patch: `tools/gecko-branch.sh new NNNN-name "<purpose>" "<test>" <files...>` does the
+  same for a new patch (the header is built from the purpose and the test).
 - `tools/gecko-branch.sh status` lists the commits; `commit` turns already-applied
   patches into commits (done by `tools/setup.sh`).
 - A new Firefox revision: `git rebase --onto <new> <old> swell` in the clone, edit
