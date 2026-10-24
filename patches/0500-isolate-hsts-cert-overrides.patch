@@ -1,0 +1,135 @@
+Purpose: HSTS state and certificate exceptions ignore the container (userContextId) in their keys, so one space's choices apply to every space. Add prefs security.hsts.isolate_by_user_context and security.cert_override.isolate_by_user_context (default false, so Firefox is unchanged); when set the container is part of the key, certificate exceptions no longer fall back to the default container's, and HSTS entries stored before the change are not migrated into other containers. Upstreamable: yes, behind the prefs (the interface comments in nsISiteSecurityService.idl still say HSTS is not isolated; left untouched to avoid an IDL rebuild).
+Test: MOZCONFIG=swell/mozconfig ./mach test swell/tests/app/isolation/browser/browser_security.js --headless
+
+diff --git a/modules/libpref/init/StaticPrefList.yaml b/modules/libpref/init/StaticPrefList.yaml
+index 17f9237d1f05..9117d347320d 100644
+--- a/modules/libpref/init/StaticPrefList.yaml
++++ b/modules/libpref/init/StaticPrefList.yaml
+@@ -19325,6 +19325,20 @@
+   value: false
+   mirror: always
+ 
++# Keep HSTS state apart per container (userContextId) instead of sharing it
++# between all containers of a profile.
++- name: security.hsts.isolate_by_user_context
++  type: RelaxedAtomicBool
++  value: false
++  mirror: always
++
++# Keep certificate exceptions apart per container and do not fall back to the
++# exceptions of the default container.
++- name: security.cert_override.isolate_by_user_context
++  type: RelaxedAtomicBool
++  value: false
++  mirror: always
++
+ # Enable preloaded static key pins by default.
+ - name: security.cert_pinning.enforcement_level
+   type: RelaxedAtomicUint32
+diff --git a/security/manager/ssl/nsCertOverrideService.cpp b/security/manager/ssl/nsCertOverrideService.cpp
+index 30ca5460270a..a849a5a3ba6c 100644
+--- a/security/manager/ssl/nsCertOverrideService.cpp
++++ b/security/manager/ssl/nsCertOverrideService.cpp
+@@ -7,6 +7,7 @@
+ #include "NSSCertDBTrustDomain.h"
+ #include "mozilla/Assertions.h"
+ #include "mozilla/Components.h"
++#include "mozilla/StaticPrefs_security.h"
+ #include "mozilla/ScopeExit.h"
+ #include "mozilla/TaskQueue.h"
+ #include "mozilla/TextUtils.h"
+@@ -461,7 +462,8 @@ nsCertOverrideService::HasMatchingOverride(
+       GetOverrideFor(aHostName, aPort, aOriginAttributes));
+   // If there is no corresponding override and the given OriginAttributes isn't
+   // the default, try to look up an override using the default OriginAttributes.
+-  if (!settings && aOriginAttributes != OriginAttributes()) {
++  if (!settings && aOriginAttributes != OriginAttributes() &&
++      !StaticPrefs::security_cert_override_isolate_by_user_context()) {
+     settings = GetOverrideFor(aHostName, aPort, OriginAttributes());
+   }
+   if (!settings) {
+@@ -746,8 +748,11 @@ void nsCertOverrideService::GetKeyString(
+   GetHostWithPort(aHostName, aPort, keyString);
+   keyString.Append(':');
+   OriginAttributes strippedAttributes(aOriginAttributes);
+-  strippedAttributes.StripAttributes(
+-      ~OriginAttributes::STRIP_PRIVATE_BROWSING_ID);
++  uint32_t keep = OriginAttributes::STRIP_PRIVATE_BROWSING_ID;
++  if (StaticPrefs::security_cert_override_isolate_by_user_context()) {
++    keep |= OriginAttributes::STRIP_USER_CONTEXT_ID;
++  }
++  strippedAttributes.StripAttributes(~keep);
+   nsAutoCString attributeSuffix;
+   strippedAttributes.CreateSuffix(attributeSuffix);
+   keyString.Append(attributeSuffix);
+diff --git a/security/manager/ssl/nsSiteSecurityService.cpp b/security/manager/ssl/nsSiteSecurityService.cpp
+index 9b259fd3edca..7279e65efa3c 100644
+--- a/security/manager/ssl/nsSiteSecurityService.cpp
++++ b/security/manager/ssl/nsSiteSecurityService.cpp
+@@ -10,6 +10,7 @@
+ #include "mozilla/LinkedList.h"
+ #include "mozilla/Logging.h"
+ #include "mozilla/StaticPrefs_network.h"
++#include "mozilla/StaticPrefs_security.h"
+ #include "mozilla/StaticPrefs_test.h"
+ #include "mozilla/Tokenizer.h"
+ #include "mozilla/dom/PContent.h"
+@@ -256,15 +257,25 @@ static void GetOldStorageKey(const nsACString& hostname,
+   storageKey.Append(kHSTSKeySuffix);
+ }
+ 
++// Entries stored before the key included the container belong to the default
++// container only, so they are not migrated into any other one.
++static bool ShouldMigrateOldKey(const OriginAttributes& aOriginAttributes) {
++  return !StaticPrefs::security_hsts_isolate_by_user_context() ||
++         aOriginAttributes.mUserContextId ==
++             nsIScriptSecurityManager::DEFAULT_USER_CONTEXT_ID;
++}
++
+ static void GetNormalizedStorageKey(const nsACString& hostname,
+                                     const OriginAttributes& aOriginAttributes,
+                                     /*out*/ nsAutoCString& storageKey) {
+   storageKey = hostname;
+ 
+-  // Don't isolate by userContextId.
++  // Don't isolate by userContextId, unless the pref asks for it.
+   OriginAttributes originAttributesNoUserContext = aOriginAttributes;
+-  originAttributesNoUserContext.mUserContextId =
+-      nsIScriptSecurityManager::DEFAULT_USER_CONTEXT_ID;
++  if (!StaticPrefs::security_hsts_isolate_by_user_context()) {
++    originAttributesNoUserContext.mUserContextId =
++        nsIScriptSecurityManager::DEFAULT_USER_CONTEXT_ID;
++  }
+   NormalizePartitionKey(originAttributesNoUserContext.mPartitionKey);
+   nsAutoCString originAttributesSuffix;
+   originAttributesNoUserContext.CreateSuffix(originAttributesSuffix);
+@@ -838,7 +849,8 @@ nsresult nsSiteSecurityService::GetWithMigration(
+     return rv;
+   }
+   // Otherwise, it potentially needs to be migrated, if it's persistent data.
+-  if (aDataStorageType != nsIDataStorage::DataType::Persistent) {
++  if (aDataStorageType != nsIDataStorage::DataType::Persistent ||
++      !ShouldMigrateOldKey(aOriginAttributes)) {
+     return NS_ERROR_NOT_AVAILABLE;
+   }
+   nsAutoCString oldStorageKey;
+@@ -863,7 +875,8 @@ nsresult nsSiteSecurityService::PutWithMigration(
+     const nsACString& aHostname, const OriginAttributes& aOriginAttributes,
+     nsIDataStorage::DataType aDataStorageType, const nsACString& aStateString) {
+   // Only persistent data needs migrating.
+-  if (aDataStorageType == nsIDataStorage::DataType::Persistent) {
++  if (aDataStorageType == nsIDataStorage::DataType::Persistent &&
++      ShouldMigrateOldKey(aOriginAttributes)) {
+     // Since the intention is to overwrite the previously-stored data anyway,
+     // the old entry can be removed.
+     nsAutoCString oldStorageKey;
+@@ -884,7 +897,8 @@ nsresult nsSiteSecurityService::RemoveWithMigration(
+     const nsACString& aHostname, const OriginAttributes& aOriginAttributes,
+     nsIDataStorage::DataType aDataStorageType) {
+   // Only persistent data needs migrating.
+-  if (aDataStorageType == nsIDataStorage::DataType::Persistent) {
++  if (aDataStorageType == nsIDataStorage::DataType::Persistent &&
++      ShouldMigrateOldKey(aOriginAttributes)) {
+     nsAutoCString oldStorageKey;
+     GetOldStorageKey(aHostname, aOriginAttributes, oldStorageKey);
+     nsresult rv = mSiteStateStorage->Remove(
