@@ -37,6 +37,8 @@ prefs = [
 
 ["browser_downloads.js"]
 
+["browser_extensions.js"]
+
 ["browser_favicons.js"]
 
 ["browser_import_arc.js"]
