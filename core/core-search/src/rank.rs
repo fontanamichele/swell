@@ -11,6 +11,8 @@ const STRONG: i32 = 100;
 pub enum CandidateKind {
     Pinned,
     Today,
+    /// A page from the identity's history; not a node of the tree.
+    History,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -21,6 +23,8 @@ pub struct Candidate {
     pub url: String,
     pub is_open: bool,
     pub last_active_at: i64,
+    /// Added to the score of a match; history candidates carry their frecency.
+    pub weight: i32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -33,6 +37,7 @@ pub struct Ranked {
 pub enum SuggestionKind {
     Pinned,
     Today,
+    History,
     Url,
     Search,
 }
@@ -80,9 +85,20 @@ fn token_score(token: &str, title: &str, url: &str) -> Option<i32> {
 /// An empty query lists the open tabs, most recently active first.
 pub fn rank(query: &str, candidates: &[Candidate], limit: usize) -> Vec<Ranked> {
     let tokens: Vec<String> = query.split_whitespace().map(str::to_lowercase).collect();
+    // A page that is also a saved or open tab is offered once, as the tab.
+    let tab_urls: std::collections::HashSet<&str> = candidates
+        .iter()
+        .filter(|c| c.kind != CandidateKind::History)
+        .map(|c| c.url.as_str())
+        .collect();
     let mut ranked: Vec<Ranked> = candidates
         .iter()
         .filter_map(|candidate| {
+            if candidate.kind == CandidateKind::History
+                && (tokens.is_empty() || tab_urls.contains(candidate.url.as_str()))
+            {
+                return None;
+            }
             let mut score = 0;
             if tokens.is_empty() {
                 if !candidate.is_open {
@@ -97,7 +113,9 @@ pub fn rank(query: &str, candidates: &[Candidate], limit: usize) -> Vec<Ranked> 
                 score += match candidate.kind {
                     CandidateKind::Pinned => 40,
                     CandidateKind::Today => 20,
+                    CandidateKind::History => 0,
                 };
+                score += candidate.weight;
                 if candidate.is_open {
                     score += 25;
                 }
@@ -124,10 +142,11 @@ fn from_ranked(ranked: &Ranked) -> Suggestion {
         kind: match candidate.kind {
             CandidateKind::Pinned => SuggestionKind::Pinned,
             CandidateKind::Today => SuggestionKind::Today,
+            CandidateKind::History => SuggestionKind::History,
         },
         title: candidate.title.clone(),
         url: candidate.url.clone(),
-        id: Some(candidate.id.clone()),
+        id: (candidate.kind != CandidateKind::History).then(|| candidate.id.clone()),
         is_open: candidate.is_open,
     }
 }

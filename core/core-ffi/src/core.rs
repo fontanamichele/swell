@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 use crate::types::*;
+use core_history::History;
 use core_model::{Env, LiveTabId, Model, NodeId, NodeKind, SpaceId, SystemEnv, WindowId};
 use core_search::{default_engines, Candidate, CandidateKind};
 use core_store::Store;
@@ -10,6 +11,8 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 const SUGGESTION_LIMIT: usize = 8;
+/// History pages looked up for one command-bar query, before ranking.
+const HISTORY_CANDIDATES: usize = 30;
 const META_DEVICE: &str = "device_id";
 const META_LAST_SPACE: &str = "last_space";
 
@@ -41,6 +44,7 @@ enum Event {
 struct Inner {
     model: Model,
     store: Store,
+    history: History,
     listeners: Vec<Arc<dyn CoreListener>>,
     /// Set when a write failed; the next write saves everything instead.
     dirty: bool,
@@ -86,6 +90,12 @@ impl Inner {
                 })
             })
             .collect()
+    }
+
+    /// The identity of the space a live tab belongs to.
+    fn identity_of_live_tab(&self, live: &LiveTabId) -> Option<String> {
+        let tab = self.model.live_tab(live)?;
+        Some(self.model.identity_of_space(&tab.space)?.id.0.clone())
     }
 
     fn space(&self, id: &str) -> Result<core_model::Space, CoreError> {
@@ -158,6 +168,7 @@ impl Inner {
                     url: tab.url.clone(),
                     is_open: open.contains(&id),
                     last_active_at: tab.last_active_at,
+                    weight: 0,
                 });
             }
         }
@@ -228,6 +239,7 @@ impl SwellCore {
     #[uniffi::constructor]
     pub fn open(dir: String) -> Result<Arc<Self>, CoreError> {
         let mut store = Store::open(Path::new(&dir))?;
+        let history = History::open(Path::new(&dir))?;
         let device = match store.get_meta(META_DEVICE)? {
             Some(device) => device,
             None => {
@@ -247,6 +259,7 @@ impl SwellCore {
             inner: Mutex::new(Inner {
                 model,
                 store,
+                history,
                 listeners: Vec::new(),
                 dirty: false,
             }),
@@ -556,6 +569,23 @@ impl SwellCore {
             for (root, kind) in inner.roots(&space) {
                 inner.candidates(&root, kind, &mut candidates);
             }
+            let tokens: Vec<String> = text.split_whitespace().map(str::to_lowercase).collect();
+            if !tokens.is_empty() {
+                let now = SystemEnv.now_ms();
+                let pages =
+                    inner
+                        .history
+                        .search(&space.identity_id.0, &tokens, HISTORY_CANDIDATES, now)?;
+                candidates.extend(pages.into_iter().map(|page| Candidate {
+                    id: String::new(),
+                    kind: CandidateKind::History,
+                    title: page.title,
+                    url: page.url,
+                    is_open: false,
+                    last_active_at: page.last_visit,
+                    weight: (page.frecency / 2.0).round() as i32,
+                }));
+            }
             let engine = &default_engines()[0];
             Ok(
                 core_search::suggest(&text, &candidates, engine, SUGGESTION_LIMIT)
@@ -564,6 +594,7 @@ impl SwellCore {
                         kind: match s.kind {
                             core_search::SuggestionKind::Pinned => SuggestionKind::Pinned,
                             core_search::SuggestionKind::Today => SuggestionKind::Today,
+                            core_search::SuggestionKind::History => SuggestionKind::History,
                             core_search::SuggestionKind::Url => SuggestionKind::Url,
                             core_search::SuggestionKind::Search => SuggestionKind::Search,
                         },
@@ -642,13 +673,42 @@ impl SwellCore {
         title: String,
         transition: Transition,
     ) -> Result<(), CoreError> {
-        let _ = transition;
         self.run(|inner, events| {
-            let ops = inner
-                .model
-                .navigated(&LiveTabId::from(live_tab), &url, &title)?;
+            let live = LiveTabId::from(live_tab);
+            let ops = inner.model.navigated(&live, &url, &title)?;
             Inner::tree_event(&ops, events);
-            inner.persist_ops(&ops)
+            let saved = inner.persist_ops(&ops);
+            // History is kept for the tab's identity only, and is best effort:
+            // a failure here must not undo the tree change above.
+            if let Some(identity) = inner.identity_of_live_tab(&live) {
+                let now = SystemEnv.now_ms();
+                let _ = match transition {
+                    Transition::Typed => inner
+                        .history
+                        .record_visit(&identity, &url, &title, now, true),
+                    Transition::Link | Transition::Redirect => inner
+                        .history
+                        .record_visit(&identity, &url, &title, now, false),
+                    _ => inner.history.set_title(&identity, &url, &title),
+                };
+            }
+            saved
+        })
+    }
+
+    /// How many pages the space's identity has in its history.
+    pub fn history_count(&self, space: String) -> Result<u64, CoreError> {
+        self.run(|inner, _| {
+            let space = inner.space(&space)?;
+            Ok(inner.history.count(&space.identity_id.0)?)
+        })
+    }
+
+    /// Forgets the history of the space's identity; returns how many pages went.
+    pub fn clear_history(&self, space: String) -> Result<u32, CoreError> {
+        self.run(|inner, _| {
+            let space = inner.space(&space)?;
+            Ok(inner.history.clear(&space.identity_id.0)? as u32)
         })
     }
 

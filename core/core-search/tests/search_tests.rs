@@ -93,6 +93,7 @@ fn cand(
         url: url.into(),
         is_open: open,
         last_active_at: active,
+        weight: 0,
     }
 }
 
@@ -215,4 +216,51 @@ fn a_bare_host_is_offered_as_url_first() {
 fn suggestions_respect_the_limit() {
     let google = &default_engines()[0];
     assert_eq!(suggest("", &pool(), google, 1).len(), 1);
+}
+
+fn history(url: &str, title: &str, weight: i32) -> Candidate {
+    Candidate {
+        id: String::new(),
+        kind: CandidateKind::History,
+        title: title.into(),
+        url: url.into(),
+        is_open: false,
+        last_active_at: 0,
+        weight,
+    }
+}
+
+#[test]
+fn history_fills_in_after_tabs_and_is_deduplicated() {
+    let mut pool = pool();
+    pool.push(history("https://github.com/", "GitHub", 30));
+    pool.push(history("https://github.blog/", "The GitHub Blog", 5));
+    let s = suggest("github", &pool, &default_engines()[0], 10);
+    let kinds: Vec<_> = s.iter().map(|s| s.kind).collect();
+    assert_eq!(s[0].kind, SuggestionKind::Pinned, "the tab comes first");
+    assert_eq!(
+        kinds
+            .iter()
+            .filter(|k| **k == SuggestionKind::History)
+            .count(),
+        1,
+        "a page that is also a tab is not listed twice"
+    );
+    let blog = s
+        .iter()
+        .find(|s| s.kind == SuggestionKind::History)
+        .unwrap();
+    assert_eq!(blog.url, "https://github.blog/");
+    assert_eq!(blog.id, None, "history has no node");
+}
+
+#[test]
+fn history_weight_orders_history_and_empty_queries_skip_it() {
+    let pool = vec![
+        history("https://a.test/page", "page", 3),
+        history("https://b.test/page", "page", 25),
+    ];
+    let ranked = rank("page", &pool, 10);
+    assert_eq!(ranked[0].candidate.url, "https://b.test/page");
+    assert!(rank("", &pool, 10).is_empty(), "no history without a query");
 }

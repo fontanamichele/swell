@@ -173,6 +173,7 @@ pub struct TreeDiff {
 pub enum SuggestionKind {
     Pinned,
     Today,
+    History,
     Url,
     Search,
 }
@@ -220,6 +221,14 @@ impl From<model::ModelError> for CoreError {
         match error {
             model::ModelError::NotFound(what) => CoreError::NotFound { what },
             model::ModelError::Invariant(reason) => CoreError::Invariant { reason },
+        }
+    }
+}
+
+impl From<core_history::HistoryError> for CoreError {
+    fn from(error: core_history::HistoryError) -> Self {
+        CoreError::Storage {
+            reason: error.to_string(),
         }
     }
 }

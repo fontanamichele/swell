@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["core-model", "core-store", "core-search", "core-ffi"]
+members = ["core-model", "core-store", "core-search", "core-history", "core-ffi"]
 
 [workspace.package]
 version = "0.1.0"
@@ -17,5 +17,6 @@ rusqlite = "0.37"
 core-model = { path = "core-model" }
 core-store = { path = "core-store" }
 core-search = { path = "core-search" }
+core-history = { path = "core-history" }
 uniffi = "0.32"
 tempfile = "3"

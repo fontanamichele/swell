@@ -8,6 +8,7 @@ publish.workspace = true
 
 [dependencies]
 core-model.workspace = true
+core-history.workspace = true
 core-search.workspace = true
 core-store.workspace = true
 thiserror.workspace = true

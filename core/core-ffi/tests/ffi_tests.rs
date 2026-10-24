@@ -506,3 +506,73 @@ fn importing_arc_adds_spaces_and_persists() {
         .import_arc("/nonexistent/StorableSidebar.json".into());
     assert!(matches!(bad, Err(CoreError::Import { .. })));
 }
+
+#[test]
+fn history_is_per_identity_and_feeds_the_command_bar() {
+    let f = fixture();
+    let a = first_space(&f.core);
+    let b_id = f
+        .core
+        .create_space(
+            "B".into(),
+            Icon::Symbol {
+                name: "star".into(),
+            },
+        )
+        .unwrap();
+    let b = f
+        .core
+        .list_spaces()
+        .unwrap()
+        .into_iter()
+        .find(|s| s.id == b_id)
+        .unwrap();
+    f.core.open_window("w1".into()).unwrap();
+    let live = f
+        .core
+        .open_url("w1".into(), a.id.clone(), "https://bank.test/login".into())
+        .unwrap();
+    f.core
+        .on_navigation(
+            live.clone(),
+            "https://bank.test/login".into(),
+            "Bank login".into(),
+            Transition::Typed,
+        )
+        .unwrap();
+    f.core
+        .on_navigation(
+            live.clone(),
+            "https://bank.test/login".into(),
+            "Bank, sign in".into(),
+            Transition::Other,
+        )
+        .unwrap();
+    f.core.on_tab_closed(live).unwrap();
+    assert_eq!(f.core.history_count(a.id.clone()).unwrap(), 1);
+    assert_eq!(f.core.history_count(b.id.clone()).unwrap(), 0);
+
+    let in_a = f
+        .core
+        .query_command_bar(a.id.clone(), "bank".into())
+        .unwrap();
+    let page = in_a
+        .iter()
+        .find(|s| s.kind == SuggestionKind::History)
+        .expect("the closed Today tab is still in history");
+    assert_eq!(page.url, "https://bank.test/login");
+    assert_eq!(page.title, "Bank, sign in", "the title update was kept");
+    assert_eq!(page.node, None);
+    let in_b = f
+        .core
+        .query_command_bar(b.id.clone(), "bank".into())
+        .unwrap();
+    assert!(in_b.iter().all(|s| s.kind != SuggestionKind::History));
+
+    assert_eq!(f.core.clear_history(b.id.clone()).unwrap(), 0);
+    assert_eq!(f.core.history_count(a.id.clone()).unwrap(), 1);
+    let f = reopen(f);
+    assert_eq!(f.core.history_count(a.id.clone()).unwrap(), 1, "kept");
+    assert_eq!(f.core.clear_history(a.id.clone()).unwrap(), 1);
+    assert_eq!(f.core.history_count(a.id).unwrap(), 0);
+}
