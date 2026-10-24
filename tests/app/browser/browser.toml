@@ -19,6 +19,8 @@ prefs = [
   "dom.webnotifications.requireuserinteraction=false",
 ]
 
+["browser_autocomplete_popup.js"]
+
 ["browser_command_bar.js"]
 
 ["browser_downloads.js"]

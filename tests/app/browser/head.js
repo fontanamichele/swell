@@ -11,6 +11,12 @@ ChromeUtils.defineESModuleGetters(this, {
   Transition: "moz-src:///swell/app/modules/Core.sys.mjs",
 });
 
+// Lit, which toolkit widgets such as the autocomplete popup load, leaves this
+// on the window; the harness reports leftover globals.
+registerCleanupFunction(() => {
+  delete window.litPropertyMetadata;
+});
+
 // The core and the bridge of the Swell window under test.
 async function swellApp() {
   return window.SwellApp.ready;
