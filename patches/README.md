@@ -31,6 +31,7 @@ Every patch starts with a header (text before the first `diff`/`---` line is ign
 | `0030-cocoa-shellservice-include.patch` | `widget/cocoa/nsMenuBarX.mm` includes `nsIShellService.h` only for the browser app | M1, upstreamable |
 | `0031-settings-dumps-swell-app.patch` | Remote Settings dump generator accepts `swell/app` and installs into its app dir | M1 |
 | `0100-p4-prototype.patch` | M0 spike: bind an extension copy to one container | prototype |
+| `0500-isolate-hsts-cert-overrides.patch` | HSTS and certificate exceptions keyed by container, behind two prefs | M2, upstreamable |
 
 Numbering: `00xx` build and tooling (`0000` is the local top-level `moz.build` hook, `0010` test tooling, `0030` build fixes), `01xx` extensions (P4), `02xx` history (P1),
-`03xx` form data (P2), `04xx` logins (P3).
+`03xx` form data (P2), `04xx` logins (P3), `05xx` other per-space security state (HSTS, certificate exceptions).
