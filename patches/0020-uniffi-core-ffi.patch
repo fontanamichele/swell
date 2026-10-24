@@ -8,10 +8,10 @@ Companion: 0021 holds the regenerated output.
 Upstreamable: no.
 
 diff --git a/Cargo.lock b/Cargo.lock
-index 4bd60e70d077..6b77b29b8155 100644
+index 4bd60e70d077..064c47d66cd7 100644
 --- a/Cargo.lock
 +++ b/Cargo.lock
-@@ -1163,6 +1163,17 @@ dependencies = [
+@@ -1163,6 +1163,18 @@ dependencies = [
   "version_check",
  ]
  
@@ -19,6 +19,7 @@ index 4bd60e70d077..6b77b29b8155 100644
 +name = "core-ffi"
 +version = "0.1.0"
 +dependencies = [
++ "core-history",
 + "core-model",
 + "core-search",
 + "core-store",
@@ -29,10 +30,18 @@ index 4bd60e70d077..6b77b29b8155 100644
  [[package]]
  name = "core-foundation"
  version = "0.9.999"
-@@ -1217,6 +1228,30 @@ dependencies = [
+@@ -1217,6 +1229,38 @@ dependencies = [
   "libc",
  ]
  
++[[package]]
++name = "core-history"
++version = "0.1.0"
++dependencies = [
++ "rusqlite 0.37.0",
++ "thiserror 2.0.12",
++]
++
 +[[package]]
 +name = "core-model"
 +version = "0.1.0"
@@ -60,7 +69,7 @@ index 4bd60e70d077..6b77b29b8155 100644
  [[package]]
  name = "core-text"
  version = "20.1.0"
-@@ -3138,6 +3173,7 @@ dependencies = [
+@@ -3138,6 +3182,7 @@ dependencies = [
   "autofill",
   "breach-alerts",
   "context_id",
@@ -80,6 +89,194 @@ index 86584577e97b..a9ada5d3a818 100644
  
    # Excluded because they are used only as dependencies, not top-level targets,
    # so we don't need to vendor their dev-dependencies.
+diff --git a/modules/libpref/init/StaticPrefList.yaml b/modules/libpref/init/StaticPrefList.yaml
+index 17f9237d1f05..1a55c1038e18 100644
+--- a/modules/libpref/init/StaticPrefList.yaml
++++ b/modules/libpref/init/StaticPrefList.yaml
+@@ -17885,6 +17885,13 @@
+ # Prefs starting with "places."
+ #---------------------------------------------------------------------------
+ 
++# Answer :visited per container (userContextId): a link only counts as visited
++# when the page was visited in the container of the process asking.
++- name: places.history.isolate_by_user_context
++  type: RelaxedAtomicBool
++  value: false
++  mirror: always
++
+ # Whether pages alternative frecency is enabled. This and the following related
+ # prefs only apply at restart.
+ - name: places.frecency.pages.alternative.featureGate
+diff --git a/toolkit/components/places/History.cpp b/toolkit/components/places/History.cpp
+index 26db6e3ae5ed..430b3624e7a3 100644
+--- a/toolkit/components/places/History.cpp
++++ b/toolkit/components/places/History.cpp
+@@ -417,7 +417,8 @@ class VisitedQuery final : public PendingStatementCallback {
+   using VisitedUrlsToContentParentSet =
+       nsTHashMap<nsCStringHashKey, VisitedUrlInfo>;
+ 
+-  static nsresult Start(PendingVisitedQueries&& aURIsToContentParentSet) {
++  static nsresult Start(PendingVisitedQueries&& aURIsToContentParentSet,
++                        Maybe<uint32_t> aUserContextId = Nothing()) {
+     MOZ_ASSERT(XRE_IsParentProcess());
+     MOZ_ASSERT(NS_IsMainThread());
+ 
+@@ -434,10 +435,14 @@ class VisitedQuery final : public PendingStatementCallback {
+         urls.InsertOrUpdate(spec, std::move(info));
+       }
+     }
+-    RefPtr<VisitedQuery> query = new VisitedQuery(std::move(urls));
++    RefPtr<VisitedQuery> query =
++        new VisitedQuery(std::move(urls), nullptr, aUserContextId);
+     return history->QueueVisitedStatement(std::move(query));
+   }
+ 
++  // When set, only visits made in this container count.
++  Maybe<uint32_t> UserContextId() const { return mUserContextId; }
++
+   static nsresult Start(nsIURI* aURI,
+                         mozIVisitedStatusCallback* aCallback = nullptr) {
+     MOZ_ASSERT(aURI, "Null URI");
+@@ -500,6 +505,10 @@ class VisitedQuery final : public PendingStatementCallback {
+     NS_ENSURE_SUCCESS(rv, rv);
+     rv = params->BindArrayOfUTF8StringsByIndex(0, urls);
+     NS_ENSURE_SUCCESS(rv, rv);
++    if (mUserContextId) {
++      rv = params->BindInt32ByIndex(1, static_cast<int32_t>(*mUserContextId));
++      NS_ENSURE_SUCCESS(rv, rv);
++    }
+     return aParamsArray->AddParams(params);
+   }
+ 
+@@ -530,18 +539,40 @@ class VisitedQuery final : public PendingStatementCallback {
+  private:
+   explicit VisitedQuery(VisitedUrlsToContentParentSet&& aUrlsToContentParentSet,
+                         const nsMainThreadPtrHandle<mozIVisitedStatusCallback>&
+-                            aCallback = nullptr)
++                            aCallback = nullptr,
++                        Maybe<uint32_t> aUserContextId = Nothing())
+       : mUrlsToContentParentSet(std::move(aUrlsToContentParentSet)),
+-        mCallback(aCallback) {}
++        mCallback(aCallback),
++        mUserContextId(aUserContextId) {}
+ 
+   ~VisitedQuery() = default;
+ 
+   VisitedUrlsToContentParentSet mUrlsToContentParentSet;
+   nsMainThreadPtrHandle<mozIVisitedStatusCallback> mCallback;
++  Maybe<uint32_t> mUserContextId;
+ };
+ 
+ NS_IMPL_ISUPPORTS_INHERITED0(VisitedQuery, PendingStatementCallback)
+ 
++static bool IsolatedByUserContext() {
++  return StaticPrefs::places_history_isolate_by_user_context();
++}
++
++// The content processes that host pages of one container. A process only ever
++// hosts a single container (RemoteType::SharedWeb keeps it in the remote type).
++static History::ContentParentSet ContentParentsOfContainer(
++    uint32_t aUserContextId) {
++  History::ContentParentSet processes;
++  nsTArray<dom::ContentParent*> all;
++  dom::ContentParent::GetAll(all);
++  for (dom::ContentParent* process : all) {
++    if (process->GetRemoteType().UserContextId() == aUserContextId) {
++      processes.Insert(process);
++    }
++  }
++  return processes;
++}
++
+ /**
+  * Notifies observers about a visit or an array of visits.
+  */
+@@ -569,7 +600,14 @@ class NotifyManyVisitsObservers : public Runnable {
+     if (aNow - aPlace.visitTime < RECENTLY_VISITED_URIS_MAX_AGE) {
+       mHistory->AppendToRecentlyVisitedURIs(aURI, aPlace.hidden);
+     }
+-    mHistory->NotifyVisited(aURI, IHistory::VisitedStatus::Visited);
++    if (IsolatedByUserContext()) {
++      History::ContentParentSet processes =
++          ContentParentsOfContainer(aPlace.userContextId);
++      mHistory->NotifyVisited(aURI, IHistory::VisitedStatus::Visited,
++                              &processes);
++    } else {
++      mHistory->NotifyVisited(aURI, IHistory::VisitedStatus::Visited);
++    }
+ 
+     aNavHistory->UpdateDaysOfHistory(aPlace.visitTime);
+ 
+@@ -1553,14 +1591,28 @@ nsresult History::QueueVisitedStatement(RefPtr<VisitedQuery>&& aQuery) {
+   }
+   auto conn = ConcurrentConnection::GetInstance();
+   if (conn.isSome()) {
+-    conn.value()->Queue(
+-        "WITH urls (url, url_hash) AS ( "
+-        "  SELECT value, hash(value) FROM carray(?1) "
+-        ") "
+-        "SELECT url, last_visit_date NOTNULL "
+-        "FROM moz_places "
+-        "JOIN urls USING(url_hash, url) "_ns,
+-        aQuery);
++    if (aQuery->UserContextId()) {
++      conn.value()->Queue(
++          "WITH urls (url, url_hash) AS ( "
++          "  SELECT value, hash(value) FROM carray(?1) "
++          ") "
++          "SELECT url, EXISTS ( "
++          "  SELECT 1 FROM moz_historyvisits v "
++          "  WHERE v.place_id = moz_places.id AND v.userContextId = ?2 "
++          ") "
++          "FROM moz_places "
++          "JOIN urls USING(url_hash, url) "_ns,
++          aQuery);
++    } else {
++      conn.value()->Queue(
++          "WITH urls (url, url_hash) AS ( "
++          "  SELECT value, hash(value) FROM carray(?1) "
++          ") "
++          "SELECT url, last_visit_date NOTNULL "
++          "FROM moz_places "
++          "JOIN urls USING(url_hash, url) "_ns,
++          aQuery);
++    }
+   }
+   return NS_OK;
+ }
+@@ -2418,8 +2470,31 @@ void History::StartPendingVisitedQueries(PendingVisitedQueries&& aQueries) {
+     if (!uris.IsEmpty()) {
+       (void)cpc->SendStartVisitedQueries(uris);
+     }
+-  } else {
++  } else if (!IsolatedByUserContext()) {
+     VisitedQuery::Start(std::move(aQueries));
++  } else {
++    // Ask once per container, for the processes that host it. The container
++    // comes from the process the request arrived from, never from the
++    // request. A link of the parent process has no container: default one.
++    nsTHashMap<nsUint32HashKey, PendingVisitedQueries> byContainer;
++    for (const auto& entry : aQueries) {
++      nsIURI* uri = entry.GetKey();
++      const ContentParentSet& processes = entry.GetData();
++      if (processes.IsEmpty()) {
++        (void)byContainer.LookupOrInsert(0).LookupOrInsert(uri);
++        continue;
++      }
++      for (const auto& process : processes) {
++        uint32_t userContextId = process->GetRemoteType().UserContextId();
++        byContainer.LookupOrInsert(userContextId)
++            .LookupOrInsert(uri)
++            .Insert(process);
++      }
++    }
++    for (auto& group : byContainer) {
++      VisitedQuery::Start(std::move(*group.GetModifiableData()),
++                          Some(group.GetKey()));
++    }
+   }
+ }
+ 
 diff --git a/toolkit/components/uniffi-bindgen-gecko-js/components/Cargo.toml b/toolkit/components/uniffi-bindgen-gecko-js/components/Cargo.toml
 index d3345a0950e7..133429e107a0 100644
 --- a/toolkit/components/uniffi-bindgen-gecko-js/components/Cargo.toml
