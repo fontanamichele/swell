@@ -1,12 +1,10 @@
 #!/bin/sh
-# Enforces conventional commits and bumps Swell's version on every commit.
+# Enforces conventional commits. (The version bump is tools/hooks/post-commit: the commit's
+# contents are fixed before this hook runs, so the bump has to follow it.)
 #
 #   type(scope)!: summary     types: feat fix perf refactor test docs build chore style ci patch
 #
-# Bump: feat -> minor; a breaking change (`!` or a "BREAKING CHANGE:" line) -> major, or
-# minor while the version is still 0.x; everything else -> patch. SWELL_NO_BUMP=1 skips the
-# bump for one commit (not the format check). Enabled by `core.hooksPath tools/hooks`,
-# which tools/setup.sh sets.
+# Enabled by `core.hooksPath tools/hooks`, which tools/setup.sh sets.
 set -eu
 
 message=$1
@@ -27,22 +25,3 @@ e.g.  feat(app): add a find bar     patch(firefox): 0030-name what changed
 MSG
   exit 1
 fi
-
-[ -n "${SWELL_NO_BUMP:-}" ] && exit 0
-
-root=$(git rev-parse --show-toplevel)
-type=${subject%%[(!:]*}
-breaking=no
-case "$subject" in *"!:"*) breaking=yes ;; esac
-grep -q '^BREAKING CHANGE:' "$message" && breaking=yes
-
-current=$(cat "$root/app/config/version.txt")
-kind=patch
-[ "$type" = feat ] && kind=minor
-if [ "$breaking" = yes ]; then
-  case "$current" in 0.*) kind=minor ;; *) kind=major ;; esac
-fi
-
-version=$("$root/tools/bump-version.sh" "$kind")
-git -C "$root" add -- app/config/version.txt
-echo "swell version -> $version ($kind)"
