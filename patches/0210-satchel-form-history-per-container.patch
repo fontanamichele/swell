@@ -1,0 +1,383 @@
+Purpose: Form history ignores the container (userContextId): a value typed in one container is suggested in every container. Add a userContextId column (schema version 6; older rows belong to the default container, and a newer database that lacks the column gets it on a downgrade), take it into account when looking up, bumping, removing and autocompleting entries, and let FormHistoryParent pass the container of the page when the new pref browser.formfill.isolate_by_user_context is true (default false, so Firefox is unchanged). Upstreamable: yes, behind the pref.
+Test: MOZCONFIG=swell/mozconfig ./mach test toolkit/components/satchel/test/unit; ./mach test swell/tests/app/isolation/browser/browser_form_history.js --headless
+
+diff --git a/toolkit/components/satchel/FormHistory.sys.mjs b/toolkit/components/satchel/FormHistory.sys.mjs
+index 1a3b37be571e..62d357602dd9 100644
+--- a/toolkit/components/satchel/FormHistory.sys.mjs
++++ b/toolkit/components/satchel/FormHistory.sys.mjs
+@@ -91,7 +91,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
+   setTimeout: "resource://gre/modules/Timer.sys.mjs",
+ });
+ 
+-const DB_SCHEMA_VERSION = 5;
++const DB_SCHEMA_VERSION = 6;
+ const DAY_IN_MS = 86400000; // 1 day in milliseconds
+ const MAX_SEARCH_TOKENS = 10;
+ const DB_FILENAME = "formhistory.sqlite";
+@@ -219,6 +219,7 @@ const dbSchema = {
+       firstUsed: "INTEGER",
+       lastUsed: "INTEGER",
+       guid: "TEXT",
++      userContextId: "INTEGER NOT NULL DEFAULT 0",
+     },
+     moz_deleted_formhistory: {
+       id: "INTEGER PRIMARY KEY",
+@@ -252,6 +253,10 @@ const dbSchema = {
+       table: "moz_formhistory",
+       columns: ["guid"],
+     },
++    moz_formhistory_usercontext_index: {
++      table: "moz_formhistory",
++      columns: ["userContextId", "fieldname"],
++    },
+   },
+ };
+ 
+@@ -266,6 +271,7 @@ const validFields = [
+   "lastUsed",
+   "source",
+   "timesUsed",
++  "userContextId",
+   "value",
+ ];
+ 
+@@ -374,6 +380,28 @@ var Migrators = {
+       }
+     }
+   },
++
++  // Adds the container an entry belongs to; entries of earlier versions
++  // belong to the default container.
++  async dbAsyncMigrateToVersion6(conn) {
++    let hasColumn = false;
++    await conn.execute("PRAGMA table_info(moz_formhistory)", null, row => {
++      if (row.getResultByName("name") == "userContextId") {
++        hasColumn = true;
++      }
++    });
++    if (!hasColumn) {
++      await conn.execute(
++        `ALTER TABLE moz_formhistory
++         ADD COLUMN userContextId INTEGER NOT NULL DEFAULT 0`
++      );
++    }
++    const index = dbSchema.indices.moz_formhistory_usercontext_index;
++    await conn.execute(
++      `CREATE INDEX IF NOT EXISTS moz_formhistory_usercontext_index
++       ON ${index.table}(${index.columns.join(", ")})`
++    );
++  },
+ };
+ 
+ /**
+@@ -403,6 +431,7 @@ function prepareInsertQuery(change, now) {
+     "firstUsed",
+     "lastUsed",
+     "timesUsed",
++    "userContextId",
+   ])) {
+     switch (key) {
+       case "fieldname":
+@@ -410,6 +439,9 @@ function prepareInsertQuery(change, now) {
+       case "value":
+         params[key] = change[key];
+         break;
++      case "userContextId":
++        params[key] = change[key] || 0;
++        break;
+       case "firstUsed":
+       case "lastUsed":
+         params[key] = change[key] || now;
+@@ -425,8 +457,9 @@ function prepareInsertQuery(change, now) {
+   return {
+     query: `
+       INSERT INTO moz_formhistory
+-        (fieldname, value, timesUsed, firstUsed, lastUsed, guid)
+-      VALUES (:fieldname, :value, :timesUsed, :firstUsed, :lastUsed, :guid)`,
++        (fieldname, value, timesUsed, firstUsed, lastUsed, guid, userContextId)
++      VALUES (:fieldname, :value, :timesUsed, :firstUsed, :lastUsed, :guid,
++              :userContextId)`,
+     params,
+   };
+ }
+@@ -439,7 +472,13 @@ function prepareInsertQuery(change, now) {
+ var InProgressInserts = {
+   _inProgress: new Map(),
+ 
+-  add(fieldname, value) {
++  // The same fieldname and value may be inserted once per container.
++  key(fieldname, userContextId) {
++    return userContextId ? `${userContextId}:${fieldname}` : fieldname;
++  },
++
++  add(fieldname, value, userContextId) {
++    fieldname = this.key(fieldname, userContextId);
+     const fieldnameSet = this._inProgress.get(fieldname);
+     if (!fieldnameSet) {
+       this._inProgress.set(fieldname, new Set([value]));
+@@ -455,10 +494,11 @@ var InProgressInserts = {
+   },
+ 
+   clear(fieldnamesAndValues) {
+-    for (const [fieldname, value] of fieldnamesAndValues) {
+-      const fieldnameSet = this._inProgress.get(fieldname);
++    for (const [fieldname, value, userContextId] of fieldnamesAndValues) {
++      const key = this.key(fieldname, userContextId);
++      const fieldnameSet = this._inProgress.get(key);
+       if (fieldnameSet?.delete(value) && fieldnameSet.size == 0) {
+-        this._inProgress.delete(fieldname);
++        this._inProgress.delete(key);
+       }
+     }
+   },
+@@ -628,12 +668,18 @@ async function updateFormHistoryWrite(aChanges) {
+           queries.push({ query, params: queryParams });
+           notifications.push(["formhistory-update", change.guid]);
+         } else {
+-          if (!InProgressInserts.add(change.fieldname, change.value)) {
++          if (
++            !InProgressInserts.add(
++              change.fieldname,
++              change.value,
++              change.userContextId
++            )
++          ) {
+             // This updateFormHistoryWrite call, or a previous one, is already
+             // going to add this fieldname / value pair, so we can ignore this.
+             continue;
+           }
+-          adds.push([change.fieldname, change.value]);
++          adds.push([change.fieldname, change.value, change.userContextId]);
+           change.guid = generateGUID();
+           const { query, params } = prepareInsertQuery(change, now);
+           queries.push({ query, params });
+@@ -648,12 +694,18 @@ async function updateFormHistoryWrite(aChanges) {
+         break;
+       }
+       case "add": {
+-        if (!InProgressInserts.add(change.fieldname, change.value)) {
++        if (
++          !InProgressInserts.add(
++            change.fieldname,
++            change.value,
++            change.userContextId
++          )
++        ) {
+           // This updateFormHistoryWrite call, or a previous one, is already
+           // going to add this fieldname / value pair, so we can ignore this.
+           continue;
+         }
+-        adds.push([change.fieldname, change.value]);
++        adds.push([change.fieldname, change.value, change.userContextId]);
+ 
+         log("Add to form history " + change);
+         if (!change.guid) {
+@@ -883,6 +935,9 @@ var DB = {
+           );
+         }
+ 
++        // A newer database may predate the container column.
++        await Migrators.dbAsyncMigrateToVersion6(conn);
++
+         // Change the stored version to the current version. If the user
+         // runs the newer code again, it will see the lower version number
+         // and re-upgrade (to fixup any entries the old code added).
+@@ -992,7 +1047,10 @@ var DB = {
+   async _expectedColumnsPresent(conn) {
+     for (const name in dbSchema.tables) {
+       const table = dbSchema.tables[name];
+-      const columns = Object.keys(table).filter(col => col != "SQL");
++      // userContextId was added in version 6 and is added on a downgrade.
++      const columns = Object.keys(table).filter(
++        col => col != "SQL" && col != "userContextId"
++      );
+       const query = `SELECT ${columns.join(", ")} FROM ${name}`;
+       try {
+         await conn.execute(query, null, (_row, cancel) => {
+@@ -1170,6 +1228,7 @@ export let FormHistory = {
+       const results = await FormHistory.search(["guid"], {
+         fieldname: change.fieldname,
+         value: change.value,
++        userContextId: change.userContextId,
+       });
+       if (results.length > 1) {
+         const error =
+@@ -1201,6 +1260,7 @@ export let FormHistory = {
+    * @param {object} params zero or more filter properties:
+    *   - fieldname
+    *   - source
++   *   - userContextId (only entries of that container)
+    * @param {Function} [isCancelled] optional function that can return true
+    *   to cancel result retrieval
+    * @returns {Promise<FormHistoryResultType[]>}
+@@ -1266,6 +1326,10 @@ export let FormHistory = {
+ 
+     params.now = Date.now() * 1000; // convert from ms to microseconds
+ 
++    if (params.userContextId !== undefined) {
++      where += "AND userContextId = :userContextId ";
++    }
++
+     if (params.source) {
+       where += `AND EXISTS(
+         SELECT 1 FROM moz_history_to_sources
+diff --git a/toolkit/components/satchel/FormHistoryParent.sys.mjs b/toolkit/components/satchel/FormHistoryParent.sys.mjs
+index b3d67d689bcc..b021081ee5c0 100644
+--- a/toolkit/components/satchel/FormHistoryParent.sys.mjs
++++ b/toolkit/components/satchel/FormHistoryParent.sys.mjs
+@@ -29,6 +29,15 @@ ChromeUtils.defineLazyGetter(lazy, "SmartFormFillAutocomplete", () => {
+   return undefined;
+ });
+ 
++// Keep entries apart per container (userContextId) instead of sharing them
++// between all containers of a profile.
++XPCOMUtils.defineLazyPreferenceGetter(
++  lazy,
++  "ISOLATE_BY_USER_CONTEXT",
++  "browser.formfill.isolate_by_user_context",
++  false
++);
++
+ XPCOMUtils.defineLazyPreferenceGetter(
+   lazy,
+   "PREFERENCE_PREFIX_WEIGHT",
+@@ -42,6 +51,14 @@ XPCOMUtils.defineLazyPreferenceGetter(
+ );
+ 
+ export class FormHistoryParent extends JSWindowActorParent {
++  // The container of the page this actor serves, when entries are kept per
++  // container; undefined otherwise, which leaves queries unfiltered.
++  get userContextId() {
++    return lazy.ISOLATE_BY_USER_CONTEXT
++      ? (this.browsingContext?.originAttributes.userContextId ?? 0)
++      : undefined;
++  }
++
+   receiveMessage({ name, data }) {
+     switch (name) {
+       case "FormHistory:FormSubmitEntries":
+@@ -72,6 +89,7 @@ export class FormHistoryParent extends JSWindowActorParent {
+         op: "bump",
+         fieldname: entry.name,
+         value: entry.value,
++        userContextId: this.userContextId,
+       }));
+ 
+     if (changes.length) {
+@@ -113,9 +131,10 @@ export class FormHistoryParent extends JSWindowActorParent {
+         )
+       );
+     } else {
++      const { userContextId } = this;
+       formHistoryPromise = lazy.FormHistory.getAutoCompleteResults(
+         searchString,
+-        params
++        userContextId === undefined ? params : { ...params, userContextId }
+       );
+     }
+ 
+@@ -160,6 +179,7 @@ export class FormHistoryParent extends JSWindowActorParent {
+       fieldname: inputName,
+       value,
+       guid,
++      userContextId: this.userContextId,
+     });
+   }
+ 
+diff --git a/toolkit/components/satchel/test/unit/head_satchel.js b/toolkit/components/satchel/test/unit/head_satchel.js
+index 3ff06b89fefc..70f430da747f 100644
+--- a/toolkit/components/satchel/test/unit/head_satchel.js
++++ b/toolkit/components/satchel/test/unit/head_satchel.js
+@@ -2,7 +2,7 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
+-const CURRENT_SCHEMA = 5;
++const CURRENT_SCHEMA = 6;
+ const PR_HOURS = 60 * 60 * 1000000;
+ 
+ var { XPCOMUtils } = ChromeUtils.importESModule(
+diff --git a/toolkit/components/satchel/test/unit/test_history_container.js b/toolkit/components/satchel/test/unit/test_history_container.js
+new file mode 100644
+index 000000000000..1b9ef0bcecd3
+--- /dev/null
++++ b/toolkit/components/satchel/test/unit/test_history_container.js
+@@ -0,0 +1,65 @@
++/* Any copyright is dedicated to the Public Domain.
++ * https://creativecommons.org/publicdomain/zero/1.0/ */
++
++// Tests that entries can be kept per container (userContextId).
++
++add_task(async function test_entries_per_container() {
++  const field = "field-container";
++  const search = (userContextId, searchString = "va") =>
++    FormHistory.getAutoCompleteResults(searchString, {
++      fieldname: field,
++      userContextId,
++    }).then(results => results.map(r => r.text));
++
++  await FormHistory.update([
++    { op: "add", fieldname: field, value: "value-1", userContextId: 1 },
++    { op: "add", fieldname: field, value: "value-2", userContextId: 2 },
++    { op: "bump", fieldname: field, value: "value-both", userContextId: 1 },
++    { op: "bump", fieldname: field, value: "value-both", userContextId: 2 },
++    { op: "add", fieldname: field, value: "value-0" },
++  ]);
++
++  Assert.equal(await FormHistory.count({ fieldname: field }), 5);
++  Assert.deepEqual((await search(1)).sort(), ["value-1", "value-both"]);
++  Assert.deepEqual((await search(2)).sort(), ["value-2", "value-both"]);
++  Assert.deepEqual(await search(0), ["value-0"]);
++  Assert.deepEqual(await search(3), []);
++  Assert.equal(
++    (await FormHistory.getAutoCompleteResults("va", { fieldname: field }))
++      .length,
++    5,
++    "without a container every entry is found"
++  );
++
++  info("Bumping again reuses the entry of the same container");
++  await FormHistory.update({
++    op: "bump",
++    fieldname: field,
++    value: "value-both",
++    userContextId: 1,
++  });
++  const rows = await FormHistory.search(["timesUsed", "userContextId"], {
++    fieldname: field,
++    value: "value-both",
++  });
++  Assert.deepEqual(
++    rows.map(r => [r.userContextId, r.timesUsed]).sort(),
++    [
++      [1, 2],
++      [2, 1],
++    ]
++  );
++
++  info("Removing in one container leaves the others");
++  await FormHistory.update({
++    op: "remove",
++    fieldname: field,
++    value: "value-both",
++    userContextId: 1,
++  });
++  Assert.deepEqual((await search(1)).sort(), ["value-1"]);
++  Assert.deepEqual((await search(2)).sort(), ["value-2", "value-both"]);
++
++  await FormHistory.update({ op: "remove", fieldname: field });
++  Assert.equal(await FormHistory.count({ fieldname: field }), 0);
++});
+diff --git a/toolkit/components/satchel/test/unit/xpcshell.toml b/toolkit/components/satchel/test/unit/xpcshell.toml
+index bd91b78fdd5a..984bf1e82aad 100644
+--- a/toolkit/components/satchel/test/unit/xpcshell.toml
++++ b/toolkit/components/satchel/test/unit/xpcshell.toml
+@@ -40,6 +40,8 @@ run-if = [
+ 
+ ["test_history_api.js"]
+ 
++["test_history_container.js"]
++
+ ["test_history_sources.js"]
+ 
+ ["test_isOriginInList.js"]
