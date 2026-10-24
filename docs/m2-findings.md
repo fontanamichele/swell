@@ -159,3 +159,51 @@ test globals.
   the `BrowserWindowTracker` stub needs (Places imports it from
   `resource:///modules/`); `mach lint swell/app` reports it. Expected, not
   worth a patch to Mozilla's allowlist.
+
+## Step 6: passwords
+
+- **Keychain decision (spike).** The Rust-crate route (`keyring` with
+  `apple-native` and `sync-secret-service`) adds 3 new third-party crates on macOS
+  (keyring, security-framework and its -sys) and 9 on Linux (keyring,
+  dbus-secret-service, aes, cbc, cipher, block-padding, inout, hkdf, hmac).
+  `./mach vendor rust` re-resolved the whole `Cargo.lock` (+800 lines of churn,
+  reverted) and then failed `cargo vet` until exemptions are added; the
+  vendored sources would live in `third_party/rust` and be redone at every
+  rebase. Decision with you: the system keychain holds the key through
+  Gecko's own `nsIOSKeyStore` (macOS Keychain, Windows Credential Manager,
+  libsecret), with no new crates, and password-manager extensions work per
+  space once step 8 lands.
+- **How it works.** `core-logins` (`logins.db`, rows keyed by identity) stores
+  origin, form action, realm, field names and times in the clear and the user
+  name and password as opaque encrypted strings; it has no key. The login
+  manager's storage is Swell's (`SwellLoginStorage.sys.mjs`, named by the new
+  pref `signon.storageModuleURI`): it encrypts and decrypts in the window process with
+  one keychain item per container (`Swell logins <container>`), calls the
+  core by container, and applies Firefox's own match rules (copied from
+  `storage-json.sys.mjs`). A container no identity owns, including 0, is
+  refused. Sync, breach alerts and vulnerable-password checks are not kept.
+- **Patch 0220** (`signon.isolate_by_user_context`): `LoginHelper.loginsFor(id)`
+  is a per-container view of the login manager (searches carry
+  `userContextId`, login objects are tagged through `wrappedJSObject` because
+  they are XPCOM wrappers, and the login-saving permission uses a principal
+  with the container). `LoginManagerParent` uses it for every read and write
+  (about 20 call sites). Two seams: `signon.storageModuleURI` and
+  `signon.prompterModuleURI`. "Never save for this site" stays in the
+  permission manager, which is synchronous and already keyed by principal.
+- **UI.** The save bar of step 5 asks "Save the password for ... on ...?" with
+  Save / Update / Never for this site / Not now; the More menu has Passwords
+  (list, show, add, edit, remove) for the active space.
+- **Test gotchas.** The test profile sets `signon.rememberSignons=false`, and
+  `prefs` in a manifest is only allowed in `[DEFAULT]`. Forms are only filled
+  in a page that is in front (the document is `hidden` otherwise), so a test
+  must select the tab. Tests use keychain items with their own prefix
+  (`swell.logins.keyLabelPrefix`) and delete them. The test for the encrypted
+  record must not use field names that equal the user name.
+- **Not done.** HTTP authentication dialogs: Swell has no tab-modal prompt box,
+  so an HTTP 401 cannot ask for credentials at all (an M1 gap, not
+  passwords-specific); `LoginManagerAuthPrompter` would need the container
+  and a prompt. Linux without libsecret: Gecko silently falls back to a key in
+  the NSS database; decision 10 (refuse) needs a probe for the library and is
+  part of the Linux step. Deleting a space does not exist yet, so nothing
+  removes its keychain item (`deleteLoginsKey` is ready). Import and export of
+  logins, password generation, breach alerts.
