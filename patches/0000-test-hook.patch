@@ -1,3 +1,7 @@
+Purpose: register swell/ with the build so ./mach test can resolve swell/tests/**.
+Test: ./mach test swell/tests/isolation/browser/browser_smoke.js --headless
+Local only; never upstreamed.
+
 --- a/moz.build
 +++ b/moz.build
 @@ -279,6 +279,7 @@ DIRS += [

@@ -1,0 +1,198 @@
+Purpose: M0 spike of P4. Bind an extension copy to one userContextId via the pref
+swell.spike.boundUserContext.<id>, and enforce it for content scripts, tabs, cookies,
+webRequest and the background page's own requests. swell.spike.originalId.<id> maps a
+derived ID back to the original for native messaging.
+Test: ./mach test swell/tests/isolation/browser/browser_isolation_extensions.js --headless
+Prototype only: replace with the real P4 patch series in M2.
+
+diff --git a/toolkit/components/extensions/Extension.sys.mjs b/toolkit/components/extensions/Extension.sys.mjs
+index 41f7c5f7bf53..c09b05f0673c 100644
+--- a/toolkit/components/extensions/Extension.sys.mjs
++++ b/toolkit/components/extensions/Extension.sys.mjs
+@@ -1117,6 +1117,18 @@ export class ExtensionData {
+     return results;
+   }
+ 
++  // Swell M0 spike: the userContextId this copy is bound to, or -1.
++  get boundUserContextId() {
++    return this.id
++      ? Services.prefs.getIntPref(`swell.spike.boundUserContext.${this.id}`, -1)
++      : -1;
++  }
++
++  get boundOriginAttributesPatterns() {
++    let bound = this.boundUserContextId;
++    return bound >= 0 ? [{ userContextId: bound }] : null;
++  }
++
+   readJSON(path) {
+     return new Promise((resolve, reject) => {
+       let uri = this.rootURI.resolve(`./${path}`);
+@@ -2154,6 +2166,7 @@ export class ExtensionData {
+           jsPaths: options.js || [],
+           cssPaths: options.css || [],
+           cssOrigin: options.css_origin,
++          originAttributesPatterns: this.boundOriginAttributesPatterns,
+         });
+       }
+ 
+@@ -3442,7 +3455,12 @@ export class Extension extends ExtensionData {
+ 
+     this.startupStates = new Set();
+     this.state = "Not started";
+-    this.userContextIsolation = lazy.userContextIsolation;
++    this.userContextIsolation =
++      lazy.userContextIsolation ||
++      Services.prefs.getIntPref(
++        `swell.spike.boundUserContext.${addonData.id}`,
++        -1
++      ) >= 0;
+ 
+     this.sharedDataKeys = new Set();
+ 
+@@ -3816,6 +3834,10 @@ export class Extension extends ExtensionData {
+   // TODO bug 1699481: move this logic to WebExtensionPolicy
+   canAccessContainer(userContextId) {
+     userContextId = userContextId ?? 0; // firefox-default has userContextId as 0.
++    let bound = this.boundUserContextId;
++    if (bound >= 0) {
++      return userContextId === bound;
++    }
+     let defaultRestrictedContainers = JSON.parse(
+       lazy.userContextIsolationDefaultRestricted
+     );
+diff --git a/toolkit/components/extensions/ExtensionParent.sys.mjs b/toolkit/components/extensions/ExtensionParent.sys.mjs
+index eb60945996e8..f3f16383d2fc 100644
+--- a/toolkit/components/extensions/ExtensionParent.sys.mjs
++++ b/toolkit/components/extensions/ExtensionParent.sys.mjs
+@@ -1763,6 +1763,10 @@ class HiddenExtensionPage {
+         remote: this.extension.remote ? "true" : null,
+         remoteType: this.extension.remoteType,
+         initialBrowsingContextGroupId: this.extension.browsingContextGroupId,
++        usercontextid:
++          this.extension.boundUserContextId >= 0
++            ? this.extension.boundUserContextId
++            : null,
+       });
+     } catch (e) {
+       SharedWindow.release();
+diff --git a/toolkit/components/extensions/ExtensionScriptingStore.sys.mjs b/toolkit/components/extensions/ExtensionScriptingStore.sys.mjs
+index 760407376a6b..a8013c5757a9 100644
+--- a/toolkit/components/extensions/ExtensionScriptingStore.sys.mjs
++++ b/toolkit/components/extensions/ExtensionScriptingStore.sys.mjs
+@@ -182,7 +182,7 @@ export const makeInternalContentScript = (
+       jsPaths,
+       matches: options.matches,
+       matchOriginAsFallback: options.matchOriginAsFallback || false,
+-      originAttributesPatterns: null,
++      originAttributesPatterns: extension.boundOriginAttributesPatterns,
+       persistAcrossSessions: options.persistAcrossSessions,
+       runAt: options.runAt || "document_idle",
+       world: options.world || "ISOLATED",
+diff --git a/toolkit/components/extensions/NativeManifests.sys.mjs b/toolkit/components/extensions/NativeManifests.sys.mjs
+index 48d7d50cdec3..1a1dd5624981 100644
+--- a/toolkit/components/extensions/NativeManifests.sys.mjs
++++ b/toolkit/components/extensions/NativeManifests.sys.mjs
+@@ -144,7 +144,12 @@ export var NativeManifests = {
+     }
+     if (
+       manifest.allowed_extensions &&
+-      !manifest.allowed_extensions.includes(context.extension.id)
++      !manifest.allowed_extensions.includes(
++        Services.prefs.getStringPref(
++          `swell.spike.originalId.${context.extension.id}`,
++          context.extension.id
++        )
++      )
+     ) {
+       Cu.reportError(
+         `This extension does not have permission to use native manifest ${path}`
+diff --git a/toolkit/components/extensions/parent/ext-contentScripts.js b/toolkit/components/extensions/parent/ext-contentScripts.js
+index a0778e86d347..23ab929f315b 100644
+--- a/toolkit/components/extensions/parent/ext-contentScripts.js
++++ b/toolkit/components/extensions/parent/ext-contentScripts.js
+@@ -108,6 +108,11 @@ class ContentScriptParent {
+       );
+     }
+ 
++    if (context.extension.boundOriginAttributesPatterns) {
++      options.originAttributesPatterns =
++        context.extension.boundOriginAttributesPatterns;
++    }
++
+     const convertCodeToURL = (data, mime) => {
+       const blob = new context.cloneScope.Blob(data, { type: mime });
+       const blobURL = context.cloneScope.URL.createObjectURL(blob);
+diff --git a/toolkit/components/extensions/parent/ext-cookies.js b/toolkit/components/extensions/parent/ext-cookies.js
+index c812810cecbb..8b9b6eccc9eb 100644
+--- a/toolkit/components/extensions/parent/ext-cookies.js
++++ b/toolkit/components/extensions/parent/ext-cookies.js
+@@ -292,8 +292,19 @@ const oaFromDetails = (details, context, allowPattern) => {
+ 
+   let isPrivate = context.incognito;
+   let storeId = isPrivate ? PRIVATE_STORE : DEFAULT_STORE;
+-  if (details.storeId) {
+-    storeId = details.storeId;
++  let requestedStoreId = details.storeId;
++  const bound = context.extension.boundUserContextId;
++  if (bound >= 0) {
++    const boundStoreId = getCookieStoreIdForOriginAttributes({
++      userContextId: bound,
++    });
++    if (requestedStoreId && requestedStoreId != boundStoreId) {
++      throw new ExtensionError(`Cannot access ${requestedStoreId}`);
++    }
++    requestedStoreId = boundStoreId;
++  }
++  if (requestedStoreId) {
++    storeId = requestedStoreId;
+     if (isDefaultCookieStoreId(storeId)) {
+       isPrivate = false;
+     } else if (isPrivateCookieStoreId(storeId)) {
+@@ -549,6 +560,11 @@ this.cookies = class extends ExtensionAPIPersistent {
+         let notify = (removed, cookie, cause) => {
+           cookie.QueryInterface(Ci.nsICookie);
+ 
++          let bound = this.extension.boundUserContextId;
++          if (bound >= 0 && cookie.originAttributes.userContextId !== bound) {
++            return;
++          }
++
+           if (this.extension.allowedOrigins.matchesCookie(cookie)) {
+             fire.async({
+               removed,
+diff --git a/toolkit/components/extensions/parent/ext-userScripts.js b/toolkit/components/extensions/parent/ext-userScripts.js
+index cd6c0e511255..b4a4a6b0dc56 100644
+--- a/toolkit/components/extensions/parent/ext-userScripts.js
++++ b/toolkit/components/extensions/parent/ext-userScripts.js
+@@ -24,7 +24,8 @@ var { ExtensionError } = ExtensionUtils;
+  *        JSON API schema file).
+  */
+ class UserScriptParent {
+-  constructor(details) {
++  constructor(details, extension) {
++    this.extension = extension;
+     this.scriptId = details.scriptId;
+     this.options = this._convertOptions(details);
+   }
+@@ -69,6 +70,11 @@ class UserScriptParent {
+       );
+     }
+ 
++    if (this.extension.boundOriginAttributesPatterns) {
++      options.originAttributesPatterns =
++        this.extension.boundOriginAttributesPatterns;
++    }
++
+     return options;
+   }
+ 
+@@ -243,7 +249,7 @@ this.userScripts = class extends ExtensionAPI {
+             }
+           }
+ 
+-          const userScript = new UserScriptParent(details);
++          const userScript = new UserScriptParent(details, context.extension);
+           const { scriptId } = userScript;
+ 
+           this.userScriptsMap.set(scriptId, userScript);
