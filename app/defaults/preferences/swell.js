@@ -9,6 +9,10 @@ pref("privacy.userContext.enabled", true);
 pref("permissions.isolateBy.userContext", true);
 pref("places.history.enabled", false);
 
+// HSTS state and certificate exceptions belong to one space (patch 0230).
+pref("security.hsts.isolate_by_user_context", true);
+pref("security.cert_override.isolate_by_user_context", true);
+
 // Every link and window.open becomes a tab of the opener's space.
 pref("browser.link.open_newwindow", 3);
 pref("browser.link.open_newwindow.restriction", 0);
