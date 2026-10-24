@@ -8,4 +8,6 @@ prefs = [
 
 ["browser_permissions.js"]
 
+["browser_security.js"]
+
 ["browser_storage.js"]
