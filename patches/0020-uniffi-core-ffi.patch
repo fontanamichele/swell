@@ -8,10 +8,10 @@ Companion: 0021 holds the regenerated output.
 Upstreamable: no.
 
 diff --git a/Cargo.lock b/Cargo.lock
-index 4bd60e70d077..064c47d66cd7 100644
+index 4bd60e70d077..ab740213ea22 100644
 --- a/Cargo.lock
 +++ b/Cargo.lock
-@@ -1163,6 +1163,18 @@ dependencies = [
+@@ -1163,6 +1163,19 @@ dependencies = [
   "version_check",
  ]
  
@@ -20,6 +20,7 @@ index 4bd60e70d077..064c47d66cd7 100644
 +version = "0.1.0"
 +dependencies = [
 + "core-history",
++ "core-logins",
 + "core-model",
 + "core-search",
 + "core-store",
@@ -30,12 +31,20 @@ index 4bd60e70d077..064c47d66cd7 100644
  [[package]]
  name = "core-foundation"
  version = "0.9.999"
-@@ -1217,6 +1229,38 @@ dependencies = [
+@@ -1217,6 +1230,46 @@ dependencies = [
   "libc",
  ]
  
 +[[package]]
 +name = "core-history"
++version = "0.1.0"
++dependencies = [
++ "rusqlite 0.37.0",
++ "thiserror 2.0.12",
++]
++
++[[package]]
++name = "core-logins"
 +version = "0.1.0"
 +dependencies = [
 + "rusqlite 0.37.0",
@@ -69,7 +78,7 @@ index 4bd60e70d077..064c47d66cd7 100644
  [[package]]
  name = "core-text"
  version = "20.1.0"
-@@ -3138,6 +3182,7 @@ dependencies = [
+@@ -3138,6 +3191,7 @@ dependencies = [
   "autofill",
   "breach-alerts",
   "context_id",
