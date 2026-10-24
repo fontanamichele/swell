@@ -15,6 +15,9 @@ pref("places.history.enabled", true);
 pref("places.history.isolate_by_user_context", true);
 pref("places.semanticHistory.featureGate", false);
 
+// What was typed into forms stays with the space it was typed in (patch 0210).
+pref("browser.formfill.isolate_by_user_context", true);
+
 // HSTS state and certificate exceptions belong to one space (patch 0500).
 pref("security.hsts.isolate_by_user_context", true);
 pref("security.cert_override.isolate_by_user_context", true);
