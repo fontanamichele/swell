@@ -94,11 +94,7 @@ add_task(async function test_serviceWorkers() {
     let regs = await content.navigator.serviceWorker.getRegistrations();
     return regs.length;
   });
-  audit(
-    "serviceWorkers",
-    regsB === 0,
-    `container B has ${regsB} registrations`
-  );
+  audit("serviceWorkers", regsB === 0, `container B has ${regsB} registrations`);
   await SpecialPowers.spawn(tabA.linkedBrowser, [], async () => {
     let regs = await content.navigator.serviceWorker.getRegistrations();
     await Promise.all(regs.map(r => r.unregister()));
@@ -110,8 +106,10 @@ add_task(async function test_httpCache() {
   let [tabA, tabB] = await openPair(PAGE);
   let url = BASE + "file_counter.sjs";
   let fetchText = () =>
-    SpecialPowers.spawn(gBrowser.selectedBrowser, [url], async u =>
-      (await content.fetch(u)).text()
+    SpecialPowers.spawn(
+      gBrowser.selectedBrowser,
+      [url],
+      async u => (await content.fetch(u)).text()
     );
   gBrowser.selectedTab = tabA;
   let first = await fetchText();

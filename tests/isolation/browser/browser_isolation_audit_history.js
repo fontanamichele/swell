@@ -42,20 +42,13 @@ add_task(async function test_places_history() {
   // Places has no per-container query API, so what container B can see is the
   // profile-wide page entry.
   let seenFromB = await PlacesUtils.history.hasVisits(VISITED_URL);
-  audit(
-    "placesHistory",
-    !seenFromB,
-    `visit visible profile-wide: ${seenFromB}`
-  );
+  audit("placesHistory", !seenFromB, `visit visible profile-wide: ${seenFromB}`);
   closeTabs(tabA);
 });
 
 add_task(async function test_visited_links() {
   let tabA = await visitInA();
-  let tabB = await openTabInUserContext(
-    BASE + "file_visited.html",
-    CONTAINER_B
-  );
+  let tabB = await openTabInUserContext(BASE + "file_visited.html", CONTAINER_B);
   let visited = await SpecialPowers.spawn(tabB.linkedBrowser, [], async () => {
     // ElementState::VISITED
     const VISITED_STATE = 1 << 18;

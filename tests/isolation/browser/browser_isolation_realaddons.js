@@ -20,11 +20,7 @@ const DARK_READER = "addon--sa@darkreader.org";
 const blockExternal = {
   observe(subject) {
     let channel = subject.QueryInterface(Ci.nsIHttpChannel);
-    if (
-      !["example.com", "example.org", "localhost", "127.0.0.1"].includes(
-        channel.URI.host
-      )
-    ) {
+    if (!["example.com", "example.org", "localhost", "127.0.0.1"].includes(channel.URI.host)) {
       channel.cancel(Cr.NS_ERROR_ABORT);
     }
   },
@@ -52,10 +48,7 @@ async function darkReaderTabs(config, prefs) {
     let ok_ = await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
       try {
         await ContentTaskUtils.waitForCondition(
-          () =>
-            content.document.documentElement.hasAttribute(
-              "data-darkreader-mode"
-            ),
+          () => content.document.documentElement.hasAttribute("data-darkreader-mode"),
           "dark reader marker",
           200,
           40
@@ -70,17 +63,9 @@ async function darkReaderTabs(config, prefs) {
     }
   }
   let foreign = hit.filter(s => s != "firefox-container-1");
-  info(
-    `OBS|${config}|a|Dark Reader content script|${foreign.length ? "leaks" : "isolated"}|marker in ${JSON.stringify(hit)}`
-  );
-  ok(
-    hit.includes("firefox-container-1"),
-    `${config}: Dark Reader works in its own container`
-  );
-  ok(
-    !foreign.length,
-    `${config}: Dark Reader is limited to its own container. Marker in ${JSON.stringify(hit)}`
-  );
+  info(`OBS|${config}|a|Dark Reader content script|${foreign.length ? "leaks" : "isolated"}|marker in ${JSON.stringify(hit)}`);
+  ok(hit.includes("firefox-container-1"), `${config}: Dark Reader works in its own container`);
+  ok(!foreign.length, `${config}: Dark Reader is limited to its own container. Marker in ${JSON.stringify(hit)}`);
 
   await addon.uninstall();
   while (gBrowser.tabs.length > 1) {
@@ -102,7 +87,5 @@ add_task(async function test_darkreader_C2() {
   if (!DIR) {
     return;
   }
-  await darkReaderTabs("C2", [
-    [`swell.spike.boundUserContext.${DARK_READER}`, 1],
-  ]);
+  await darkReaderTabs("C2", [[`swell.spike.boundUserContext.${DARK_READER}`, 1]]);
 });
