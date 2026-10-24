@@ -6,6 +6,8 @@ prefs = [
   "dom.disable_open_during_load=false",
 ]
 
+["browser_autofill.js"]
+
 ["browser_downloads.js"]
 
 ["browser_form_history.js"]

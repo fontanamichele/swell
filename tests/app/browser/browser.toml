@@ -4,6 +4,8 @@ support-files = [
   "file_blank.html",
   "file_visited.html",
   "file_form.html",
+  "file_address_form.html",
+  "file_card_form.html",
   "file_opener.html",
   "file_download.sjs",
   "file_links.html",
@@ -20,6 +22,10 @@ prefs = [
 ]
 
 ["browser_autocomplete_popup.js"]
+
+["browser_autofill.js"]
+
+["browser_autofill_dialog.js"]
 
 ["browser_command_bar.js"]
 
