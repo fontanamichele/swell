@@ -1,5 +1,5 @@
 #!/bin/sh
-# usage: gecko-branch.sh commit | status | fixup <NNNN> | export
+# usage: gecko-branch.sh commit | status | save <NNNN> <message> | new <NNNN-name> <purpose> <test> <file>... | fixup <NNNN> | export
 #
 # Keeps our Gecko edits as real commits on a local branch ("swell") of the Firefox
 # clone, one commit per patch in patches/, so `git status` there stays clean. The
@@ -8,7 +8,13 @@
 #
 #   commit        turn the patches that are applied (apply-patches.sh) into commits
 #   status        list our commits and any uncommitted changes
-#   fixup NNNN    amend the commit of patch NNNN with the current uncommitted changes
+#   save NNNN msg   the everyday command after editing Firefox files that belong to patch
+#                   NNNN: fold the edits into its commit, rewrite its patch file, and commit
+#                   that file in the swell repository as "patch(firefox): NNNN msg"
+#   new NAME purpose test FILE...
+#                   make a new patch from those files (NAME is NNNN-short-name), export it
+#                   and commit it in the swell repository
+#   fixup NNNN    like save, without the swell commit
 #   export        rewrite patches/*.patch from the commits
 #
 # A commit's subject is "<patch name>: <purpose>" and its body is the patch header.
@@ -74,6 +80,29 @@ fixup)
   GIT_SEQUENCE_EDITOR=true git rebase -q -i --autosquash "$want"
   "$0" export
   ;;
+save)
+  prefix=${2:?usage: gecko-branch.sh save NNNN message}
+  message=${3:?usage: gecko-branch.sh save NNNN message}
+  "$0" fixup "$prefix"
+  name=$(ls "$swell"/patches | grep "^$prefix" | head -n 1 | sed 's/\.patch$//')
+  git -C "$swell" add -- "patches/$name.patch"
+  git -C "$swell" commit -q --no-verify -m "patch(firefox): $name $message"
+  echo "committed in swell: patch(firefox): $name $message"
+  ;;
+new)
+  name=${2:?usage: gecko-branch.sh new NNNN-name purpose test file...}
+  purpose=${3:?missing purpose}
+  test_cmd=${4:?missing test}
+  shift 4
+  [ "$#" -gt 0 ] || { echo "error: name the files of the patch" >&2; exit 1; }
+  case "$name" in [0-9][0-9][0-9][0-9]-*) ;; *) echo "error: name must look like NNNN-short-name" >&2; exit 1 ;; esac
+  git add -- "$@"
+  { echo "$name: $purpose"; echo; echo "Purpose: $purpose"; echo "Test: $test_cmd"; } | git commit -q --no-verify -F -
+  "$0" export
+  git -C "$swell" add -- "patches/$name.patch"
+  git -C "$swell" commit -q --no-verify -m "patch(firefox): $name $purpose"
+  echo "committed in swell: patch(firefox): $name $purpose"
+  ;;
 export)
   git log --reverse --format='%H' "$want..HEAD" | while read -r sha; do
     subject=$(git log -1 --format=%s "$sha")
@@ -88,7 +117,7 @@ export)
   done
   ;;
 *)
-  echo "usage: $0 commit | status | fixup <NNNN> | export" >&2
+  echo "usage: $0 commit | status | save <NNNN> <message> | new <NNNN-name> <purpose> <test> <file>... | fixup <NNNN> | export" >&2
   exit 2
   ;;
 esac
