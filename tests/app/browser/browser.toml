@@ -73,6 +73,8 @@ prefs = [
 
 ["browser_two_spaces.js"]
 
+["browser_icon_centering.js"]
+
 ["browser_user_agent.js"]
 
 ["browser_visited_latency.js"]

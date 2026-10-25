@@ -1885,3 +1885,14 @@ textarea {
 #emoji-grid {
   height: 220px;
 }
+
+/* An emoji is drawn about a pixel and a half above the middle of its line and a
+   letter half a pixel, so each gets the padding that centres its ink. */
+.space {
+  padding: 1px 0 0;
+}
+
+.space.has-emoji,
+.emoji-button:not(.empty) {
+  padding: 3px 0 0 1px;
+}

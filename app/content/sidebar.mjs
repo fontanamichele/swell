@@ -274,6 +274,7 @@ export class Sidebar {
       button.draggable = true;
       button.textContent =
         space.icon.glyph ?? space.title.charAt(0).toUpperCase();
+      button.classList.toggle("has-emoji", !!space.icon.glyph);
       button.addEventListener("click", () => app.switchSpace(space.id));
       button.addEventListener("contextmenu", event => {
         event.preventDefault();
