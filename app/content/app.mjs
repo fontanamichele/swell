@@ -24,6 +24,11 @@ const { SwellExtensionUI } = ChromeUtils.importESModule(
 
 const IS_MAC = Services.appinfo.OS == "Darwin";
 
+// Whether keys typed at `target` are text going into a field of the window.
+function isEditable(target) {
+  return !!target?.closest?.("input, textarea, select, [contenteditable]");
+}
+
 // The window: holds what the core says about the active space, keeps track of
 // which saved tabs are open, and turns clicks and keys into core and bridge
 // commands. It never decides anything about state itself.
@@ -65,6 +70,7 @@ export class App {
   }
 
   #renderQueued;
+  #overSidebar = false;
 
   get space() {
     return this.spaces.find(space => space.id == this.activeSpaceId) ?? null;
@@ -486,17 +492,16 @@ export class App {
     });
   }
 
-  // The back and forward buttons of a mouse reach the window as an AppCommand,
-  // not as mouse events, and without saying where the pointer is. Over the
-  // sidebar they change the space, anywhere else they move through the history
-  // of the tab in front.
+  // Back and forward, from the buttons of a mouse (which reach the window as an
+  // AppCommand, without saying where the pointer is) or from the keyboard (the
+  // shortcuts a mouse driver can send). Over the sidebar they change the
+  // space, anywhere else they move through the history of the tab in front.
   #installAppCommands() {
     const win = this.document.defaultView;
-    let overSidebar = false;
     for (const id of ["sidebar", "titlebar-left"]) {
       const area = this.document.getElementById(id);
-      area.addEventListener("mouseenter", () => (overSidebar = true));
-      area.addEventListener("mouseleave", () => (overSidebar = false));
+      area.addEventListener("mouseenter", () => (this.#overSidebar = true));
+      area.addEventListener("mouseleave", () => (this.#overSidebar = false));
     }
     win.addEventListener(
       "AppCommand",
@@ -507,16 +512,20 @@ export class App {
         }
         event.preventDefault();
         event.stopPropagation();
-        if (overSidebar) {
-          this.switchSpaceBy(delta);
-        } else if (delta < 0) {
-          this.bridge.goBack();
-        } else {
-          this.bridge.goForward();
-        }
+        this.navigate(delta);
       },
       true
     );
+  }
+
+  /**
+   * @param {number} delta -1 for back, 1 for forward.
+   */
+  navigate(delta) {
+    if (this.#overSidebar) {
+      return this.switchSpaceBy(delta);
+    }
+    return delta < 0 ? this.bridge.goBack() : this.bridge.goForward();
   }
 
   #installShortcuts() {
@@ -582,10 +591,19 @@ export class App {
         this.bridge.zoom(0);
         return true;
       case "[":
-        this.bridge.goBack();
+        this.navigate(-1);
         return true;
       case "]":
-        this.bridge.goForward();
+        this.navigate(1);
+        return true;
+      // What a mouse driver sends for its back and forward buttons, if the
+      // person asked for the arrows. In a text field they move the caret.
+      case "arrowleft":
+      case "arrowright":
+        if (event.shiftKey || isEditable(event.target)) {
+          return false;
+        }
+        this.navigate(key == "arrowleft" ? -1 : 1);
         return true;
       default:
         break;

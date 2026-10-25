@@ -295,3 +295,67 @@ add_task(
     await closeAllTabs(bridge);
   }
 );
+
+add_task(
+  async function test_accel_arrows_go_back_and_forward_or_change_space() {
+    const { bridge, app } = await swellApp();
+    const a = await freshSpace(app, "Arrows A");
+    const b = await freshSpace(app, "Arrows B");
+    const tab = await inFront(bridge, app, b);
+    tab.browser.fixupAndLoadURIString(SECOND, {
+      triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
+    });
+    await rendered(
+      () => app.selectedTab?.url == SECOND && !app.selectedTab.loading,
+      "the second page loads"
+    );
+
+    EventUtils.synthesizeKey("KEY_ArrowLeft", { accelKey: true }, window);
+    await rendered(
+      () => app.selectedTab?.url == FIRST && !app.selectedTab.loading,
+      "accel+Left goes back"
+    );
+    EventUtils.synthesizeKey("KEY_ArrowRight", { accelKey: true }, window);
+    await rendered(
+      () => app.selectedTab?.url == SECOND && !app.selectedTab.loading,
+      "accel+Right goes forward"
+    );
+
+    const sidebar = byId("sidebar");
+    sidebar.dispatchEvent(new MouseEvent("mouseenter"));
+    EventUtils.synthesizeKey("KEY_ArrowLeft", { accelKey: true }, window);
+    await rendered(
+      () => app.activeSpaceId == a.id,
+      "over the sidebar, accel+Left is the previous space"
+    );
+    EventUtils.synthesizeKey(
+      "]",
+      { accelKey: true, code: "BracketRight" },
+      window
+    );
+    await rendered(
+      () => app.activeSpaceId == b.id,
+      "and the brackets are the previous and next space too"
+    );
+    sidebar.dispatchEvent(new MouseEvent("mouseleave"));
+
+    app.commandBar.open({ mode: "new" });
+    const input = byId("commandbar-input");
+    input.focus();
+    const typing = new KeyboardEvent("keydown", {
+      key: "ArrowLeft",
+      code: "ArrowLeft",
+      metaKey: Services.appinfo.OS == "Darwin",
+      ctrlKey: Services.appinfo.OS != "Darwin",
+      bubbles: true,
+      cancelable: true,
+    });
+    input.dispatchEvent(typing);
+    Assert.ok(
+      !typing.defaultPrevented,
+      "in a text field the arrows are the caret's"
+    );
+    app.commandBar.close();
+    await closeAllTabs(bridge);
+  }
+);
