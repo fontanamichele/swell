@@ -309,3 +309,5 @@ With the sidebar hidden its button goes too and the page keeps its margin (on ma
 
 - Window drag regions are built in document order and a later `no-drag` frame cuts a hole in an earlier `drag` one. `#titlebar` comes before `#app`, so a `no-drag` on the whole `#sidebar` cut away the top row of the sidebar. Only the clickable parts of the sidebar (`#lists`, `#favorites`, `#navbar`, the extension buttons, the footer) are `no-drag` now.
 - The floating sidebar is back to the full height of the window, flush with its left edge, with only the radius (`--peek-gap` is 0; setting it above 0 gives the card with margins again, but the macOS row then needs its offset back).
+
+- The top row (`#titlebar`) now comes after `#app` in the document. Drag regions are built in document order and the page (`#content`, `no-drag`) lies under a floating sidebar, so the row has to come after it for the sidebar's top part to drag. The floating sidebar's radius is 18px (`--peek-radius`).

@@ -350,6 +350,7 @@ button {
 :root {
   /* The floating sidebar is as tall as the window and flush to its left edge. */
   --peek-gap: 0px;
+  --peek-radius: 18px;
   --peek-top: var(--peek-gap);
   --peek-bottom: var(--peek-gap);
 }
@@ -375,7 +376,7 @@ button {
   inset: var(--peek-top) auto var(--peek-bottom) var(--peek-gap);
   z-index: 6;
   background: var(--sidebar-bg);
-  border-radius: 10px;
+  border-radius: var(--peek-radius);
   box-shadow: var(--shadow);
   transform: translateX(calc(-100% - 48px));
   visibility: hidden;

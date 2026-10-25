@@ -96,7 +96,7 @@ add_task(async function test_a_hidden_sidebar_floats_back_at_the_left_edge() {
   Assert.ok(document.documentElement.hasAttribute("sidebar-peek"));
   Assert.equal(getComputedStyle(sidebar).position, "fixed", "it floats");
   Assert.equal(getComputedStyle(sidebar).visibility, "visible");
-  Assert.equal(getComputedStyle(sidebar).borderTopLeftRadius, "10px");
+  Assert.equal(getComputedStyle(sidebar).borderTopLeftRadius, "18px");
   Assert.ok(
     getComputedStyle(sidebar).transitionDuration.includes("0.2s"),
     "it slides"
@@ -333,3 +333,14 @@ add_task(async function test_holding_accel_s_shows_the_sidebar_while_held() {
   Assert.ok(app.sidebarLayout.collapsed, "and another hides it");
   app.sidebarLayout.toggle();
 });
+
+add_task(
+  async function test_the_top_of_the_window_comes_after_the_page_for_dragging() {
+    await swellApp();
+    const order = byId("titlebar").compareDocumentPosition(byId("content"));
+    Assert.ok(
+      order & Node.DOCUMENT_POSITION_PRECEDING,
+      "the row comes after the page, so a floating sidebar's top row still drags"
+    );
+  }
+);
