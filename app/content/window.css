@@ -5,6 +5,16 @@
 /* Swell has its own palette and spacing, not Firefox's design tokens. */
 /* stylelint-disable stylelint-plugin-mozilla/use-design-tokens */
 
+/* The font of the whole window is Epilogue (SIL Open Font License, fonts/OFL.txt),
+   kept in the application so that nothing is fetched. */
+@font-face {
+  font-family: Epilogue;
+  src: url("chrome://swell/content/fonts/Epilogue.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: block;
+}
+
 :root {
   --sidebar-width: 264px;
   --content-margin: 8px;
@@ -20,8 +30,10 @@
   --shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
   --page-bg: #ffffff;
   --radius: 8px;
-  font: message-box;
-  font-size: 13px;
+  font:
+    13px Epilogue,
+    system-ui,
+    sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1889,10 +1901,17 @@ textarea {
 /* An emoji is drawn about a pixel and a half above the middle of its line and a
    letter half a pixel, so each gets the padding that centres its ink. */
 .space {
-  padding: 1px 0 0;
+  padding: 3px 0 0;
 }
 
 .space.has-emoji,
 .emoji-button:not(.empty) {
   padding: 3px 0 0 1px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }

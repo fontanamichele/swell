@@ -356,3 +356,7 @@ Google, and other sites, choose between their modern and a basic page by the use
 ## The whole emoji set
 
 The picker has the whole emoji set of the data of emojibase 16.0.3 (MIT; names and keywords from Unicode's CLDR): 1,906 emoji in the nine groups of Unicode, with 323 that have skin tones. The data is `emoji-data.json` (122 KB), read when the picker is first opened, with its licence next to it, and it replaces the 480 chosen by hand. A row of six buttons chooses no skin tone or one of the five, which is applied to every emoji that has them (the choice is kept in the XUL store). Searching goes through the words of all of them (the name and its tags). Emoji of the data set that the system's font cannot draw would show as empty squares: nothing hides them, and the ones that come after Emoji 16 are not in the data.
+
+## Epilogue
+
+The window is set in Epilogue (Google Fonts, SIL Open Font License 1.1), the variable font file `app/content/fonts/Epilogue.ttf` with its licence, loaded by an `@font-face` on a `chrome://` URL: nothing is fetched from Google, which fits the rule that Swell talks to no one on its own. Buttons, inputs and selects inherit it. What has its own font is left alone: the window buttons of Windows (Segoe), the emoji (the system's) and the pages. Epilogue is wider than the system font; the letters of the space buttons needed 3px of padding to be centred again (`browser_icon_centering.js`).
