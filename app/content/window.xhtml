@@ -29,24 +29,25 @@
   <body>
     <div id="titlebar">
       <div id="titlebar-left">
+        <div id="window-buttons-box"></div>
         <button
           id="sidebar-toggle"
           class="nav-button"
           aria-label="Hide sidebar"
           aria-expanded="true"
-        >
-          &#x25E7;
-        </button>
+        ></button>
         <div id="nav-buttons">
-          <button id="nav-back" class="nav-button" aria-label="Back">
-            &#x2190;
-          </button>
-          <button id="nav-forward" class="nav-button" aria-label="Forward">
-            &#x2192;
-          </button>
-          <button id="nav-reload" class="nav-button" aria-label="Reload">
-            &#x21BB;
-          </button>
+          <button id="nav-back" class="nav-button" aria-label="Back"></button>
+          <button
+            id="nav-forward"
+            class="nav-button"
+            aria-label="Forward"
+          ></button>
+          <button
+            id="nav-reload"
+            class="nav-button"
+            aria-label="Reload"
+          ></button>
         </div>
       </div>
       <div id="window-controls" hidden="">
@@ -78,9 +79,7 @@
               class="nav-button"
               title="Copy address"
               aria-label="Copy address"
-            >
-              &#x29C9;
-            </button>
+            ></button>
           </div>
         </div>
         <div id="extension-actions" hidden=""></div>
@@ -97,7 +96,7 @@
           </section>
           <section class="list" id="today-section">
             <header><span class="heading">Today</span></header>
-            <button id="new-tab" class="new-tab">+ New tab</button>
+            <button id="new-tab" class="new-tab">New tab</button>
             <div id="today" class="tree" data-root="today"></div>
           </section>
         </div>

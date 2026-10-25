@@ -108,3 +108,47 @@ add_task(async function test_the_sidebar_is_resized_by_dragging_its_edge() {
   Assert.equal(rect("sidebar").width, 264, "a double click resets it");
   Assert.ok(app);
 });
+
+add_task(async function test_buttons_use_iconoir_icons() {
+  await swellApp();
+  for (const [id, icon] of [
+    ["nav-back", "nav-arrow-left"],
+    ["nav-forward", "nav-arrow-right"],
+    ["nav-reload", "refresh"],
+    ["nav-copy", "copy"],
+    ["sidebar-toggle", "sidebar-collapse"],
+  ]) {
+    const mask = getComputedStyle(byId(id), "::before").maskImage;
+    Assert.ok(mask.includes(`icons/${icon}.svg`), `${id} shows ${icon}`);
+    Assert.equal(byId(id).textContent.trim(), "", `${id} has no text glyph`);
+    const response = await fetch(`chrome://swell/content/icons/${icon}.svg`);
+    Assert.ok(response.ok, `${icon}.svg is packaged`);
+  }
+  byId("sidebar-toggle").click();
+  Assert.ok(
+    getComputedStyle(byId("sidebar-toggle"), "::before").maskImage.includes(
+      "sidebar-expand.svg"
+    ),
+    "the sidebar button changes when the sidebar is hidden"
+  );
+  byId("sidebar-toggle").click();
+});
+
+add_task(async function test_macos_reserves_room_for_the_window_buttons() {
+  if (Services.appinfo.OS != "Darwin") {
+    return;
+  }
+  await swellApp();
+  const box = rect("window-buttons-box");
+  Assert.greater(
+    box.width,
+    40,
+    "the window button box has the size of the buttons"
+  );
+  Assert.greater(box.height, 8);
+  Assert.less(
+    box.right,
+    rect("sidebar-toggle").left + 1,
+    "before the sidebar button"
+  );
+});

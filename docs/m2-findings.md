@@ -289,3 +289,9 @@ A row at the top of the sidebar: back, forward, reload (stop while the page load
 - The page is a rounded card (10px, 8px margin) on the sidebar's background. With the sidebar hidden on macOS the card starts below the row, which keeps the window buttons and the sidebar button.
 - The sidebar is resized by dragging its edge (a double click resets it, 180px to half the window), hidden and shown by the button or the accel key S. Width and state are kept in the XUL store.
 - macOS only shows its window buttons if `customtitlebar` is set after the window exists. Putting it on the root in `window.xhtml` hid them, so `window.mjs` sets it for every platform again; the Wayland remark about setting it before first show is not settled.
+
+## macOS window buttons and icons
+
+- With `customtitlebar`, macOS hides its window buttons (`FrameView__closeButtonOrigin` returns a point above the window) unless the page has an element with the `-moz-window-button-box` appearance, which says where they go. Setting the attribute alone, early or late, was never enough: that is why the buttons were missing, and why the M1 note that the attribute and CSS were checked but not the look was right to worry. `#window-buttons-box` in the top row is that element; it takes the size of the three buttons from the theme.
+- Button icons are Iconoir (MIT, `app/content/icons/`, licence file included), drawn as CSS masks so that they take the text colour.
+- `browser_sidebar_tree.js` failed once in a full run (the context menu item was not found) and passed in the next full run and twice alone; not understood yet.

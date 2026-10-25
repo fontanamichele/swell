@@ -107,8 +107,13 @@ button {
 }
 
 @media (-moz-platform: macos) {
-  #titlebar-left {
-    padding-inline-start: 80px;
+  /* Where macOS puts its window buttons: it hides them unless the page says
+     where they go, by an element with this appearance. */
+  #window-buttons-box {
+    appearance: auto;
+    -moz-default-appearance: -moz-window-button-box;
+    flex: none;
+    margin-inline: 12px 8px;
   }
 
   #window-controls {
@@ -150,6 +155,16 @@ button {
 @media (-moz-platform: linux) and (not (-moz-gtk-csd-available)) {
   #window-controls {
     display: none;
+  }
+}
+
+#window-buttons-box {
+  display: none;
+}
+
+@media (-moz-platform: macos) {
+  #window-buttons-box {
+    display: block;
   }
 }
 
@@ -1309,4 +1324,67 @@ dialog .buttons {
 
 .nav-address.empty {
   color: var(--muted);
+}
+
+/* Icons are Iconoir (MIT, icons/LICENSE-iconoir), drawn as a mask so that they
+   take the colour of the text. */
+.nav-button::before,
+.new-tab::before {
+  content: "";
+  display: block;
+  width: 18px;
+  height: 18px;
+  background-color: currentColor;
+  mask: var(--icon) center / contain no-repeat;
+}
+
+.new-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.new-tab::before {
+  --icon: url("chrome://swell/content/icons/plus.svg");
+  width: 16px;
+  height: 16px;
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#nav-back {
+  --icon: url("chrome://swell/content/icons/nav-arrow-left.svg");
+}
+
+#nav-forward {
+  --icon: url("chrome://swell/content/icons/nav-arrow-right.svg");
+}
+
+#nav-reload {
+  --icon: url("chrome://swell/content/icons/refresh.svg");
+}
+
+#nav-reload.loading {
+  --icon: url("chrome://swell/content/icons/xmark.svg");
+}
+
+#nav-copy {
+  --icon: url("chrome://swell/content/icons/copy.svg");
+}
+
+#nav-copy::before {
+  width: 16px;
+  height: 16px;
+}
+
+#sidebar-toggle {
+  --icon: url("chrome://swell/content/icons/sidebar-collapse.svg");
+}
+
+:root[sidebar-collapsed] #sidebar-toggle {
+  --icon: url("chrome://swell/content/icons/sidebar-expand.svg");
 }

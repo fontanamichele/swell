@@ -71,7 +71,7 @@ export class NavBar {
     this.#forward.disabled = !tab?.canGoForward;
     this.#reload.disabled = !tab;
     const loading = !!tab?.loading;
-    this.#reload.textContent = loading ? "✕" : "↻";
+    this.#reload.classList.toggle("loading", loading);
     this.#reload.title = loading
       ? "Stop"
       : `Reload (${IS_MAC ? "⌘R" : "Ctrl+R"})`;
