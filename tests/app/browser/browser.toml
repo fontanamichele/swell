@@ -63,6 +63,8 @@ prefs = [
 
 ["browser_titlebar.js"]
 
+["browser_spaces.js"]
+
 ["browser_two_spaces.js"]
 
 ["browser_visited_latency.js"]

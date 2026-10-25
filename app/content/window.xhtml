@@ -179,26 +179,58 @@
         <button type="button" id="downloads-close">Close</button>
       </div>
     </dialog>
-    <dialog id="new-space-dialog">
-      <form method="dialog" id="new-space-form">
-        <label
-          >Name <input id="new-space-title" type="text" autocomplete="off"
-        /></label>
-        <label
-          >Emoji
+    <dialog id="space-dialog">
+      <form method="dialog" id="space-form">
+        <h3 id="space-dialog-title">New space</h3>
+        <div class="space-fields">
+          <button
+            type="button"
+            id="space-emoji-button"
+            class="emoji-button"
+            aria-haspopup="true"
+            aria-expanded="false"
+          ></button>
           <input
-            id="new-space-emoji"
+            id="space-title"
             type="text"
-            maxlength="4"
             autocomplete="off"
-        /></label>
-        <div class="buttons">
-          <button value="cancel" type="button" id="new-space-cancel">
-            Cancel
+            placeholder="Name"
+            aria-label="Name"
+          />
+        </div>
+        <div id="emoji-picker" hidden="">
+          <input
+            id="emoji-search"
+            type="search"
+            autocomplete="off"
+            placeholder="Search emoji"
+            aria-label="Search emoji"
+          />
+          <div id="emoji-tabs"></div>
+          <div id="emoji-grid"></div>
+          <button type="button" id="emoji-clear" class="link-button">
+            Use the first letter of the name
           </button>
-          <button value="create" id="new-space-create">Create space</button>
+        </div>
+        <div class="buttons">
+          <button type="button" id="space-cancel">Cancel</button>
+          <button id="space-save">Create space</button>
         </div>
       </form>
+    </dialog>
+    <dialog id="delete-space-dialog">
+      <h3>Delete <span id="delete-space-name"></span>?</h3>
+      <p>
+        Its tabs, folders, history, saved passwords, addresses and cards,
+        cookies and site data, permissions and add-ons are removed, and so are
+        its downloads from the list. This cannot be undone.
+      </p>
+      <div class="buttons">
+        <button type="button" id="delete-space-cancel">Cancel</button>
+        <button type="button" id="delete-space-confirm" class="danger">
+          Delete space
+        </button>
+      </div>
     </dialog>
   </body>
 </html>

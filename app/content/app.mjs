@@ -12,6 +12,7 @@ import { AutofillUI } from "chrome://swell/content/autofill.mjs";
 import { PasswordsUI } from "chrome://swell/content/passwords.mjs";
 import { ExtensionsUI } from "chrome://swell/content/extensions.mjs";
 import { MediaUI } from "chrome://swell/content/media.mjs";
+import { SpaceEditor } from "chrome://swell/content/space-editor.mjs";
 import { ExtensionActionsUI } from "chrome://swell/content/extension-actions.mjs";
 
 const { SwellExtensionUI } = ChromeUtils.importESModule(
@@ -53,6 +54,7 @@ export class App {
     this.extensions = new ExtensionsUI(this);
     this.extensionActions = new ExtensionActionsUI(this);
     this.media = new MediaUI(this);
+    this.spaceEditor = new SpaceEditor(this);
     this.#renderQueued = false;
   }
 
@@ -376,6 +378,42 @@ export class App {
     if (id) {
       await this.switchSpace(id);
     }
+  }
+
+  async updateSpace(id, title, emoji) {
+    const icon = emoji
+      ? new this.Icon.Emoji({ glyph: emoji })
+      : new this.Icon.Symbol({ name: "circle" });
+    await this.run(() => this.core.updateSpace(id, title, icon));
+  }
+
+  moveSpace(id, index) {
+    return this.run(() => this.core.moveSpace(id, index));
+  }
+
+  // Asks, then deletes the space and what the engine keeps for its container.
+  async deleteSpace(id) {
+    const space = this.spaces.find(s => s.id == id);
+    if (
+      !space ||
+      this.spaces.length < 2 ||
+      !(await this.spaceEditor.confirmDelete(space))
+    ) {
+      return;
+    }
+    const deleted = await this.run(() => this.core.deleteSpace(id));
+    if (!deleted?.identityRemoved) {
+      return;
+    }
+    const { forgetContainer } = ChromeUtils.importESModule(
+      "moz-src:///swell/app/modules/SpaceCleanup.sys.mjs"
+    );
+    const failures = await forgetContainer(deleted.userContextId);
+    this.toasts.show({
+      text: failures.length
+        ? `Deleted ${space.title}, but could not remove: ${failures.join("; ")}`
+        : `Deleted ${space.title}`,
+    });
   }
 
   #installShortcuts() {

@@ -268,3 +268,12 @@ Done: a tab and window layer for WebExtensions without `browser/` (`app/extensio
 - Window controls: `customtitlebar` is on the root in `window.xhtml` for every platform, so the system titlebar is gone before the first show. macOS keeps its traffic lights; Windows and Linux get minimize, maximize/restore and close in a strip across the top (Linux follows the GTK button layout and falls back to the system titlebar without client-side decorations). Only macOS has been run; the Windows and Linux layouts are untested.
 
 Not done yet: `commands`, updating all copies of an add-on, idle unload of persistent backgrounds, a native messaging id test, hiding `contextualIdentities`.
+
+## Spaces: edit, order, delete
+
+- The core can rename a space and change its icon, move it in the list, and delete it (`update_space`, `move_space`, `delete_space`). Deleting takes the space's trees and tabs, and its identity with the favorites, history, logins and zoom unless another space shares it. The last space cannot be deleted.
+- A container id is never handed out twice: the next free id is kept in the store (`next_user_context_id`), so a new space cannot see what a deleted one left behind.
+- `Store::sync_structure` only upserts, so deletions go through `Store::sync_removals`, which forgets the spaces, identities and nodes the model no longer has. `save_all` is not used for this: its `DELETE FROM identities` cascades into the zoom of every identity.
+- `SpaceCleanup.sys.mjs` forgets what the engine keeps for the container: site data and permissions (`deleteDataFromOriginAttributesPattern`), Places visits (a page visited only there is removed whole; the others get their counts recalculated), form history, the `autofill-profiles-<id>.json` file, the key of the saved logins, add-on copies and downloads. `browser_spaces.js` checks each of them against a space that stays.
+- UI: right-click on a space for Edit and Delete, drag a space button to reorder, and one dialog with an emoji picker (about 480 emoji in 9 groups, searchable by words) for creating and editing.
+- Not covered: the picker has no skin tones, and a deleted space's HSTS entries and certificate exceptions are not checked separately (they are cleared if the clear-data service handles them for the container).

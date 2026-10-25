@@ -26,10 +26,16 @@ function letterOf(info) {
 /**
  *
  */
+const SPACE_MIME = "application/x-swell-space";
+
+/**
+ *
+ */
 export class Sidebar {
   #app;
   #doc;
   #dragged = null;
+  #draggedSpace = null;
 
   constructor(app) {
     this.#app = app;
@@ -57,7 +63,6 @@ export class Sidebar {
     }
     const mac = Services.appinfo.OS == "Darwin";
     doc.getElementById("new-tab-key").textContent = mac ? "⌘T" : "Ctrl+T";
-    this.#installSpaceDialog();
   }
 
   render() {
@@ -198,35 +203,79 @@ export class Sidebar {
       button.classList.toggle("active", space.id == app.activeSpaceId);
       button.title = space.title;
       button.dataset.id = space.id;
+      button.draggable = true;
       button.textContent =
         space.icon.glyph ?? space.title.charAt(0).toUpperCase();
       button.addEventListener("click", () => app.switchSpace(space.id));
+      button.addEventListener("contextmenu", event => {
+        event.preventDefault();
+        app.menu.show(event.clientX, event.clientY, [
+          {
+            label: "Edit space\u2026",
+            action: () => app.spaceEditor.edit(space),
+          },
+          {
+            label: "Delete space\u2026",
+            danger: true,
+            disabled: app.spaces.length < 2,
+            action: () => app.deleteSpace(space.id),
+          },
+        ]);
+      });
+      this.#installSpaceDrag(button, space.id);
       return button;
     });
     const add = this.#doc.createElement("button");
     add.className = "space add";
     add.title = "New space";
     add.textContent = "+";
-    add.addEventListener("click", () =>
-      this.#doc.getElementById("new-space-dialog").showModal()
-    );
+    add.addEventListener("click", () => this.#app.spaceEditor.create());
     nav.replaceChildren(...buttons, add);
   }
 
-  #installSpaceDialog() {
-    const doc = this.#doc;
-    const dialog = doc.getElementById("new-space-dialog");
-    const title = doc.getElementById("new-space-title");
-    const emoji = doc.getElementById("new-space-emoji");
-    doc
-      .getElementById("new-space-cancel")
-      .addEventListener("click", () => dialog.close());
-    doc.getElementById("new-space-form").addEventListener("submit", event => {
+  // Spaces are dragged by their buttons; dropping on the left half of another
+  // one puts the space before it, on the right half after it.
+  #installSpaceDrag(button, id) {
+    const clear = () => button.classList.remove("drop-before", "drop-after");
+    button.addEventListener("dragstart", event => {
+      this.#draggedSpace = id;
+      event.dataTransfer.setData(SPACE_MIME, id);
+      event.dataTransfer.effectAllowed = "move";
+      button.classList.add("dragging");
+    });
+    button.addEventListener("dragend", () => {
+      this.#draggedSpace = null;
+      button.classList.remove("dragging");
+      for (const other of this.#doc.querySelectorAll(".space")) {
+        other.classList.remove("drop-before", "drop-after");
+      }
+    });
+    button.addEventListener("dragover", event => {
+      if (!this.#draggedSpace || this.#draggedSpace == id) {
+        return;
+      }
       event.preventDefault();
-      this.#app.createSpace(title.value.trim(), emoji.value.trim());
-      title.value = "";
-      emoji.value = "";
-      dialog.close();
+      event.dataTransfer.dropEffect = "move";
+      const rect = button.getBoundingClientRect();
+      const before = event.clientX < rect.left + rect.width / 2;
+      button.classList.toggle("drop-before", before);
+      button.classList.toggle("drop-after", !before);
+    });
+    button.addEventListener("dragleave", clear);
+    button.addEventListener("drop", event => {
+      const dragged = this.#draggedSpace;
+      if (!dragged || dragged == id) {
+        return;
+      }
+      event.preventDefault();
+      const after = button.classList.contains("drop-after");
+      clear();
+      const order = this.#app.spaces.map(space => space.id);
+      let target = order.indexOf(id) + (after ? 1 : 0);
+      if (order.indexOf(dragged) < target) {
+        target--;
+      }
+      this.#app.moveSpace(dragged, target);
     });
   }
 

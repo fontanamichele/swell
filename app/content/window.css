@@ -1045,3 +1045,142 @@ dialog .buttons {
   min-width: 25px;
   min-height: 25px;
 }
+
+#space-dialog,
+#delete-space-dialog {
+  width: 380px;
+}
+
+#space-dialog h3,
+#delete-space-dialog h3 {
+  margin: 0 0 var(--space-medium);
+}
+
+.space-fields {
+  display: flex;
+  align-items: center;
+  gap: var(--space-small);
+  margin-bottom: var(--space-medium);
+}
+
+.space-fields input {
+  flex: 1;
+  width: auto;
+  margin-top: 0;
+}
+
+.emoji-button {
+  width: 40px;
+  height: 36px;
+  flex: none;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.emoji-button.empty {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+#emoji-picker {
+  margin-bottom: var(--space-medium);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: var(--space-small);
+}
+
+#emoji-picker[hidden] {
+  display: none;
+}
+
+#emoji-search {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 var(--space-small);
+}
+
+#emoji-tabs {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-small);
+}
+
+.emoji-tab,
+.emoji {
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  padding: 0;
+  line-height: 1;
+}
+
+.emoji-tab {
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+  opacity: 0.6;
+}
+
+.emoji-tab.selected {
+  opacity: 1;
+  background: var(--row-hover);
+}
+
+#emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+  height: 192px;
+  overflow-y: auto;
+  align-content: start;
+}
+
+#emoji-grid.none::after {
+  content: "No emoji matches";
+  grid-column: 1 / -1;
+  padding: var(--space-medium);
+  opacity: 0.6;
+}
+
+.emoji {
+  height: 36px;
+  font-size: 22px;
+}
+
+.emoji:hover,
+.emoji-tab:hover {
+  background: var(--row-hover);
+}
+
+.emoji.selected {
+  background: var(--row-selected);
+  outline: 2px solid var(--accent);
+}
+
+.link-button {
+  margin-top: var(--space-small);
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  padding: 0;
+}
+
+#delete-space-confirm {
+  background: #d63b3b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+}
+
+.space.dragging {
+  opacity: 0.4;
+}
+
+.space.drop-before {
+  box-shadow: -2px 0 0 var(--accent);
+}
+
+.space.drop-after {
+  box-shadow: 2px 0 0 var(--accent);
+}
