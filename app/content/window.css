@@ -1933,3 +1933,9 @@ textarea {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, currentColor 22%, transparent) transparent;
 }
+
+/* With nothing to suggest the list takes no room, so the input is the whole bar
+   and its text is in the middle of it. */
+#commandbar-list:empty {
+  display: none;
+}

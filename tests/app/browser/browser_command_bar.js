@@ -235,3 +235,29 @@ add_task(async function test_the_bar_is_in_the_middle_of_the_page() {
   app.commandBar.close();
   app.sidebarLayout.toggle();
 });
+
+add_task(async function test_the_empty_bar_is_just_its_input() {
+  const { app } = await swellApp();
+  app.commandBar.open({ mode: "new" });
+  const field = document.getElementById("commandbar-input");
+  field.value = "";
+  field.dispatchEvent(new Event("input"));
+  const panel = document.querySelector("#commandbar .panel");
+  await rendered(
+    () => !document.getElementById("commandbar-list").children.length,
+    "nothing is suggested"
+  );
+  const box = panel.getBoundingClientRect();
+  const fieldBox = field.getBoundingClientRect();
+  Assert.less(
+    Math.abs(box.height - fieldBox.height - 2),
+    1.5,
+    "the bar is as tall as its input (and its border)"
+  );
+  Assert.less(
+    Math.abs(fieldBox.top - box.top - (box.bottom - fieldBox.bottom)),
+    1.5,
+    "with the same room above the input and below it"
+  );
+  app.commandBar.close();
+});
