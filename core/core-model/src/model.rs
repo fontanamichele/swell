@@ -48,6 +48,22 @@ fn can_contain(parent: &NodeKind, child: &NodeKind) -> bool {
     }
 }
 
+/// Whether two addresses are the same page for a pinned tab: they may differ in
+/// the fragment, a closing slash, the scheme and a leading "www.", which are
+/// what a redirect or the page itself change.
+fn same_page(a: &str, b: &str) -> bool {
+    fn key(url: &str) -> String {
+        let url = url.split('#').next().unwrap_or(url);
+        let url = url
+            .strip_prefix("https://")
+            .or_else(|| url.strip_prefix("http://"))
+            .unwrap_or(url);
+        let url = url.strip_prefix("www.").unwrap_or(url);
+        url.trim_end_matches('/').to_owned()
+    }
+    key(a) == key(b)
+}
+
 impl Model {
     pub fn new(env: Box<dyn Env>, device: impl Into<String>) -> Self {
         Self {
@@ -630,7 +646,22 @@ impl Model {
             return not_found("live tab", live.as_str());
         };
         if self.is_saved(&node) {
-            return Ok(Vec::new());
+            // On its own page a pinned tab follows the title of the page, and
+            // that is all it follows.
+            let same = matches!(
+                self.node(&node).map(|n| &n.kind),
+                Some(NodeKind::Tab(tab)) if same_page(&tab.url, url)
+            );
+            if !same || title.is_empty() {
+                return Ok(Vec::new());
+            }
+            return self.update(&node, |kind| match kind {
+                NodeKind::Tab(tab) => {
+                    tab.title = title.to_owned();
+                    Ok(())
+                }
+                _ => invariant("only tabs navigate"),
+            });
         }
         let now = self.env.now_ms();
         self.update(&node, |kind| match kind {

@@ -519,3 +519,25 @@ fn a_pinned_tab_can_be_pinned_again_where_it_is() {
     );
     m.validate().unwrap();
 }
+
+#[test]
+fn a_pinned_tab_follows_the_title_of_its_own_page_only() {
+    let mut m = model();
+    let s = space(&mut m, "S");
+    let window = WindowId::from("w");
+    m.open_window(window.clone());
+    let (live, _) = m.open_url(&window, &s, "https://a.test/page").unwrap();
+    m.pin_live_tab(&live, &pinned(&m, &s), 0).unwrap();
+    let node = m.live_tab(&live).unwrap().node.clone();
+    let tab = |m: &Model| match &m.node(&node).unwrap().kind {
+        NodeKind::Tab(tab) => (tab.url.clone(), tab.title.clone()),
+        _ => unreachable!(),
+    };
+    m.navigated(&live, "https://www.a.test/page/#top", "(1) Page")
+        .unwrap();
+    assert_eq!(tab(&m), ("https://a.test/page".into(), "(1) Page".into()));
+    m.navigated(&live, "https://a.test/other", "Other").unwrap();
+    assert_eq!(tab(&m), ("https://a.test/page".into(), "(1) Page".into()));
+    m.navigated(&live, "https://a.test/page", "").unwrap();
+    assert_eq!(tab(&m).1, "(1) Page", "an empty title does not erase it");
+}
