@@ -12,6 +12,11 @@ import { AutofillUI } from "chrome://swell/content/autofill.mjs";
 import { PasswordsUI } from "chrome://swell/content/passwords.mjs";
 import { ExtensionsUI } from "chrome://swell/content/extensions.mjs";
 import { MediaUI } from "chrome://swell/content/media.mjs";
+import { ExtensionActionsUI } from "chrome://swell/content/extension-actions.mjs";
+
+const { SwellExtensionUI } = ChromeUtils.importESModule(
+  "moz-src:///swell/app/modules/SwellExtensionUI.sys.mjs"
+);
 
 const IS_MAC = Services.appinfo.OS == "Darwin";
 
@@ -46,6 +51,7 @@ export class App {
     this.autofill = new AutofillUI(this);
     this.passwords = new PasswordsUI(this);
     this.extensions = new ExtensionsUI(this);
+    this.extensionActions = new ExtensionActionsUI(this);
     this.media = new MediaUI(this);
     this.#renderQueued = false;
   }
@@ -168,7 +174,11 @@ export class App {
     clientX,
     clientY,
     linkURL,
+    linkText,
     imageURL,
+    mediaURL,
+    mediaType,
+    password,
     selection,
     editable,
   }) {
@@ -228,8 +238,29 @@ export class App {
         { label: "Reload", action: () => this.bridge.reload() }
       );
     }
+    if (tab) {
+      items.push(
+        ...SwellExtensionUI.menuItemsFor({
+          nativeTab: tab,
+          pageUrl: browser.currentURI.spec,
+          onLink: !!linkURL,
+          linkUrl: linkURL,
+          linkText,
+          onImage: !!imageURL,
+          onVideo: mediaType == "video",
+          onAudio: mediaType == "audio",
+          srcUrl: imageURL ?? mediaURL,
+          onEditable: editable,
+          onPassword: password,
+          isTextSelected: !!selection,
+          selectionText: selection,
+        })
+      );
+    }
     const rect = browser.getBoundingClientRect();
-    this.menu.show(rect.left + clientX, rect.top + clientY, items);
+    this.menu.show(rect.left + clientX, rect.top + clientY, items, {
+      onHide: () => SwellExtensionUI.menuHidden(),
+    });
   }
 
   async #loadTree() {
@@ -268,6 +299,7 @@ export class App {
 
   render() {
     this.sidebar.render();
+    this.extensionActions.render();
   }
 
   // Reports a failed command instead of leaving the window silently stale.

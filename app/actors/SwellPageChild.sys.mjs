@@ -35,6 +35,7 @@ export class SwellPageChild extends JSWindowActorChild {
     const target = event.composedTarget ?? event.target;
     const link = this.#closest(target, "a[href], area[href]");
     const image = this.#closest(target, "img");
+    const media = this.#closest(target, "video, audio");
     const editable =
       !!this.#closest(target, "input, textarea, [contenteditable]") &&
       !target.readOnly;
@@ -42,7 +43,11 @@ export class SwellPageChild extends JSWindowActorChild {
       clientX: event.clientX,
       clientY: event.clientY,
       linkURL: link ? link.href : null,
+      linkText: link ? link.textContent.trim() : null,
       imageURL: image ? image.currentSrc || image.src : null,
+      mediaURL: media ? media.currentSrc || media.src : null,
+      mediaType: media ? media.localName : null,
+      password: !!this.#closest(target, "input[type=password]"),
       selection: this.contentWindow.getSelection().toString().trim(),
       editable,
     });

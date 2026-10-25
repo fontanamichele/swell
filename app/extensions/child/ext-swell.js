@@ -15,4 +15,9 @@ extensions.registerModules({
     scopes: ["addon_child"],
     paths: [["tabs"]],
   },
+  menusInternal: {
+    url: "chrome://swellext/content/child/ext-menus.js",
+    scopes: ["addon_child"],
+    paths: [["contextMenus"], ["menus"]],
+  },
 });

@@ -4,41 +4,96 @@
 
 "use strict";
 
-add_task(
-  async function test_the_titlebar_is_ours_on_macos_and_native_elsewhere() {
-    await swellApp();
-    const root = document.documentElement;
-    const titlebar = document.getElementById("titlebar");
-    if (Services.appinfo.OS == "Darwin") {
-      Assert.ok(
-        root.hasAttribute("customtitlebar"),
-        "the native titlebar is hidden"
-      );
-      const style = getComputedStyle(titlebar);
-      Assert.equal(style.display, "block");
-      const css = await (
-        await fetch("chrome://swell/content/window.css")
-      ).text();
-      Assert.ok(
-        /:root\[customtitlebar\] #titlebar \{[^}]*-moz-window-dragging: drag/s.test(
-          css
-        ),
-        "the strip is a drag region"
-      );
-      Assert.greaterOrEqual(
-        parseInt(
-          getComputedStyle(document.getElementById("sidebar")).paddingTop,
-          10
-        ),
-        40,
-        "the sidebar leaves room for the window controls"
-      );
-    } else {
-      Assert.ok(
-        !root.hasAttribute("customtitlebar"),
-        "the native titlebar stays"
-      );
-      Assert.equal(getComputedStyle(titlebar).display, "none");
-    }
+const isMac = Services.appinfo.OS == "Darwin";
+
+add_task(async function test_the_titlebar_is_ours_on_every_platform() {
+  await swellApp();
+  const root = document.documentElement;
+  const titlebar = document.getElementById("titlebar");
+  Assert.ok(
+    root.hasAttribute("customtitlebar"),
+    "the native titlebar is hidden from the start"
+  );
+  Assert.notEqual(getComputedStyle(titlebar).display, "none");
+  const css = await (await fetch("chrome://swell/content/window.css")).text();
+  Assert.ok(
+    /:root\[customtitlebar\] #titlebar \{[^}]*-moz-window-dragging: drag/s.test(
+      css
+    ),
+    "the strip is a drag region"
+  );
+});
+
+add_task(async function test_macos_leaves_room_for_the_system_buttons() {
+  if (!isMac) {
+    return;
   }
-);
+  await swellApp();
+  Assert.greaterOrEqual(
+    parseInt(
+      getComputedStyle(document.getElementById("sidebar")).paddingTop,
+      10
+    ),
+    40,
+    "the sidebar leaves room for the window controls"
+  );
+  Assert.equal(
+    getComputedStyle(document.getElementById("window-controls")).display,
+    "none",
+    "the system draws the window buttons"
+  );
+});
+
+add_task(async function test_other_platforms_draw_window_buttons() {
+  if (isMac) {
+    return;
+  }
+  await swellApp();
+  const controls = document.getElementById("window-controls");
+  Assert.ok(!controls.hidden);
+  const shown = id =>
+    getComputedStyle(document.getElementById(id)).display != "none";
+  Assert.ok(shown("window-close"), "close");
+  Assert.ok(shown("window-minimize"), "minimize");
+  Assert.notEqual(
+    shown("window-maximize"),
+    shown("window-restore"),
+    "one of maximize and restore"
+  );
+  const css = await (await fetch("chrome://swell/content/window.css")).text();
+  Assert.ok(
+    /#window-controls \{[^}]*-moz-window-dragging: no-drag/s.test(css),
+    "the buttons are not part of the drag region"
+  );
+  Assert.greaterOrEqual(
+    document.getElementById("app").getBoundingClientRect().top,
+    document.getElementById("titlebar").getBoundingClientRect().height - 1,
+    "the app starts under the strip"
+  );
+});
+
+add_task(async function test_window_buttons_follow_the_window_state() {
+  if (isMac) {
+    return;
+  }
+  await swellApp();
+  const root = document.documentElement;
+  window.maximize();
+  await TestUtils.waitForCondition(
+    () => root.hasAttribute("maximized"),
+    "maximized is set"
+  );
+  Assert.equal(
+    getComputedStyle(document.getElementById("window-maximize")).display,
+    "none"
+  );
+  window.restore();
+  await TestUtils.waitForCondition(
+    () => !root.hasAttribute("maximized"),
+    "maximized is gone"
+  );
+  Assert.equal(
+    getComputedStyle(document.getElementById("window-restore")).display,
+    "none"
+  );
+});

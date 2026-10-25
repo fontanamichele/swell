@@ -368,7 +368,7 @@ class TabContext extends EventEmitter {
   constructor(getDefaultPrototype) {
     super();
     this.getDefaultPrototype = getDefaultPrototype;
-    this.tabData = new Map();
+    this.tabData = new WeakMap();
     windowTracker.addListener("progress", this);
     this.stopSelected = bridge().on("selected", snapshot => {
       const tab = snapshot ? bridge().tab(snapshot.liveTab) : null;
@@ -376,9 +376,6 @@ class TabContext extends EventEmitter {
         this.emit("tab-select", tab);
       }
     });
-    this.stopClosed = bridge().on("tabclosed", ({ liveTab }) =>
-      this.emit("tab-closed", { liveTab })
-    );
   }
 
   onLocationChange(browser, webProgress, request, locationURI, flags) {
@@ -392,32 +389,26 @@ class TabContext extends EventEmitter {
     const fromBrowse = !(
       flags & Ci.nsIWebProgressListener.LOCATION_CHANGE_SAME_DOCUMENT
     );
-    this.emit(
-      "location-change",
-      {
-        id: tabTracker.getId(nativeTab),
-        linkedBrowser: browser,
-        selected: bridge().selectedTab === nativeTab,
-      },
-      fromBrowse
-    );
+    this.emit("location-change", nativeTab, fromBrowse);
   }
 
-  get(tabId) {
-    if (!this.tabData.has(tabId)) {
-      this.tabData.set(tabId, Object.create(this.getDefaultPrototype(tabId)));
+  get(nativeTab) {
+    if (!this.tabData.has(nativeTab)) {
+      this.tabData.set(
+        nativeTab,
+        Object.create(this.getDefaultPrototype(nativeTab))
+      );
     }
-    return this.tabData.get(tabId);
+    return this.tabData.get(nativeTab);
   }
 
-  clear(tabId) {
-    this.tabData.delete(tabId);
+  clear(nativeTab) {
+    this.tabData.delete(nativeTab);
   }
 
   shutdown() {
     windowTracker.removeListener("progress", this);
     this.stopSelected?.();
-    this.stopClosed?.();
   }
 }
 

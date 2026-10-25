@@ -8,8 +8,12 @@ swell.jar:
   content/swellext/ext-swell.json     (ext-swell.json)
   content/swellext/ext-tabs.js        (ext-tabs.js)
   content/swellext/ext-windows.js     (ext-windows.js)
+  content/swellext/ext-menus.js       (ext-menus.js)
+  content/swellext/ext-browserAction.js (ext-browserAction.js)
   content/swellext/child/ext-swell.js (child/ext-swell.js)
 # Firefox's own definitions of the API, unmodified.
   content/swellext/child/ext-tabs.js  (../../../browser/components/extensions/child/ext-tabs.js)
   content/swellext/schemas/tabs.json  (../../../browser/components/extensions/schemas/tabs.json)
   content/swellext/schemas/windows.json (../../../browser/components/extensions/schemas/windows.json)
+  content/swellext/child/ext-menus.js (../../../browser/components/extensions/child/ext-menus.js)
+  content/swellext/schemas/menus.json (../../../browser/components/extensions/schemas/menus.json)

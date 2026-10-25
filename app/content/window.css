@@ -62,21 +62,195 @@ button {
   display: none;
 }
 
-/* With the native titlebar hidden, the window controls float over the top
-   left of the sidebar: leave room for them and let the strip drag the window. */
-:root[customtitlebar] #titlebar {
-  display: block;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: var(--sidebar-width);
-  height: 38px;
-  z-index: 5;
-  -moz-window-dragging: drag;
+/* macOS: the system window buttons float over the top left of the sidebar, so
+   leave room for them and let the strip drag the window. */
+@media (-moz-platform: macos) {
+  :root[customtitlebar] #titlebar {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-width);
+    height: 38px;
+    z-index: 5;
+    -moz-window-dragging: drag;
+  }
+
+  :root[customtitlebar] #sidebar {
+    padding-top: 44px;
+  }
+
+  #window-controls {
+    display: none;
+  }
 }
 
-:root[customtitlebar] #sidebar {
-  padding-top: 44px;
+/* Windows and Linux: a strip across the window holds the window buttons. Linux
+   without client-side decorations keeps the system titlebar (see below). */
+@media not (-moz-platform: macos) {
+  :root {
+    --titlebar-height: 32px;
+  }
+
+  :root[customtitlebar] #titlebar {
+    display: flex;
+    position: fixed;
+    inset: 0 0 auto;
+    height: var(--titlebar-height);
+    z-index: 5;
+    -moz-window-dragging: drag;
+  }
+
+  :root[customtitlebar] #app {
+    box-sizing: border-box;
+    padding-top: var(--titlebar-height);
+  }
+}
+
+@media (-moz-platform: linux) and (not (-moz-gtk-csd-available)) {
+  #window-controls {
+    display: none;
+  }
+}
+
+#window-controls {
+  display: flex;
+  margin-inline-start: auto;
+  align-items: stretch;
+  -moz-window-dragging: no-drag;
+}
+
+@media (-moz-platform: linux) and (-moz-gtk-csd-reversed-placement) {
+  #window-controls {
+    order: -1;
+    margin-inline-start: 0;
+    margin-inline-end: auto;
+  }
+}
+
+.window-control {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: inherit;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:root:not([maximized]) #window-restore,
+:root[maximized] #window-maximize {
+  display: none;
+}
+
+@media (-moz-platform: windows) {
+  .window-control {
+    width: 46px;
+    font:
+      10px / 1 "Segoe Fluent Icons",
+      "Segoe MDL2 Assets"; /* stylelint-disable-line font-family-no-missing-generic-family-keyword */
+  }
+
+  #window-minimize {
+    -moz-default-appearance: -moz-window-button-minimize;
+  }
+
+  #window-maximize {
+    -moz-default-appearance: -moz-window-button-maximize;
+  }
+
+  #window-restore {
+    -moz-default-appearance: -moz-window-button-restore;
+  }
+
+  #window-close {
+    -moz-default-appearance: -moz-window-button-close;
+  }
+
+  #window-minimize::before {
+    content: "\e921";
+  }
+
+  #window-maximize::before {
+    content: "\e922";
+  }
+
+  #window-restore::before {
+    content: "\e923";
+  }
+
+  #window-close::before {
+    content: "\e8bb";
+  }
+
+  .window-control:hover {
+    background: var(--row-hover);
+  }
+
+  #window-close:hover {
+    color: white;
+    background: hsl(355, 86%, 49%);
+  }
+}
+
+@media (-moz-platform: linux) {
+  #window-controls {
+    gap: 6px;
+    padding-inline: 10px;
+    align-items: center;
+  }
+
+  .window-control {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: color-mix(in srgb, currentColor 10%, transparent);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    -moz-context-properties: stroke;
+    stroke: currentColor;
+  }
+
+  .window-control:hover {
+    background-color: color-mix(in srgb, currentColor 18%, transparent);
+  }
+
+  #window-minimize {
+    background-image: -moz-symbolic-icon(window-minimize-symbolic);
+  }
+
+  #window-maximize {
+    background-image: -moz-symbolic-icon(window-maximize-symbolic);
+  }
+
+  #window-restore {
+    background-image: -moz-symbolic-icon(window-restore-symbolic);
+  }
+
+  #window-close {
+    background-image: -moz-symbolic-icon(window-close-symbolic);
+  }
+
+  @media not (-moz-gtk-csd-minimize-button) {
+    #window-minimize {
+      display: none;
+    }
+  }
+
+  @media not (-moz-gtk-csd-maximize-button) {
+    #window-maximize,
+    #window-restore {
+      display: none;
+    }
+  }
+
+  @media not (-moz-gtk-csd-close-button) {
+    #window-close {
+      display: none;
+    }
+  }
 }
 
 #sidebar {
@@ -568,6 +742,50 @@ kbd {
   color: white;
 }
 
+#menu button:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+#menu button.checked::before {
+  content: "\2713";
+  display: inline-block;
+  width: 1.2em;
+  margin-inline-start: -0.2em;
+}
+
+#menu hr {
+  border: none;
+  border-top: 1px solid var(--panel-border);
+  margin: 5px 4px;
+}
+
+#menu .submenu-parent {
+  position: relative;
+}
+
+#menu button.has-submenu::after {
+  content: "\25B8";
+  float: right;
+}
+
+#menu .submenu {
+  display: none;
+  position: absolute;
+  top: -6px;
+  left: 100%;
+  min-width: 170px;
+  padding: 5px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+
+#menu .submenu-parent:hover > .submenu {
+  display: block;
+}
+
 #menu button.danger {
   color: #d63b3b;
 }
@@ -756,4 +974,74 @@ dialog .buttons {
 
 #extension-prompt {
   max-width: 420px;
+}
+
+#extension-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 0 var(--space-small) var(--space-small);
+}
+
+#extension-actions[hidden] {
+  display: none;
+}
+
+.extension-action {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background-color: transparent;
+  background-image: var(--extension-icon);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .extension-action {
+    background-image: var(--extension-icon-dark);
+  }
+}
+
+.extension-action:hover:not(:disabled) {
+  background-color: var(--row-hover);
+}
+
+.extension-action:disabled {
+  opacity: 0.4;
+}
+
+.extension-action .badge {
+  position: absolute;
+  inset: auto 0 0 auto;
+  min-width: 12px;
+  padding: 0 3px;
+  border-radius: 6px;
+  font-size: 9px;
+  line-height: 12px;
+  text-align: center;
+}
+
+#extension-popup {
+  position: fixed;
+  z-index: 10;
+  overflow: hidden;
+  background: var(--popup-background, #fff);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+
+#extension-popup[hidden] {
+  display: none;
+}
+
+#extension-popup browser {
+  display: block;
+  min-width: 25px;
+  min-height: 25px;
 }

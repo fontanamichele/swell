@@ -10,5 +10,20 @@
     "schema": "chrome://swellext/content/schemas/windows.json",
     "scopes": ["addon_parent"],
     "paths": [["windows"]]
+  },
+  "menusInternal": {
+    "url": "chrome://swellext/content/ext-menus.js",
+    "schema": "chrome://swellext/content/schemas/menus.json",
+    "scopes": ["addon_parent"],
+    "events": ["startup"],
+    "permissions": ["menus", "contextMenus"],
+    "paths": [["contextMenus"], ["menus"], ["menusInternal"]]
+  },
+  "browserAction": {
+    "url": "chrome://swellext/content/ext-browserAction.js",
+    "schema": "chrome://extensions/content/schemas/browser_action.json",
+    "scopes": ["addon_parent"],
+    "manifest": ["browser_action", "action"],
+    "paths": [["browserAction"], ["action"]]
   }
 }

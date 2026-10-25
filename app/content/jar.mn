@@ -17,6 +17,7 @@ swell.jar:
   content/swell/autofill.mjs  (autofill.mjs)
   content/swell/passwords.mjs (passwords.mjs)
   content/swell/extensions.mjs (extensions.mjs)
+  content/swell/extension-actions.mjs (extension-actions.mjs)
   content/swell/media.mjs     (media.mjs)
 % content formautofill %content/formautofill/ contentaccessible=no
   content/formautofill/formautofill.css (../../../browser/extensions/formautofill/content/formautofill.css)

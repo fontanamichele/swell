@@ -4,10 +4,32 @@
 
 import { App } from "chrome://swell/content/app.mjs";
 
-// macOS: draw in the titlebar, so the window controls sit over our sidebar.
-// Elsewhere the native titlebar stays until the window controls are drawn here.
-if (Services.appinfo.OS == "Darwin") {
-  document.documentElement.setAttribute("customtitlebar", "true");
+// The root carries customtitlebar (window.xhtml) so the titlebar is gone before
+// the window is first shown. macOS keeps its own window buttons over the
+// sidebar; elsewhere these are drawn in #window-controls.
+if (Services.appinfo.OS != "Darwin") {
+  const controls = document.getElementById("window-controls");
+  controls.hidden = false;
+  const root = document.documentElement;
+  const sync = () =>
+    root.toggleAttribute(
+      "maximized",
+      window.windowState == window.STATE_MAXIMIZED
+    );
+  window.addEventListener("sizemodechange", sync);
+  sync();
+  document
+    .getElementById("window-minimize")
+    .addEventListener("click", () => window.minimize());
+  document
+    .getElementById("window-maximize")
+    .addEventListener("click", () => window.maximize());
+  document
+    .getElementById("window-restore")
+    .addEventListener("click", () => window.restore());
+  document
+    .getElementById("window-close")
+    .addEventListener("click", () => window.close());
 }
 
 // Registers the toolkit's content actors (find, select popups, autocomplete,

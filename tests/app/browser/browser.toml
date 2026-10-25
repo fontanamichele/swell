@@ -39,6 +39,8 @@ prefs = [
 
 ["browser_extension_install.js"]
 
+["browser_extension_menus.js"]
+
 ["browser_extension_ui.js"]
 
 ["browser_extensions.js"]

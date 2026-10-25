@@ -13,6 +13,7 @@
   screenX="60"
   screenY="40"
   persist="screenX screenY width height sizemode"
+  customtitlebar="true"
 >
   <head>
     <meta charset="utf-8" />
@@ -27,9 +28,29 @@
     <script type="module" src="chrome://swell/content/window.mjs"></script>
   </head>
   <body>
-    <div id="titlebar"></div>
+    <div id="titlebar">
+      <div id="window-controls" hidden="">
+        <button
+          id="window-minimize"
+          class="window-control"
+          title="Minimize"
+        ></button>
+        <button
+          id="window-maximize"
+          class="window-control"
+          title="Maximize"
+        ></button>
+        <button
+          id="window-restore"
+          class="window-control"
+          title="Restore"
+        ></button>
+        <button id="window-close" class="window-control" title="Close"></button>
+      </div>
+    </div>
     <div id="app">
       <aside id="sidebar">
+        <div id="extension-actions" hidden=""></div>
         <div id="favorites" class="favorites"></div>
         <div id="lists">
           <section class="list" id="pinned-section">
@@ -107,6 +128,7 @@
       </div>
     </div>
     <div id="menu" hidden=""></div>
+    <div id="extension-popup" hidden=""></div>
     <panel
       xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
       is="autocomplete-richlistbox-popup"

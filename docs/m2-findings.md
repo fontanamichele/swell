@@ -262,4 +262,9 @@ Done: a tab and window layer for WebExtensions without `browser/` (`app/extensio
 - Gotcha: installing a stored original for another space copied the file onto itself and emptied it (`getHashForFile` failed with `NS_ERROR_NOT_AVAILABLE`).
 - Isolation: `extension copies` is isolated, and the self-test detects sharing by loading the second copy unbound.
 
-Not done yet: `menus`, `browserAction` with a popup, `commands`, updating all copies of an add-on, idle unload of persistent backgrounds, a native messaging id test, hiding `contextualIdentities`.
+- `menus`: `app/extensions/ext-menus.js` turns an add-on's items into plain descriptions that the window's own context menu draws (Firefox builds XUL menus). Several top-level items of one add-on go under a submenu named after it, as in Firefox. Firefox's child script and `menus.json` are installed unmodified. Not done: icons, `viewTypes`, `overrideContext`, `getTargetElement`.
+- `browserAction`/`action`: state in the toolkit's `ExtensionActions`, buttons in a row at the top of the sidebar for the add-ons of the active space, popup in a `<browser>` of the space's container hosted in the window. Gotcha: in the non-e10s test harness the popup browser never fires `load`, so only a remote browser waits for its frame loader. The remote path is not covered by the suite.
+- The per-tab data of an add-on (`TabContext`) is keyed by native tab now; before it was keyed by an id the toolkit never passed.
+- Window controls: `customtitlebar` is on the root in `window.xhtml` for every platform, so the system titlebar is gone before the first show. macOS keeps its traffic lights; Windows and Linux get minimize, maximize/restore and close in a strip across the top (Linux follows the GTK button layout and falls back to the system titlebar without client-side decorations). Only macOS has been run; the Windows and Linux layouts are untested.
+
+Not done yet: `commands`, updating all copies of an add-on, idle unload of persistent backgrounds, a native messaging id test, hiding `contextualIdentities`.

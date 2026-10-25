@@ -21,6 +21,7 @@ MOZ_SRC_FILES += [
     "modules/EngineBridge.sys.mjs",
     "modules/ExtensionInstaller.sys.mjs",
     "modules/LoginPrompter.sys.mjs",
+    "modules/SwellExtensionUI.sys.mjs",
     "modules/SwellLoginStorage.sys.mjs",
     "modules/SwellWindows.sys.mjs",
     "modules/TreeState.sys.mjs",
