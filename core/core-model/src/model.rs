@@ -644,6 +644,28 @@ impl Model {
         })
     }
 
+    /// Makes the page a live tab is on the page its pinned node starts from, in
+    /// place, so that closing it and opening it again starts there.
+    pub fn repin(&mut self, live: &LiveTabId, url: &str, title: &str) -> Result<Vec<TreeOp>> {
+        let Some(node) = self.live_tabs.get(live).map(|tab| tab.node.clone()) else {
+            return not_found("live tab", live.as_str());
+        };
+        if !self.is_saved(&node) {
+            return invariant("only a pinned tab or a favorite has a page to start from");
+        }
+        let now = self.env.now_ms();
+        self.update(&node, |kind| match kind {
+            NodeKind::Tab(tab) => {
+                tab.url = url.to_owned();
+                tab.title = title.to_owned();
+                tab.icon = None;
+                tab.last_active_at = now;
+                Ok(())
+            }
+            _ => invariant("only tabs navigate"),
+        })
+    }
+
     /// Sets or clears the favicon of a live tab's node.
     pub fn set_tab_icon(&mut self, live: &LiveTabId, icon: Option<&str>) -> Result<Vec<TreeOp>> {
         let Some(node) = self.live_tabs.get(live).map(|tab| tab.node.clone()) else {

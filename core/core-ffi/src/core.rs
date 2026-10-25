@@ -829,6 +829,17 @@ impl SwellCore {
         })
     }
 
+    /// Makes the page a pinned tab or favorite is on the page it starts from.
+    pub fn repin_tab(&self, live_tab: String, url: String, title: String) -> Result<(), CoreError> {
+        self.run(|inner, events| {
+            let ops = inner
+                .model
+                .repin(&LiveTabId::from(live_tab), &url, &title)?;
+            Inner::tree_event(&ops, events);
+            inner.persist_ops(&ops)
+        })
+    }
+
     /// How many pages the space's identity has in its history.
     pub fn history_count(&self, space: String) -> Result<u64, CoreError> {
         self.run(|inner, _| {

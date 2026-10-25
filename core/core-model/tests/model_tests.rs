@@ -486,3 +486,36 @@ fn a_pinned_tab_keeps_its_page_when_it_navigates_and_a_today_tab_does_not() {
     }
     m.validate().unwrap();
 }
+
+#[test]
+fn a_pinned_tab_can_be_pinned_again_where_it_is() {
+    let mut m = model();
+    let s = space(&mut m, "S");
+    let window = WindowId::from("w");
+    m.open_window(window.clone());
+    let (live, _) = m.open_url(&window, &s, "https://a.test/").unwrap();
+    assert!(
+        m.repin(&live, "https://b.test/", "B").is_err(),
+        "not while in Today"
+    );
+    m.pin_live_tab(&live, &pinned(&m, &s), 0).unwrap();
+    m.navigated(&live, "https://b.test/", "B").unwrap();
+    m.repin(&live, "https://b.test/", "B").unwrap();
+    let node = m.live_tab(&live).unwrap().node.clone();
+    match &m.node(&node).unwrap().kind {
+        NodeKind::Tab(tab) => {
+            assert_eq!(
+                (tab.url.as_str(), tab.title.as_str()),
+                ("https://b.test/", "B")
+            );
+            assert_eq!(tab.icon, None, "the icon is set again by the new page");
+        }
+        _ => unreachable!(),
+    }
+    assert_eq!(
+        m.node(&node).unwrap().parent_id,
+        Some(pinned(&m, &s)),
+        "in place"
+    );
+    m.validate().unwrap();
+}
