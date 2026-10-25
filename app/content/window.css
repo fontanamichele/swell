@@ -1484,3 +1484,18 @@ select,
 textarea {
   -moz-window-dragging: no-drag;
 }
+
+/* Drag regions are the drag areas minus the no-drag ones, whatever their order.
+   With the sidebar floating, the page lies under it and would cancel its top row,
+   so only the part of the page to the right of the sidebar is no-drag then. */
+:root[sidebar-collapsed][sidebar-peek] #content {
+  -moz-window-dragging: default;
+}
+
+:root[sidebar-collapsed][sidebar-peek] #content::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 calc(var(--sidebar-width) + var(--peek-gap) - var(--content-margin));
+  pointer-events: none;
+  -moz-window-dragging: no-drag;
+}

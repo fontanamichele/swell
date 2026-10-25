@@ -311,3 +311,5 @@ With the sidebar hidden its button goes too and the page keeps its margin (on ma
 - The floating sidebar is back to the full height of the window, flush with its left edge, with only the radius (`--peek-gap` is 0; setting it above 0 gives the card with margins again, but the macOS row then needs its offset back).
 
 - The top row (`#titlebar`) now comes after `#app` in the document. Drag regions are built in document order and the page (`#content`, `no-drag`) lies under a floating sidebar, so the row has to come after it for the sidebar's top part to drag. The floating sidebar's radius is 18px (`--peek-radius`).
+
+- Correction: Gecko's window drag region is the drag areas minus the no-drag areas, whatever their order in the document (`GetWindowDraggingRegion`); the earlier note on document order was wrong. What cancelled the floating sidebar's top row was `#content` (`no-drag`), which spans the whole window while the sidebar is hidden. While the sidebar floats, `#content` is `default` and only a pseudo-element to the right of the sidebar is `no-drag`.

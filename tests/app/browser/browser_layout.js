@@ -335,12 +335,18 @@ add_task(async function test_holding_accel_s_shows_the_sidebar_while_held() {
 });
 
 add_task(
-  async function test_the_top_of_the_window_comes_after_the_page_for_dragging() {
+  async function test_a_floating_sidebars_top_is_not_cancelled_by_the_page() {
     await swellApp();
-    const order = byId("titlebar").compareDocumentPosition(byId("content"));
+    const css = await (await fetch("chrome://swell/content/window.css")).text();
     Assert.ok(
-      order & Node.DOCUMENT_POSITION_PRECEDING,
-      "the row comes after the page, so a floating sidebar's top row still drags"
+      /\[sidebar-peek\] #content \{\s*-moz-window-dragging: default/.test(css),
+      "the page is not a no-drag area as a whole while the sidebar floats"
+    );
+    Assert.ok(
+      /\[sidebar-peek\] #content::before \{[^}]*-moz-window-dragging: no-drag/s.test(
+        css
+      ),
+      "only the part to the right of the sidebar is"
     );
   }
 );
