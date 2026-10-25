@@ -1499,3 +1499,64 @@ textarea {
   pointer-events: none;
   -moz-window-dragging: no-drag;
 }
+
+/* The window is the sidebar's material, tinted with the colour of the space,
+   and the page is a card on it. On macOS the material is the system's
+   translucent sidebar (vibrancy), which needs the backgrounds above it to be
+   clear; elsewhere the tint is mixed into the sidebar colour. */
+:root {
+  --tint-mix: 38%;
+}
+
+@media (-moz-platform: macos) {
+  /* The theme gives the root the system's opaque window background, which would
+     cover the sidebar material. */
+  :root {
+    appearance: none;
+  }
+
+  html {
+    background: transparent;
+  }
+
+  body {
+    appearance: auto;
+    -moz-default-appearance: -moz-sidebar;
+    background: transparent;
+  }
+
+  :root[tinted] body {
+    background: color-mix(in srgb, var(--space-tint) var(--tint-mix), transparent);
+  }
+}
+
+@media not (-moz-platform: macos) {
+  :root[tinted] body {
+    background: color-mix(in srgb, var(--space-tint) 22%, var(--sidebar-bg));
+  }
+}
+
+#space-tints {
+  display: flex;
+  gap: 8px;
+  margin-bottom: var(--space-medium);
+}
+
+.tint-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: var(--swatch);
+  background-clip: padding-box;
+  box-shadow: 0 0 0 1px var(--panel-border);
+}
+
+.tint-swatch.none {
+  background: linear-gradient(to top right, transparent calc(50% - 1px), var(--muted) 50%, transparent calc(50% + 1px)), var(--panel-bg);
+}
+
+.tint-swatch.selected {
+  box-shadow: 0 0 0 2px var(--accent);
+}

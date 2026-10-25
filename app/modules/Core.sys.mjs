@@ -25,6 +25,7 @@ const COMMANDS = [
   "createSpace",
   "updateSpace",
   "moveSpace",
+  "setSpaceTint",
   "deleteSpace",
   "openWindow",
   "closeWindow",

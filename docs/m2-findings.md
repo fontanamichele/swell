@@ -313,3 +313,9 @@ With the sidebar hidden its button goes too and the page keeps its margin (on ma
 - The top row (`#titlebar`) now comes after `#app` in the document. Drag regions are built in document order and the page (`#content`, `no-drag`) lies under a floating sidebar, so the row has to come after it for the sidebar's top part to drag. The floating sidebar's radius is 18px (`--peek-radius`).
 
 - Correction: Gecko's window drag region is the drag areas minus the no-drag areas, whatever their order in the document (`GetWindowDraggingRegion`); the earlier note on document order was wrong. What cancelled the floating sidebar's top row was `#content` (`no-drag`), which spans the whole window while the sidebar is hidden. While the sidebar floats, `#content` is `default` and only a pseudo-element to the right of the sidebar is `no-drag`.
+
+## Tinted, translucent sidebar
+
+- Each space has a tint (`#rrggbb`, set from the space editor's swatches, stored in the core: `spaces.tint`, schema version 3). The window takes the tint of the active space.
+- On macOS the window is the system's sidebar material (vibrancy): `body` has the `-moz-sidebar` appearance, which makes a `Sidebar` theme geometry for the whole window and so a native `NSVisualEffectView` behind the page. The theme gives the root the opaque `-moz-mac-window` appearance by default, which would cover it, so `:root` is `appearance: none` here. The tint is mixed over the material (38%). Elsewhere the tint is mixed into the sidebar colour.
+- I could only check the style values by test, not how the material looks: the default behind-window blend mode (`widget.macos.sidebar-blend-mode.behind-window`) and whether the page card and its margins sit well on it need a look by eye.

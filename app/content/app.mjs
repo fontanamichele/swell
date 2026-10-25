@@ -303,7 +303,20 @@ export class App {
     });
   }
 
+  // The tint of the active space, for the CSS that colours the sidebar.
+  #applyTint() {
+    const root = this.document.documentElement;
+    const tint = this.space?.tint;
+    if (tint) {
+      root.style.setProperty("--space-tint", tint);
+    } else {
+      root.style.removeProperty("--space-tint");
+    }
+    root.toggleAttribute("tinted", !!tint);
+  }
+
   render() {
+    this.#applyTint();
     this.sidebar.render();
     this.extensionActions.render();
     this.navBar.render();
@@ -373,7 +386,7 @@ export class App {
     return this.run(() => this.core.unpinNode(id, this.activeSpaceId));
   }
 
-  async createSpace(title, emoji) {
+  async createSpace(title, emoji, tint = null) {
     const icon = emoji
       ? new this.Icon.Emoji({ glyph: emoji })
       : new this.Icon.Symbol({ name: "circle" });
@@ -381,15 +394,19 @@ export class App {
       this.core.createSpace(title || "New space", icon)
     );
     if (id) {
+      if (tint) {
+        await this.run(() => this.core.setSpaceTint(id, tint));
+      }
       await this.switchSpace(id);
     }
   }
 
-  async updateSpace(id, title, emoji) {
+  async updateSpace(id, title, emoji, tint = null) {
     const icon = emoji
       ? new this.Icon.Emoji({ glyph: emoji })
       : new this.Icon.Symbol({ name: "circle" });
     await this.run(() => this.core.updateSpace(id, title, icon));
+    await this.run(() => this.core.setSpaceTint(id, tint));
   }
 
   moveSpace(id, index) {
