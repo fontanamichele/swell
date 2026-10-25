@@ -162,21 +162,19 @@
       xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
       id="main-menubar"
     >
-      <menu id="swell-menu" label="Swell">
-        <menupopup id="swell-menu-popup">
-          <menuitem id="menu_mac_hide_app" label="Hide Swell" />
-          <menuitem id="menu_mac_hide_others" label="Hide Others" />
-          <menuitem id="menu_mac_show_all" label="Show All" />
-          <menuseparator id="menu_FileQuitSeparator" />
-          <menuitem id="menu_FileQuitItem" label="Quit Swell" />
-        </menupopup>
-      </menu>
       <menu id="file-menu" label="File">
         <menupopup>
           <menuitem label="New Tab" data-action="new-tab" />
           <menuitem label="New Space&#x2026;" data-action="new-space" />
           <menuseparator />
           <menuitem label="Close Tab" data-action="close-tab" />
+          <!-- Gecko moves these into the menu that macOS calls by the name
+               of the application, and hides them here. -->
+          <menuitem id="menu_mac_hide_app" label="Hide Swell" />
+          <menuitem id="menu_mac_hide_others" label="Hide Others" />
+          <menuitem id="menu_mac_show_all" label="Show All" />
+          <menuseparator id="menu_FileQuitSeparator" />
+          <menuitem id="menu_FileQuitItem" label="Quit Swell" />
         </menupopup>
       </menu>
       <menu id="view-menu" label="View">

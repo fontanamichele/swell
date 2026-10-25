@@ -366,3 +366,5 @@ Fonts tried and why: Epilogue first (wide; fine coverage), then Asta Sans was ch
 ## Many pins at once
 
 `core/core-store/examples/pin_links.rs` adds links to the pinned tabs of a space of a profile (`cargo run -p core-store --example pin_links -- <data dir> <space title> < links.tsv`, one `address<TAB>title` per line; Swell must be closed, and the data should be copied first). It was used to put 36 links in a space. A pinned tab takes the title of the page when it is on its own page (the same address, ignoring the fragment, a closing slash, the scheme and "www."), so the titles that were guessed for the pages that would not answer a script are replaced by the real ones when a pin is first opened.
+
+- The menu named after the application is macOS's own, filled by Gecko from the elements it finds by id (`menu_mac_hide_app`, `menu_FileQuitItem`, and so on, which it also hides where they are). A menu of ours called "Swell" with those items showed twice; they are in the File menu now.

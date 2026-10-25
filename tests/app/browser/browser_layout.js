@@ -455,7 +455,22 @@ add_task(
     const labels = [...bar.querySelectorAll(":scope > menu")].map(m =>
       m.getAttribute("label")
     );
-    Assert.deepEqual(labels, ["Swell", "File", "View", "Tools"]);
+    Assert.deepEqual(
+      labels,
+      ["File", "View", "Tools"],
+      "the menu named after the application is the system's, not another of ours"
+    );
+    for (const id of [
+      "menu_mac_hide_app",
+      "menu_mac_hide_others",
+      "menu_mac_show_all",
+      "menu_FileQuitItem",
+    ]) {
+      Assert.ok(
+        bar.querySelector(`#${id}`),
+        `${id} is there for the system menu`
+      );
+    }
     const tools = [...bar.querySelectorAll("#tools-menu menuitem")].map(
       m => m.dataset.action
     );
