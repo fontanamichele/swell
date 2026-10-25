@@ -445,3 +445,44 @@ fn a_space_has_an_optional_tint() {
     assert_eq!(m.space(&a).unwrap().tint, None);
     assert!(m.set_space_tint(&SpaceId::from("nope"), None).is_err());
 }
+
+#[test]
+fn a_pinned_tab_keeps_its_page_when_it_navigates_and_a_today_tab_does_not() {
+    let mut m = model();
+    let s = space(&mut m, "S");
+    let window = WindowId::from("w");
+    m.open_window(window.clone());
+    let (live, _) = m.open_url(&window, &s, "https://a.test/").unwrap();
+    m.navigated(&live, "https://a.test/", "A").unwrap();
+    m.navigated(&live, "https://a.test/next", "Next").unwrap();
+    let node = m.live_tab(&live).unwrap().node.clone();
+    let url = |m: &Model| match &m.node(&node).unwrap().kind {
+        NodeKind::Tab(tab) => (tab.url.clone(), tab.title.clone()),
+        _ => unreachable!(),
+    };
+    assert_eq!(
+        url(&m),
+        ("https://a.test/next".into(), "Next".into()),
+        "Today follows"
+    );
+
+    m.pin_live_tab(&live, &pinned(&m, &s), 0).unwrap();
+    assert!(m
+        .navigated(&live, "https://b.test/", "B")
+        .unwrap()
+        .is_empty());
+    assert_eq!(
+        url(&m),
+        ("https://a.test/next".into(), "Next".into()),
+        "a pinned tab stays where it was pinned"
+    );
+    m.set_tab_icon(&live, Some("data:image/png;base64,AAA"))
+        .unwrap();
+    m.set_tab_icon(&live, Some("data:image/png;base64,BBB"))
+        .unwrap();
+    match &m.node(&node).unwrap().kind {
+        NodeKind::Tab(tab) => assert_eq!(tab.icon.as_deref(), Some("data:image/png;base64,AAA")),
+        _ => unreachable!(),
+    }
+    m.validate().unwrap();
+}

@@ -622,10 +622,16 @@ impl Model {
     }
 
     /// Records a top-level navigation of a live tab.
+    /// Records where a live tab went. A tab that is pinned or a favorite keeps
+    /// the page it was pinned at: it shows where it is while it is open, and
+    /// closing it and opening it again starts from the pinned page.
     pub fn navigated(&mut self, live: &LiveTabId, url: &str, title: &str) -> Result<Vec<TreeOp>> {
         let Some(node) = self.live_tabs.get(live).map(|tab| tab.node.clone()) else {
             return not_found("live tab", live.as_str());
         };
+        if self.is_saved(&node) {
+            return Ok(Vec::new());
+        }
         let now = self.env.now_ms();
         self.update(&node, |kind| match kind {
             NodeKind::Tab(tab) => {
@@ -643,13 +649,24 @@ impl Model {
         let Some(node) = self.live_tabs.get(live).map(|tab| tab.node.clone()) else {
             return not_found("live tab", live.as_str());
         };
+        let saved = self.is_saved(&node);
         self.update(&node, |kind| match kind {
+            // A saved tab keeps its icon once it has one, as it keeps its page.
+            NodeKind::Tab(tab) if saved && tab.icon.is_some() => Ok(()),
             NodeKind::Tab(tab) => {
                 tab.icon = icon.map(str::to_owned);
                 Ok(())
             }
             _ => invariant("only tabs have icons"),
         })
+    }
+
+    /// Whether a node is pinned or a favorite, as opposed to being in Today.
+    fn is_saved(&self, node: &NodeId) -> bool {
+        matches!(
+            self.root_of(node).map(|root| &root.kind),
+            Some(NodeKind::Root(RootKind::Pinned(_) | RootKind::Favorites(_)))
+        )
     }
 
     /// Checks every invariant of the model.
