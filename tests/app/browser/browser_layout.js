@@ -240,6 +240,11 @@ add_task(async function test_buttons_use_iconoir_icons() {
     ),
     "the sidebar button has the same icon when the sidebar floats"
   );
+  Assert.equal(
+    getComputedStyle(byId("sidebar-toggle"), "::before").transform,
+    "matrix(-1, 0, 0, 1, 0, 0)",
+    "turned the other way round"
+  );
   byId("sidebar-toggle").click();
 });
 

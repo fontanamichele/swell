@@ -1843,3 +1843,8 @@ textarea {
   background: var(--row-hover);
   color: var(--sidebar-fg);
 }
+
+/* With the sidebar hidden the icon is the other way round. */
+:root[sidebar-collapsed] #sidebar-toggle::before {
+  transform: scaleX(-1);
+}
