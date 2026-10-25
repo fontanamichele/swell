@@ -116,6 +116,17 @@ add_task(async function test_a_hidden_sidebar_floats_back_at_the_left_edge() {
     "the button is there to keep it open"
   );
   Assert.equal(getComputedStyle(byId("nav-buttons")).visibility, "visible");
+  for (const id of ["sidebar-toggle", "nav-back", "nav-reload"]) {
+    const box = byId(id).getBoundingClientRect();
+    const hit = document.elementFromPoint(
+      box.left + box.width / 2,
+      box.top + box.height / 2
+    );
+    Assert.ok(
+      hit == byId(id) || byId(id).contains(hit),
+      `${id} is on top of the floating sidebar, not under it`
+    );
+  }
 
   await TestUtils.waitForCondition(
     () => Math.round(rect("sidebar").left) == 0,
