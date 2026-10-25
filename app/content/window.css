@@ -1560,3 +1560,153 @@ textarea {
 .tint-swatch.selected {
   box-shadow: 0 0 0 2px var(--accent);
 }
+
+/* ---- Like Arc: favorites, rows, top rows and bottom bar ---- */
+
+/* Favorites: tiles, three to a row. Empty, they are only there to be dropped
+   on while a tab is dragged. */
+.favorites {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  min-height: 0;
+  padding: 0 0 var(--space-small);
+}
+
+.favorites:empty {
+  display: none;
+}
+
+#sidebar.tab-dragging .favorites:empty {
+  display: grid;
+  height: 46px;
+  margin-bottom: var(--space-small);
+  border: 2px dashed var(--panel-border);
+  border-radius: 12px;
+}
+
+.favorite {
+  height: 46px;
+  border-radius: 12px;
+  background: var(--row-hover);
+}
+
+.favorite:hover {
+  background: var(--row-selected);
+}
+
+.favorite .avatar {
+  width: 20px;
+  height: 20px;
+  background: transparent;
+}
+
+/* Sections have no headings; a line sets the open tabs apart. The "+" for a new
+   folder shows when the pointer is over the pinned tabs. */
+#pinned-section {
+  position: relative;
+}
+
+.list > header .heading {
+  display: none;
+}
+
+#today-section > header {
+  display: none;
+}
+
+#pinned-section > header {
+  position: absolute;
+  inset: 0 0 auto auto;
+  z-index: 1;
+  padding: 0;
+  opacity: 0;
+}
+
+#pinned-section:hover > header,
+#pinned-section > header:focus-within {
+  opacity: 1;
+}
+
+#today-section {
+  margin-top: var(--space-small);
+  padding-top: var(--space-small);
+}
+
+/* Rows: taller, rounder, a little larger text. */
+.row {
+  height: 40px;
+  gap: 10px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.row .avatar {
+  margin-inline-start: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+}
+
+.row.tab .title {
+  font-weight: 500;
+}
+
+.row.selected {
+  background: var(--row-selected);
+  box-shadow: none;
+}
+
+.new-tab {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* The top rows: more air around the window buttons, and an address pill that
+   looks like Arc's. */
+:root {
+  --titlebar-height: 44px;
+}
+
+@media not (-moz-platform: macos) {
+  :root {
+    --titlebar-height: 32px;
+  }
+}
+
+.nav-pill {
+  height: 38px;
+  border-radius: 12px;
+}
+
+.nav-address {
+  padding: 0 12px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+#nav-copy {
+  --icon: url("chrome://swell/content/icons/link.svg");
+}
+
+/* The bottom bar: downloads, the spaces, a new space. */
+#footer-row {
+  align-items: center;
+  gap: var(--space-small);
+}
+
+#spaces {
+  flex: 1;
+  justify-content: center;
+}
+
+#downloads-button {
+  --icon: url("chrome://swell/content/icons/download.svg");
+}
+
+#space-add {
+  --icon: url("chrome://swell/content/icons/plus.svg");
+}

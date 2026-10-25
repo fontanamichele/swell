@@ -18,6 +18,7 @@ swell.jar:
   content/swell/passwords.mjs (passwords.mjs)
   content/swell/extensions.mjs (extensions.mjs)
   content/swell/extension-actions.mjs (extension-actions.mjs)
+  content/swell/menubar.mjs   (menubar.mjs)
   content/swell/media.mjs     (media.mjs)
   content/swell/navbar.mjs    (navbar.mjs)
   content/swell/sidebar-layout.mjs (sidebar-layout.mjs)
@@ -31,6 +32,8 @@ swell.jar:
   content/swell/icons/sidebar-collapse.svg (icons/sidebar-collapse.svg)
   content/swell/icons/sidebar-expand.svg (icons/sidebar-expand.svg)
   content/swell/icons/plus.svg (icons/plus.svg)
+  content/swell/icons/download.svg (icons/download.svg)
+  content/swell/icons/link.svg (icons/link.svg)
   content/swell/icons/LICENSE-iconoir (icons/LICENSE-iconoir)
 % content formautofill %content/formautofill/ contentaccessible=no
   content/formautofill/formautofill.css (../../../browser/extensions/formautofill/content/formautofill.css)

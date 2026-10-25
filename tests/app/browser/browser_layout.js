@@ -216,7 +216,7 @@ add_task(async function test_buttons_use_iconoir_icons() {
     ["nav-back", "nav-arrow-left"],
     ["nav-forward", "nav-arrow-right"],
     ["nav-reload", "refresh"],
-    ["nav-copy", "copy"],
+    ["nav-copy", "link"],
     ["sidebar-toggle", "sidebar-collapse"],
   ]) {
     const mask = getComputedStyle(byId(id), "::before").maskImage;
@@ -359,5 +359,113 @@ add_task(
       ),
       "only the part to the right of the sidebar is"
     );
+  }
+);
+
+add_task(async function test_the_sidebar_is_laid_out_like_arcs() {
+  const { app } = await swellApp();
+  const style = id => getComputedStyle(byId(id));
+
+  Assert.equal(
+    byId("pinned-section").querySelector(".heading").offsetParent,
+    null,
+    "the sections have no headings"
+  );
+
+  const space = await freshSpace(app, "Like Arc");
+  const tab = await savedTab(
+    app.core,
+    space,
+    space.pinnedRoot,
+    `${BASE}file_blank.html`,
+    "A tab"
+  );
+  await rendered(() => rowFor(tab), "the tab shows");
+  Assert.equal(rowFor(tab).getBoundingClientRect().height, 40, "tall rows");
+  Assert.equal(getComputedStyle(rowFor(tab)).borderTopLeftRadius, "12px");
+
+  Assert.equal(style("favorites").display, "none", "no favorites, no gap");
+  byId("sidebar").classList.add("tab-dragging");
+  Assert.equal(style("favorites").display, "grid", "a place to drop one");
+  Assert.equal(
+    style("favorites").gridTemplateColumns.split(" ").length,
+    3,
+    "favorites are three to a row"
+  );
+  byId("sidebar").classList.remove("tab-dragging");
+
+  rowFor(tab).dispatchEvent(
+    new MouseEvent("contextmenu", { bubbles: true, clientX: 30, clientY: 200 })
+  );
+  const add = [...document.querySelectorAll("#menu button")].find(
+    b => b.textContent == "Add to favorites"
+  );
+  Assert.ok(add, "a saved tab can be made a favorite");
+  add.click();
+  await rendered(
+    () => byId("favorites").querySelector(`[data-id="${CSS.escape(tab)}"]`),
+    "it becomes a tile at the top"
+  );
+  Assert.equal(style("favorites").display, "grid");
+  Assert.ok(!rowFor(tab), "and leaves the list");
+});
+
+add_task(async function test_the_bottom_bar_has_downloads_and_new_space() {
+  await swellApp();
+  Assert.ok(!byId("more"), "the three dots are gone");
+  Assert.ok(
+    getComputedStyle(byId("downloads-button"), "::before").maskImage.includes(
+      "download.svg"
+    )
+  );
+  Assert.less(
+    byId("downloads-button").getBoundingClientRect().right,
+    rect("spaces").left + 1,
+    "downloads at the left"
+  );
+  Assert.greater(
+    byId("space-add").getBoundingClientRect().left,
+    rect("spaces").right - 1,
+    "new space at the right"
+  );
+  byId("downloads-button").click();
+  await TestUtils.waitForCondition(
+    () => byId("downloads-dialog").open,
+    "it shows the downloads"
+  );
+  byId("downloads-close").click();
+});
+
+add_task(
+  async function test_the_system_menu_bar_has_what_the_sidebar_has_not() {
+    await swellApp();
+    const bar = byId("main-menubar");
+    const labels = [...bar.querySelectorAll(":scope > menu")].map(m =>
+      m.getAttribute("label")
+    );
+    Assert.deepEqual(labels, ["Swell", "File", "View", "Tools"]);
+    const tools = [...bar.querySelectorAll("#tools-menu menuitem")].map(
+      m => m.dataset.action
+    );
+    Assert.deepEqual(tools, [
+      "downloads",
+      "extensions",
+      "passwords",
+      "autofill",
+      "import-arc",
+    ]);
+    const item = bar.querySelector('[data-action="downloads"]');
+    item.dispatchEvent(new CustomEvent("command", { bubbles: true }));
+    await TestUtils.waitForCondition(
+      () => byId("downloads-dialog").open,
+      "an item does what it says"
+    );
+    byId("downloads-close").click();
+
+    bar
+      .querySelector('[data-action="new-space"]')
+      .dispatchEvent(new CustomEvent("command", { bubbles: true }));
+    Assert.ok(byId("space-dialog").open, "New Space opens the editor");
+    byId("space-cancel").click();
   }
 );

@@ -319,3 +319,10 @@ With the sidebar hidden its button goes too and the page keeps its margin (on ma
 - Each space has a tint (`#rrggbb`, set from the space editor's swatches, stored in the core: `spaces.tint`, schema version 3). The window takes the tint of the active space.
 - On macOS the window is the system's sidebar material (vibrancy): `body` has the `-moz-sidebar` appearance, which makes a `Sidebar` theme geometry for the whole window and so a native `NSVisualEffectView` behind the page. The theme gives the root the opaque `-moz-mac-window` appearance by default, which would cover it, so `:root` is `appearance: none` here. The tint is mixed over the material (38%). Elsewhere the tint is mixed into the sidebar colour.
 - I could only check the style values by test, not how the material looks: the default behind-window blend mode (`widget.macos.sidebar-blend-mode.behind-window`) and whether the page card and its margins sit well on it need a look by eye.
+
+## Closer to Arc
+
+- Favorites are tiles, three to a row, above the lists; with none they take no room and only show as a dashed drop target while a tab is dragged. The tab menu has Add to favorites and Remove from favorites.
+- The sections have no headings (a line sets the open tabs apart; the "+" for a new folder shows when the pointer is over the pinned tabs). Rows are 40px with a 12px radius and 14px text; New tab is the first row of the open tabs; the top row is 44px high on macOS and the address pill 38px with a link icon.
+- The bottom bar is downloads, the spaces, new space. The old "..." menu is the system menu bar now: a `<menubar>` in window.xhtml (macOS builds the native menus from the first `<menubar>` of the window document; the first menu is the application menu, found by the ids `menu_mac_hide_app`, `menu_FileQuitItem` and so on). It has Swell, File, View and Tools (downloads, add-ons, passwords, addresses and cards, import from Arc). Items have no key equivalents, because the shortcuts are handled by the window and a menu key would handle them twice. No Edit or Window menus yet.
+- Not seen by eye: the menu bar, the vibrancy and the new sizes.

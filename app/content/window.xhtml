@@ -60,8 +60,19 @@
         </div>
         <footer id="sidebar-footer">
           <div id="footer-row">
+            <button
+              id="downloads-button"
+              class="nav-button"
+              title="Downloads"
+              aria-label="Downloads"
+            ></button>
             <nav id="spaces" aria-label="Spaces"></nav>
-            <button id="more" class="icon-button" title="More">&#x22EF;</button>
+            <button
+              id="space-add"
+              class="nav-button"
+              title="New space"
+              aria-label="New space"
+            ></button>
           </div>
         </footer>
       </aside>
@@ -154,6 +165,44 @@
         <button id="window-close" class="window-control" title="Close"></button>
       </div>
     </div>
+    <menubar
+      xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+      id="main-menubar"
+    >
+      <menu id="swell-menu" label="Swell">
+        <menupopup id="swell-menu-popup">
+          <menuitem id="menu_mac_hide_app" label="Hide Swell" />
+          <menuitem id="menu_mac_hide_others" label="Hide Others" />
+          <menuitem id="menu_mac_show_all" label="Show All" />
+          <menuseparator id="menu_FileQuitSeparator" />
+          <menuitem id="menu_FileQuitItem" label="Quit Swell" />
+        </menupopup>
+      </menu>
+      <menu id="file-menu" label="File">
+        <menupopup>
+          <menuitem label="New Tab" data-action="new-tab" />
+          <menuitem label="New Space&#x2026;" data-action="new-space" />
+          <menuseparator />
+          <menuitem label="Close Tab" data-action="close-tab" />
+        </menupopup>
+      </menu>
+      <menu id="view-menu" label="View">
+        <menupopup>
+          <menuitem label="Toggle Sidebar" data-action="toggle-sidebar" />
+          <menuitem label="Reload" data-action="reload" />
+        </menupopup>
+      </menu>
+      <menu id="tools-menu" label="Tools">
+        <menupopup>
+          <menuitem label="Downloads" data-action="downloads" />
+          <menuitem label="Add-ons" data-action="extensions" />
+          <menuitem label="Passwords" data-action="passwords" />
+          <menuitem label="Addresses and Cards" data-action="autofill" />
+          <menuseparator />
+          <menuitem label="Import from Arc&#x2026;" data-action="import-arc" />
+        </menupopup>
+      </menu>
+    </menubar>
     <div id="commandbar" hidden="">
       <div class="panel">
         <input

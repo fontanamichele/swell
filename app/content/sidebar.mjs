@@ -47,17 +47,12 @@ export class Sidebar {
     doc
       .getElementById("new-folder")
       .addEventListener("click", () => app.newFolder());
-    const more = doc.getElementById("more");
-    more.addEventListener("click", () => {
-      const { left, top: y } = more.getBoundingClientRect();
-      app.menu.show(left, y - 40, [
-        { label: "Downloads", action: () => app.downloads.show() },
-        { label: "Add-ons", action: () => app.extensions.show() },
-        { label: "Passwords", action: () => app.passwords.show() },
-        { label: "Addresses and cards", action: () => app.autofill.show() },
-        { label: "Import from Arc\u2026", action: () => app.chooseArcFile() },
-      ]);
-    });
+    doc
+      .getElementById("downloads-button")
+      .addEventListener("click", () => app.downloads.show());
+    doc
+      .getElementById("space-add")
+      .addEventListener("click", () => app.spaceEditor.create());
     for (const id of ["pinned", "today", "favorites"]) {
       this.#installDropZone(doc.getElementById(id));
     }
@@ -225,12 +220,7 @@ export class Sidebar {
       this.#installSpaceDrag(button, space.id);
       return button;
     });
-    const add = this.#doc.createElement("button");
-    add.className = "space add";
-    add.title = "New space";
-    add.textContent = "+";
-    add.addEventListener("click", () => this.#app.spaceEditor.create());
-    nav.replaceChildren(...buttons, add);
+    nav.replaceChildren(...buttons);
   }
 
   // Spaces are dragged by their buttons; dropping on the left half of another
@@ -332,10 +322,22 @@ export class Sidebar {
       items.push({ label: "New subfolder", action: () => app.newFolder(id) });
     } else {
       items.push({ label: "Open", action: () => app.openNode(id) });
+      const inFavorites = parentId === space.favoritesRoot;
       if (inToday) {
         items.push({ label: "Pin", action: () => app.pin(id) });
-      } else {
+      } else if (!inFavorites) {
         items.push({ label: "Unpin", action: () => app.unpin(id) });
+      }
+      if (inFavorites) {
+        items.push({
+          label: "Remove from favorites",
+          action: () => app.unpin(id),
+        });
+      } else {
+        items.push({
+          label: "Add to favorites",
+          action: () => app.favorite(id),
+        });
       }
       if (app.openTabs.has(id)) {
         items.push({ label: "Close tab", action: () => app.closeNodeTab(id) });
@@ -356,10 +358,12 @@ export class Sidebar {
       event.dataTransfer.setData(DRAG_TYPE, id);
       event.dataTransfer.effectAllowed = "move";
       element.classList.add("dragging");
+      this.#doc.getElementById("sidebar").classList.add("tab-dragging");
     });
     element.addEventListener("dragend", () => {
       this.#dragged = null;
       element.classList.remove("dragging");
+      this.#doc.getElementById("sidebar").classList.remove("tab-dragging");
       this.#clearDropMarks();
     });
   }

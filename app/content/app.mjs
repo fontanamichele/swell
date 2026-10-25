@@ -14,6 +14,7 @@ import { ExtensionsUI } from "chrome://swell/content/extensions.mjs";
 import { MediaUI } from "chrome://swell/content/media.mjs";
 import { SidebarLayout } from "chrome://swell/content/sidebar-layout.mjs";
 import { NavBar } from "chrome://swell/content/navbar.mjs";
+import { MenuBar } from "chrome://swell/content/menubar.mjs";
 import { SpaceEditor } from "chrome://swell/content/space-editor.mjs";
 import { ExtensionActionsUI } from "chrome://swell/content/extension-actions.mjs";
 
@@ -59,6 +60,7 @@ export class App {
     this.spaceEditor = new SpaceEditor(this);
     this.navBar = new NavBar(this);
     this.sidebarLayout = new SidebarLayout(this);
+    this.menuBar = new MenuBar(this);
     this.#renderQueued = false;
   }
 
@@ -378,6 +380,14 @@ export class App {
       id,
       space.pinnedRoot,
       this.state.childrenOf(space.pinnedRoot).length
+    );
+  }
+
+  // Moves a saved tab to the favorites at the top of the sidebar.
+  favorite(id) {
+    const count = this.state.childrenOf(this.space.favoritesRoot).length;
+    return this.run(() =>
+      this.core.moveNode(id, this.space.favoritesRoot, count)
     );
   }
 
