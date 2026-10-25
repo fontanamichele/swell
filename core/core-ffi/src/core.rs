@@ -17,6 +17,7 @@ const HISTORY_CANDIDATES: usize = 30;
 const META_DEVICE: &str = "device_id";
 const META_LAST_SPACE: &str = "last_space";
 const META_NEXT_CONTEXT: &str = "next_user_context_id";
+const META_LAST_TAB: &str = "last_tab:";
 
 enum Event {
     Tree(TreeDiff),
@@ -328,6 +329,24 @@ impl SwellCore {
         self.run(|inner, _| {
             let last = inner.store.get_meta(META_LAST_SPACE)?;
             Ok(last.filter(|id| inner.model.space(&SpaceId::from(id.as_str())).is_some()))
+        })
+    }
+
+    /// The saved tab the user last had in front in `space`, if it still exists.
+    pub fn last_tab(&self, space: String) -> Result<Option<String>, CoreError> {
+        self.run(|inner, _| {
+            let last = inner.store.get_meta(&format!("{META_LAST_TAB}{space}"))?;
+            Ok(last.filter(|id| inner.model.node(&NodeId::from(id.as_str())).is_some()))
+        })
+    }
+
+    /// Remembers the saved tab in front in `space`, to open it again at the next start.
+    pub fn set_last_tab(&self, space: String, node: String) -> Result<(), CoreError> {
+        self.run(|inner, _| {
+            inner.space(&space)?;
+            Ok(inner
+                .store
+                .set_meta(&format!("{META_LAST_TAB}{space}"), &node)?)
         })
     }
 
@@ -648,6 +667,19 @@ impl SwellCore {
             Inner::tree_event(&ops, events);
             inner.persist_ops(&ops)?;
             Ok(id.0)
+        })
+    }
+
+    /// Puts back the row removed last, with what was below it. Returns its id, or
+    /// nothing when there is nothing to put back.
+    pub fn undo_remove(&self) -> Result<Option<String>, CoreError> {
+        self.run(|inner, events| {
+            let Some((id, ops)) = inner.model.undo_remove()? else {
+                return Ok(None);
+            };
+            Inner::tree_event(&ops, events);
+            inner.persist_ops(&ops)?;
+            Ok(Some(id.0))
         })
     }
 

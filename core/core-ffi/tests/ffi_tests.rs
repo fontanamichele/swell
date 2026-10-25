@@ -445,6 +445,79 @@ fn switching_spaces_is_remembered() {
 }
 
 #[test]
+fn the_tab_in_front_is_remembered_while_it_exists() {
+    let f = fixture();
+    let space = first_space(&f.core);
+    f.core.open_window("w1".into()).unwrap();
+    assert_eq!(f.core.last_tab(space.id.clone()).unwrap(), None);
+    f.core
+        .open_url("w1".into(), space.id.clone(), "https://a.test/".into())
+        .unwrap();
+    let tree = f.core.space_tree(space.id.clone()).unwrap();
+    let node = tree
+        .nodes
+        .iter()
+        .find(|n| matches!(n.kind, NodeKindView::Tab { .. }))
+        .unwrap()
+        .id
+        .clone();
+    f.core.set_last_tab(space.id.clone(), node.clone()).unwrap();
+    let f = reopen(f);
+    assert_eq!(
+        f.core.last_tab(space.id.clone()).unwrap(),
+        Some(node.clone())
+    );
+    f.core.remove_node(node).unwrap();
+    assert_eq!(f.core.last_tab(space.id).unwrap(), None);
+}
+
+#[test]
+fn a_removed_folder_comes_back_with_its_rows_in_place() {
+    let f = fixture();
+    let space = first_space(&f.core);
+    f.core.open_window("w1".into()).unwrap();
+    let folder = f
+        .core
+        .create_folder(space.pinned_root.clone(), "Reading".into(), 0)
+        .unwrap();
+    let other = f
+        .core
+        .create_folder(space.pinned_root.clone(), "Other".into(), 1)
+        .unwrap();
+    let live = f
+        .core
+        .open_url("w1".into(), space.id.clone(), "https://a.test/".into())
+        .unwrap();
+    f.core
+        .pin_tab("w1".into(), live, folder.clone(), 0)
+        .unwrap();
+    let before = f.core.space_tree(space.id.clone()).unwrap();
+
+    f.core.remove_node(folder.clone()).unwrap();
+    let removed = f.core.space_tree(space.id.clone()).unwrap();
+    assert_eq!(removed.nodes.len(), before.nodes.len() - 2);
+
+    assert_eq!(f.core.undo_remove().unwrap(), Some(folder.clone()));
+    let after = f.core.space_tree(space.id.clone()).unwrap();
+    let mut a = before.nodes.clone();
+    let mut b = after.nodes.clone();
+    a.sort_by(|x, y| x.id.cmp(&y.id));
+    b.sort_by(|x, y| x.id.cmp(&y.id));
+    assert_eq!(a, b, "the folder and its page are back");
+    assert_eq!(before.children, after.children, "in the same places");
+    assert!(after.nodes.iter().any(|n| n.id == other));
+
+    let f = reopen(f);
+    let reloaded = f.core.space_tree(space.id).unwrap();
+    assert_eq!(reloaded.nodes.len(), before.nodes.len(), "and it was saved");
+    assert_eq!(
+        f.core.undo_remove().unwrap(),
+        None,
+        "nothing more to put back"
+    );
+}
+
+#[test]
 fn closing_stops_events_but_not_commands() {
     let f = fixture();
     let space = first_space(&f.core);

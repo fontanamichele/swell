@@ -21,7 +21,19 @@ pub struct Model {
     /// The lowest container id a new identity may get, so that the id of a
     /// deleted space is never given to another one.
     next_user_context_id: u32,
+    /// What `remove_node` took away most recently, newest last, so that it can be put back.
+    removals: Vec<Removal>,
 }
+
+/// A removed row and everything below it, with the place it was in.
+struct Removal {
+    parent: NodeId,
+    index: usize,
+    /// The row first, then its descendants, each after its parent.
+    nodes: Vec<Node>,
+}
+
+const MAX_REMOVALS: usize = 50;
 
 /// What deleting a space took away, for the caller to clean up after.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -76,6 +88,7 @@ impl Model {
             nodes: HashMap::new(),
             windows: HashMap::new(),
             live_tabs: HashMap::new(),
+            removals: Vec::new(),
             next_user_context_id: 1,
         }
     }
@@ -480,7 +493,20 @@ impl Model {
         let Some(parent) = node.parent_id.clone() else {
             return invariant("roots cannot be removed");
         };
-        let doomed: HashSet<NodeId> = self.subtree(id).into_iter().collect();
+        let order = self.subtree(id);
+        let removal = Removal {
+            index: self
+                .nodes
+                .get(&parent)
+                .and_then(|p| p.children.iter().position(|child| child == id))
+                .unwrap_or(0),
+            parent: parent.clone(),
+            nodes: order
+                .iter()
+                .filter_map(|node_id| self.nodes.get(node_id).cloned())
+                .collect(),
+        };
+        let doomed: HashSet<NodeId> = order.into_iter().collect();
         let mut closed: Vec<LiveTabId> = self
             .live_tabs
             .values()
@@ -499,7 +525,52 @@ impl Model {
             .unwrap()
             .children
             .retain(|child| child != id);
+        self.removals.push(removal);
+        if self.removals.len() > MAX_REMOVALS {
+            self.removals.remove(0);
+        }
         Ok((vec![TreeOp::Removed { id: id.clone() }], closed))
+    }
+
+    /// Puts back the row `remove_node` took away last, where it was (at the end of
+    /// its parent if the parent has fewer rows now). Returns its id, or `None` when
+    /// there is nothing to put back or its parent is gone.
+    pub fn undo_remove(&mut self) -> Result<Option<(NodeId, Vec<TreeOp>)>> {
+        while let Some(removal) = self.removals.pop() {
+            let Some(parent) = self.nodes.get_mut(&removal.parent) else {
+                continue;
+            };
+            let index = removal.index.min(parent.children.len());
+            let Some(root) = removal.nodes.first().map(|node| node.id.clone()) else {
+                continue;
+            };
+            parent.children.insert(index, root.clone());
+            let mut ops = Vec::with_capacity(removal.nodes.len());
+            for (position, node) in removal.nodes.iter().enumerate() {
+                self.nodes.insert(node.id.clone(), node.clone());
+                let (node_parent, node_index) = if position == 0 {
+                    (removal.parent.clone(), index)
+                } else {
+                    let node_parent = node
+                        .parent_id
+                        .clone()
+                        .unwrap_or_else(|| removal.parent.clone());
+                    let node_index = self
+                        .nodes
+                        .get(&node_parent)
+                        .and_then(|p| p.children.iter().position(|child| child == &node.id))
+                        .unwrap_or(0);
+                    (node_parent, node_index)
+                };
+                ops.push(TreeOp::Inserted {
+                    node: node.clone(),
+                    parent: node_parent,
+                    index: node_index as u32,
+                });
+            }
+            return Ok(Some((root, ops)));
+        }
+        Ok(None)
     }
 
     /// Renames a folder, or sets a tab's custom title (an empty title clears it).
