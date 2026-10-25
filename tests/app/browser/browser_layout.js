@@ -442,10 +442,10 @@ add_task(async function test_the_bottom_bar_has_downloads_and_new_space() {
   );
   byId("downloads-button").click();
   await TestUtils.waitForCondition(
-    () => byId("downloads-dialog").open,
+    () => !byId("downloads-panel").hidden,
     "it shows the downloads"
   );
-  byId("downloads-close").click();
+  byId("downloads-button").click();
 });
 
 add_task(
@@ -457,7 +457,7 @@ add_task(
     );
     Assert.deepEqual(
       labels,
-      ["File", "View", "Tools"],
+      ["File", "Edit", "View", "Tools", "Window"],
       "the menu named after the application is the system's, not another of ours"
     );
     for (const id of [
@@ -484,10 +484,10 @@ add_task(
     const item = bar.querySelector('[data-action="downloads"]');
     item.dispatchEvent(new CustomEvent("command", { bubbles: true }));
     await TestUtils.waitForCondition(
-      () => byId("downloads-dialog").open,
+      () => !byId("downloads-panel").hidden,
       "an item does what it says"
     );
-    byId("downloads-close").click();
+    byId("downloads-button").click();
 
     bar
       .querySelector('[data-action="new-space"]')

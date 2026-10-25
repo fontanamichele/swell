@@ -33,18 +33,22 @@ function stateOf(download) {
 export class DownloadsPanel {
   #app;
   #list = null;
-  #dialog;
+  #panel;
+  #sidebar;
   #rows;
   #toasts = new WeakMap();
 
   constructor(app) {
     this.#app = app;
     const doc = app.document;
-    this.#dialog = doc.getElementById("downloads-dialog");
+    this.#panel = doc.getElementById("downloads-panel");
+    this.#sidebar = doc.getElementById("sidebar");
     this.#rows = doc.getElementById("downloads-list");
-    doc
-      .getElementById("downloads-close")
-      .addEventListener("click", () => this.#dialog.close());
+  }
+
+  /** Whether the list is showing in the sidebar. */
+  get visible() {
+    return !this.#panel.hidden;
   }
 
   async init() {
@@ -101,10 +105,18 @@ export class DownloadsPanel {
   }
 
   async show() {
+    this.#panel.hidden = false;
+    this.#sidebar.dataset.view = "downloads";
     await this.#refresh();
-    if (!this.#dialog.open) {
-      this.#dialog.showModal();
-    }
+  }
+
+  hide() {
+    this.#panel.hidden = true;
+    delete this.#sidebar.dataset.view;
+  }
+
+  toggle() {
+    return this.visible ? this.hide() : this.show();
   }
 
   async #refresh() {
@@ -127,17 +139,20 @@ export class DownloadsPanel {
         const state = doc.createElement("span");
         state.className = "download-state";
         state.textContent = stateOf(download);
-        row.append(label, state);
+        const actions = doc.createElement("div");
+        actions.className = "download-actions";
         if (download.succeeded) {
           const show = doc.createElement("button");
-          show.textContent = "Show in folder";
+          show.textContent = "Show";
+          show.title = "Show in folder";
           show.addEventListener("click", () => reveal(download));
-          row.append(show);
+          actions.append(show);
         }
         const remove = doc.createElement("button");
         remove.textContent = "Remove";
         remove.addEventListener("click", () => this.#list.remove(download));
-        row.append(remove);
+        actions.append(remove);
+        row.append(label, state, actions);
         return row;
       })
     );

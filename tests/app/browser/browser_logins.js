@@ -75,7 +75,10 @@ add_task(async function test_a_submitted_login_is_offered_for_saving() {
     async () =>
       (await logins.searchLoginsAsync({ origin: "https://example.com" }))
         .length == 1,
-    "the login is saved in the space"
+    "the login is saved in the space",
+    // The first save makes the space's key in the system keychain.
+    100,
+    300
   );
   const [saved] = await logins.searchLoginsAsync({
     origin: "https://example.com",

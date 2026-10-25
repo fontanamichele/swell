@@ -14,6 +14,7 @@ swell.jar:
   content/swell/permissions.mjs (permissions.mjs)
   content/swell/toasts.mjs    (toasts.mjs)
   content/swell/downloads.mjs (downloads.mjs)
+  content/swell/dialogs.mjs   (dialogs.mjs)
   content/swell/autofill.mjs  (autofill.mjs)
   content/swell/passwords.mjs (passwords.mjs)
   content/swell/extensions.mjs (extensions.mjs)

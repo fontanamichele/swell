@@ -339,6 +339,21 @@ export class EngineBridge {
       const findbar = doc.createXULElement("findbar");
       slot.append(findbar);
       doc.getElementById("findbars").append(slot);
+      // The bar floats and takes the width of what it holds; the toolkit's
+      // flex="1" is a user agent rule that no style of ours can override.
+      const unflex = () => {
+        const container = findbar.querySelector(".findbar-container");
+        container?.removeAttribute("flex");
+        return !!container;
+      };
+      if (!unflex()) {
+        const observer = new this.#window.MutationObserver(() => {
+          if (unflex()) {
+            observer.disconnect();
+          }
+        });
+        observer.observe(findbar, { childList: true });
+      }
       tab.findbar = findbar;
       tab.findbarSlot = slot;
       await new Promise(resolve => this.#window.requestAnimationFrame(resolve));
@@ -350,6 +365,11 @@ export class EngineBridge {
     }
     this.#showFindBars();
     tab.findbar.startFind(tab.findbar.FIND_NORMAL);
+  }
+
+  // Finds the next (or previous) match of the last search in the selected tab.
+  findAgain(backwards) {
+    this.#selected?.findbar?.onFindAgainCommand(backwards);
   }
 
   // Only the selected tab's find bar is visible.
@@ -445,6 +465,17 @@ export class EngineBridge {
     const tab = this.#tabs.get(liveTab);
     if (!tab) {
       return;
+    }
+    // A page that asked to be told before it goes may ask whether to stay.
+    if (tab.browser.hasBeforeUnload) {
+      try {
+        const { permitUnload } = await tab.browser.asyncPermitUnload("prompt");
+        if (!permitUnload) {
+          return;
+        }
+      } catch (e) {
+        console.warn("Swell: could not ask the page before closing it", e);
+      }
     }
     const next = this.#neighbour(tab);
     this.#removeTab(tab, next);
@@ -581,6 +612,15 @@ export class EngineBridge {
         )
       );
     });
+    // A link, address or file dropped on the page: the first one loads here, any
+    // others open next to it in the same space.
+    browser.droppedLinkHandler = (event, links) => {
+      const [first, ...rest] = links;
+      this.#load(browser, first.url);
+      for (const link of rest) {
+        this.openUrl(link.url, tab.space, { background: true });
+      }
+    };
     browser.addEventListener("DOMWindowClose", event => {
       event.preventDefault();
       if (tab.liveTab) {
@@ -663,6 +703,11 @@ export class EngineBridge {
     }
     if (tab) {
       this.#lastSelected.set(tab.space, tab.liveTab);
+      if (tab.node) {
+        this.#core
+          .setLastTab(tab.space, tab.node)
+          .catch(e => console.error("Could not remember the tab in front", e));
+      }
       tab.browser.hidden = false;
       this.#setActive(tab, true);
     }

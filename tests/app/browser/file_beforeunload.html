@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>beforeunload</title>
+<input id="field">
+<script>
+  window.addEventListener("beforeunload", event => {
+    event.preventDefault();
+    event.returnValue = "";
+  });
+</script>

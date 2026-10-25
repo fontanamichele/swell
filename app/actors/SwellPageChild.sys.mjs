@@ -6,6 +6,10 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   ContentDOMReference: "resource://gre/modules/ContentDOMReference.sys.mjs",
+  setTimeout: "resource://gre/modules/Timer.sys.mjs",
+  InlineSpellCheckerContent:
+    "resource://gre/modules/InlineSpellCheckerContent.sys.mjs",
+  SpellCheckHelper: "resource://gre/modules/InlineSpellChecker.sys.mjs",
 });
 
 const SAFE_SCHEMES = ["http:", "https:", "file:", "about:"];
@@ -16,6 +20,24 @@ const SAFE_SCHEMES = ["http:", "https:", "file:", "about:"];
  * they open new tabs, and carries out edit commands the menu asks for.
  */
 export class SwellPageChild extends JSWindowActorChild {
+  #destructionObservers = new Set();
+
+  // The spell checker asks to be told when this actor goes away.
+  registerDestructionObserver(observer) {
+    this.#destructionObservers.add(observer);
+  }
+
+  unregisterDestructionObserver(observer) {
+    this.#destructionObservers.delete(observer);
+  }
+
+  didDestroy() {
+    for (const observer of this.#destructionObservers) {
+      observer.actorDestroyed();
+    }
+    this.#destructionObservers.clear();
+  }
+
   handleEvent(event) {
     if (event.type == "contextmenu") {
       this.#onContextMenu(event);
@@ -27,6 +49,8 @@ export class SwellPageChild extends JSWindowActorChild {
   receiveMessage({ name, data }) {
     if (name == "Swell:Command") {
       this.docShell.doCommand(data.command);
+    } else if (name == "Swell:ReplaceMisspelling") {
+      lazy.InlineSpellCheckerContent.replaceMisspelling(data.suggestion);
     }
   }
 
@@ -34,7 +58,7 @@ export class SwellPageChild extends JSWindowActorChild {
     return target?.closest?.(selector) ?? null;
   }
 
-  #onContextMenu(event) {
+  async #onContextMenu(event) {
     if (event.defaultPrevented || !this.contentWindow) {
       return;
     }
@@ -45,9 +69,12 @@ export class SwellPageChild extends JSWindowActorChild {
     const editable =
       !!this.#closest(target, "input, textarea, [contenteditable]") &&
       !target.readOnly;
+    const spelling = editable ? await this.#spelling(event, target) : null;
     this.sendAsyncMessage("Swell:ContextMenu", {
       clientX: event.clientX,
       clientY: event.clientY,
+      screenX: event.screenX,
+      screenY: event.screenY,
       linkURL: link ? link.href : null,
       linkText: link ? link.textContent.trim() : null,
       imageURL: image ? image.currentSrc || image.src : null,
@@ -56,9 +83,36 @@ export class SwellPageChild extends JSWindowActorChild {
       password: !!this.#closest(target, "input[type=password]"),
       selection: this.contentWindow.getSelection().toString().trim(),
       editable,
+      spelling,
       // For the developer tools to find the element in the page.
       contentDomReference: lazy.ContentDOMReference.get(target),
     });
+  }
+
+  // The misspelled word under the pointer and what to suggest for it, or null.
+  async #spelling(event, target) {
+    const flags = lazy.SpellCheckHelper.isEditable(target, this.contentWindow);
+    if (!(flags & lazy.SpellCheckHelper.SPELLCHECKABLE)) {
+      return null;
+    }
+    lazy.InlineSpellCheckerContent.uninitContextMenu();
+    let info;
+    // The first pass over a field can still be running right after it loads.
+    for (let attempt = 0; attempt < 15; attempt++) {
+      info = await lazy.InlineSpellCheckerContent.initContextMenu(
+        event,
+        flags,
+        this
+      );
+      if (!info.initialSpellCheckPending) {
+        break;
+      }
+      await new Promise(resolve => lazy.setTimeout(resolve, 200));
+    }
+    if (!info.overMisspelling) {
+      return null;
+    }
+    return { word: info.misspelling, suggestions: info.spellSuggestions };
   }
 
   #onClick(event) {

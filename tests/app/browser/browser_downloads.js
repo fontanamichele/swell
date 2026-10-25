@@ -61,14 +61,34 @@ add_task(async function test_an_attachment_is_saved_without_asking() {
   );
 
   await app.downloads.show();
-  const dialog = document.getElementById("downloads-dialog");
-  Assert.ok(dialog.open, "the downloads dialog opens");
+  const panel = document.getElementById("downloads-panel");
+  Assert.ok(!panel.hidden, "the downloads open in the sidebar");
+  Assert.greater(panel.getBoundingClientRect().height, 0, "and take room");
   Assert.deepEqual(
-    [...dialog.querySelectorAll(".download-name")].map(n => n.textContent),
+    [...panel.querySelectorAll(".download-name")].map(n => n.textContent),
     ["swell-test.bin"],
-    "the dialog lists this space's download"
+    "the panel lists this space's download"
   );
-  document.getElementById("downloads-close").click();
-  Assert.ok(!dialog.open, "Close closes it");
+  Assert.equal(
+    document.getElementById("lists").getBoundingClientRect().height,
+    0,
+    "in place of the tabs"
+  );
+  app.switchSpaceBy(1);
+  Assert.ok(panel.hidden, "going right closes it");
+  Assert.greater(
+    document.getElementById("lists").getBoundingClientRect().height,
+    0,
+    "and the tabs are back"
+  );
+  await app.switchSpace(app.spaces[0].id);
+  await rendered(
+    () => app.activeSpaceId == app.spaces[0].id,
+    "in the first space"
+  );
+  app.switchSpaceBy(-1);
+  Assert.ok(!panel.hidden, "going left of the first space opens it");
+  document.getElementById("downloads-button").click();
+  Assert.ok(panel.hidden, "the button closes it");
   await closeAllTabs(bridge);
 });

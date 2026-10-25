@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { App } from "chrome://swell/content/app.mjs";
+import { Dialogs } from "chrome://swell/content/dialogs.mjs";
 
 // The developer tools ask the window of a tab whether it runs with Fission.
 window.gFissionBrowser = Services.appinfo.fissionAutostart;
@@ -48,6 +49,31 @@ if (Services.appinfo.OS != "Darwin") {
 // popup blocking, media controls); nothing else in this application does.
 ChromeUtils.importESModule("resource://gre/modules/ActorManagerParent.sys.mjs");
 
+// The only dictionary in the tree. Firefox registers its dictionaries from a list of
+// built-in add-ons that Swell does not have.
+Cc["@mozilla.org/spellchecker/engine;1"]
+  .getService(Ci.mozISpellCheckingEngine)
+  .addDictionary(
+    "en-US",
+    Services.io.newURI("resource://gre/dictionaries/en-US.aff")
+  );
+
+// Firefox keeps finished downloads only in Places history, which the downloads
+// list does not read. Keep them all in the download store (downloads.json), where
+// each remembers its container.
+ChromeUtils.importESModule(
+  "resource://gre/modules/DownloadIntegration.sys.mjs"
+).DownloadIntegration.shouldPersistDownload = () => true;
+
+// The print dialog of the toolkit, which expects XPCOMUtils as a global.
+window.XPCOMUtils = ChromeUtils.importESModule(
+  "resource://gre/modules/XPCOMUtils.sys.mjs"
+).XPCOMUtils;
+Services.scriptloader.loadSubScript(
+  "chrome://global/content/printUtils.js",
+  window
+);
+
 // Address and credit card autofill, with its own prompt (see AutofillPrompter).
 const { startAutofill } = ChromeUtils.importESModule(
   "moz-src:///swell/app/modules/Autofill.sys.mjs"
@@ -83,7 +109,7 @@ ChromeUtils.registerWindowActor("SwellPage", {
       click: { mozSystemGroup: true, capture: true },
     },
   },
-  allFrames: false,
+  allFrames: true,
   messageManagerGroups: ["browsers"],
   safeForUntrustedWebProcess: true,
 });
@@ -99,6 +125,17 @@ ChromeUtils.registerWindowActor("WebRTC", {
   },
   allFrames: true,
   messageManagerGroups: ["browsers"],
+  safeForUntrustedWebProcess: true,
+});
+
+// The dialogs a page opens (alert, confirm, prompt, leaving the page, HTTP
+// authentication): Firefox's parent actor, shown by dialogs.mjs.
+ChromeUtils.registerWindowActor("Prompt", {
+  parent: {
+    esModuleURI: "moz-src:///browser/actors/PromptParent.sys.mjs",
+  },
+  includeChrome: true,
+  allFrames: true,
   safeForUntrustedWebProcess: true,
 });
 
@@ -144,6 +181,7 @@ async function start() {
   });
   await bridge.init(await core.lastActiveSpace());
   SwellWindows.register(window, bridge);
+  new Dialogs({ win: window, bridge, pages: document.getElementById("pages") });
   const app = new App({
     doc: document,
     core,
@@ -153,6 +191,10 @@ async function start() {
     Downloads,
   });
   await app.init();
+  const last = await core.lastTab(bridge.activeSpace);
+  if (last && !bridge.tabs().length) {
+    await bridge.openNode(last);
+  }
   const commandLine = window.arguments?.[0];
   if (commandLine instanceof Ci.nsICommandLine) {
     const path = commandLine.handleFlagWithParam("import-arc", false);

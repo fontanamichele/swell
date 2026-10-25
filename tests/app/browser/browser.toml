@@ -4,6 +4,8 @@ support-files = [
   "file_blank.html",
   "file_visited.html",
   "file_form.html",
+  "file_spell.html",
+  "file_beforeunload.html",
   "file_address_form.html",
   "file_card_form.html",
   "file_login.html",
@@ -37,7 +39,13 @@ prefs = [
 
 ["browser_devtools.js"]
 
+["browser_dialogs.js"]
+
 ["browser_downloads.js"]
+
+["browser_drop.js"]
+
+["browser_edit_menu.js"]
 
 ["browser_extension_install.js"]
 
@@ -67,6 +75,8 @@ prefs = [
 
 ["browser_permissions.js"]
 
+["browser_print.js"]
+
 ["browser_scrollbar.js"]
 
 ["browser_sidebar_actions.js"]
@@ -77,9 +87,13 @@ prefs = [
 
 ["browser_spaces.js"]
 
+["browser_spelling.js"]
+
 ["browser_titlebar.js"]
 
 ["browser_two_spaces.js"]
+
+["browser_undo.js"]
 
 ["browser_user_agent.js"]
 

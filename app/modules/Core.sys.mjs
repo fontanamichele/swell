@@ -21,6 +21,8 @@ const EVENTS = [
 const COMMANDS = [
   "listSpaces",
   "lastActiveSpace",
+  "lastTab",
+  "setLastTab",
   "spaceTree",
   "createSpace",
   "updateSpace",
@@ -39,6 +41,7 @@ const COMMANDS = [
   "renameNode",
   "setCollapsed",
   "removeNode",
+  "undoRemove",
   "queryCommandBar",
   "importArc",
   "onNavigation",

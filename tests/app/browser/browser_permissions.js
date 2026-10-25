@@ -32,6 +32,18 @@ add_task(
 
     await request(tabA);
     await rendered(() => !bar().hidden, "the bar appears");
+    const content = document.getElementById("content").getBoundingClientRect();
+    const floating = bar().getBoundingClientRect();
+    Assert.greater(
+      floating.top,
+      content.top + content.height / 2,
+      "it floats low"
+    );
+    Assert.less(
+      floating.bottom,
+      content.bottom,
+      "over the page, inside the card"
+    );
     Assert.equal(
       bar().querySelector(".permission-text").textContent,
       "example.com wants to show notifications"

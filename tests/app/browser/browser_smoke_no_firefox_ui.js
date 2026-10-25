@@ -28,7 +28,11 @@ add_task(async function test_no_firefox_ui_exists() {
   ]) {
     ok(!document.getElementById(id), `no #${id}`);
   }
-  ok(!window.gBrowser, "no gBrowser");
+  // Only the small stand-in of dialogs.mjs, which has no tabs of its own.
+  ok(
+    !window.gBrowser || !window.gBrowser.tabContainer,
+    "no tabbrowser, only the stand-in for the prompts"
+  );
   ok(!window.gBrowserInit, "no gBrowserInit");
   for (const url of [
     "chrome://browser/content/browser.xhtml",

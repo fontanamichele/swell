@@ -7,9 +7,12 @@
 Run from the firefox/ directory:
     MOZCONFIG=$PWD/swell/mozconfig ./mach python swell/tests/e2e/restart_persistence.py [--shots DIR]
 
+SWELL_APP names another binary to run, for example the staged package.
+
 First launch: make a space, a pinned folder with a saved tab, and open a real
 page. Second launch, same profile: the space, the pinned tree and the Today row
-must be back, with nothing open. Needs network access for the real page.
+must be back, and the tab that was in front must be open again, alone. Needs
+network access for the real page.
 """
 
 import argparse
@@ -23,7 +26,7 @@ import time
 
 from marionette_driver.marionette import Marionette
 
-APP = "obj-swell/dist/Swell.app/Contents/MacOS/swell"
+APP = os.environ.get("SWELL_APP", "obj-swell/dist/Swell.app/Contents/MacOS/swell")
 
 BUILD = r"""
 const done = arguments[arguments.length - 1];
@@ -52,12 +55,16 @@ const done = arguments[arguments.length - 1];
   const { core, bridge, app } = await window.SwellApp.ready;
   const spaces = await core.listSpaces();
   const personal = spaces[0];
+  for (let i = 0; i < 80 && !bridge.selectedTab?.url; i++) {
+    await new Promise(r => setTimeout(r, 250));
+  }
   const tree = await core.spaceTree(personal.id);
   const titles = tree.nodes.map(n => n.kind.title ?? n.kind.url);
   done({
     spaces: spaces.map(s => s.title),
     titles,
     openTabs: bridge.tabs().length,
+    frontUrl: bridge.selectedTab?.url ?? null,
     rows: [...document.querySelectorAll("#pinned .row, #today .row")].map(r => r.textContent.trim()),
   });
 })().catch(e => done("ERR " + e + " " + e.stack));
@@ -139,8 +146,12 @@ def main():
             for expected in ("Reading", "Example Org"):
                 if expected not in state["titles"]:
                     failures.append(f"{expected!r} did not come back")
-            if state["openTabs"] != 0:
-                failures.append("tabs were open right after a restart")
+            if state["openTabs"] != 1:
+                failures.append(
+                    f"expected only the tab in front to be open, got {state['openTabs']}"
+                )
+            elif not (state["frontUrl"] or "").startswith("https://example.com"):
+                failures.append(f"the tab in front is {state['frontUrl']!r}")
             if not any("Example Domain" in row for row in state["rows"]):
                 failures.append("the Today row for the page did not come back")
         quit_app(client, proc)
@@ -149,7 +160,9 @@ def main():
     if failures:
         print("FAIL:", *failures, sep="\n  ")
         return 1
-    print("OK: spaces, folders, saved tabs and Today rows survive a restart")
+    print(
+        "OK: spaces, folders, saved tabs, Today rows and the tab in front survive a restart"
+    )
     return 0
 
 

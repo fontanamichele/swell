@@ -74,7 +74,7 @@ export class Sidebar {
       .addEventListener("click", () => app.commandBar.open({ mode: "new" }));
     doc
       .getElementById("downloads-button")
-      .addEventListener("click", () => app.downloads.show());
+      .addEventListener("click", () => app.downloads.toggle());
     doc
       .getElementById("space-add")
       .addEventListener("click", () => app.spaceEditor.create());

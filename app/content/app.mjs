@@ -129,6 +129,16 @@ export class App {
     this.downloads.init();
   }
 
+  // Opens the print dialog over the page in front.
+  print() {
+    const browser = this.selectedTab && this.bridge.selectedTab?.browser;
+    if (browser) {
+      this.document.defaultView.PrintUtils.startPrintWindow(
+        browser.browsingContext
+      );
+    }
+  }
+
   // Asks for an Arc StorableSidebar.json and imports it.
   async chooseArcFile() {
     const picker = Cc["@mozilla.org/filepicker;1"].createInstance(
@@ -198,6 +208,8 @@ export class App {
     actor,
     clientX,
     clientY,
+    screenX: pointerX,
+    screenY: pointerY,
     linkURL,
     linkText,
     imageURL,
@@ -206,6 +218,7 @@ export class App {
     password,
     selection,
     editable,
+    spelling,
     contentDomReference,
   }) {
     const tab = this.bridge.tabForBrowser(browser);
@@ -234,6 +247,19 @@ export class App {
         },
         { label: "Copy image address", action: () => copy(imageURL) }
       );
+    }
+    if (spelling) {
+      for (const suggestion of spelling.suggestions) {
+        items.push({
+          label: suggestion,
+          action: () =>
+            actor.sendAsyncMessage("Swell:ReplaceMisspelling", { suggestion }),
+        });
+      }
+      if (!spelling.suggestions.length) {
+        items.push({ label: "No suggestions", disabled: true });
+      }
+      items.push({ separator: true });
     }
     if (editable) {
       items.push(
@@ -293,8 +319,14 @@ export class App {
         }
       );
     }
+    // Frames report their own client coordinates, so the screen ones place the menu.
+    const win = this.document.defaultView;
     const rect = browser.getBoundingClientRect();
-    this.menu.show(rect.left + clientX, rect.top + clientY, items, {
+    const x =
+      pointerX == null ? rect.left + clientX : pointerX - win.mozInnerScreenX;
+    const y =
+      pointerY == null ? rect.top + clientY : pointerY - win.mozInnerScreenY;
+    this.menu.show(x, y, items, {
       onHide: () => SwellExtensionUI.menuHidden(),
     });
   }
@@ -363,9 +395,23 @@ export class App {
   }
 
   // The space `delta` places along the list, if there is one.
+  // The downloads are one place before the first space: going left from there opens
+  // them, and going right closes them.
   switchSpaceBy(delta) {
+    if (this.downloads.visible) {
+      if (delta > 0) {
+        this.downloads.hide();
+        this.sidebar.slide("next");
+      }
+      return null;
+    }
     const index = this.spaces.findIndex(s => s.id == this.activeSpaceId);
     const next = this.spaces[index + delta];
+    if (!next && index == 0 && delta < 0) {
+      this.downloads.show();
+      this.sidebar.slide("prev");
+      return null;
+    }
     return next ? this.switchSpace(next.id) : null;
   }
 
@@ -399,6 +445,7 @@ export class App {
   }
 
   switchSpace(id) {
+    this.downloads.hide();
     return this.run(() => this.core.switchSpace(this.bridge.windowId, id));
   }
 
@@ -454,8 +501,22 @@ export class App {
     }
   }
 
-  removeNode(id) {
-    return this.run(() => this.core.removeNode(id));
+  // Removes a row and offers to put it back.
+  async removeNode(id) {
+    const info = this.state.describe(id);
+    await this.run(() => this.core.removeNode(id));
+    if (info) {
+      const label = info.title || info.url;
+      this.toasts.show({
+        text: `Removed ${label.length > 32 ? `${label.slice(0, 32)}\u2026` : label}`,
+        actions: [{ label: "Undo", run: () => this.undoRemove() }],
+      });
+    }
+  }
+
+  // Puts back the row removed last.
+  undoRemove() {
+    return this.run(() => this.core.undoRemove());
   }
 
   renameNode(id, title) {
@@ -652,8 +713,22 @@ export class App {
           this.run(() => this.bridge.closeTab(this.selectedTab.liveTab));
         }
         return true;
+      case "z":
+        // In a field or a page, undoing is theirs.
+        if (
+          event.shiftKey ||
+          isEditable(event.target) ||
+          this.document.activeElement?.localName == "browser"
+        ) {
+          return false;
+        }
+        this.undoRemove();
+        return true;
       case "r":
         this.bridge.reload();
+        return true;
+      case "p":
+        this.print();
         return true;
       case "s":
         this.sidebarLayout.shortcutDown(event);

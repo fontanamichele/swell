@@ -466,6 +466,24 @@ button {
   display: flex;
 }
 
+/* The bars that ask something of the user and the find bar float over the bottom
+ * of the page, as cards. */
+#floating {
+  position: absolute;
+  inset-inline: 0;
+  bottom: var(--space-large);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-small);
+  pointer-events: none;
+}
+
+#floating > * {
+  pointer-events: auto;
+}
+
 #permission-bar,
 #autofill-bar,
 #media-bar,
@@ -473,9 +491,14 @@ button {
   display: flex;
   align-items: center;
   gap: var(--space-small);
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(760px, calc(100% - 2 * var(--space-large)));
   padding: var(--space-small) var(--space-medium);
   background: var(--panel-bg);
-  border-bottom: 1px solid var(--panel-border);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
 }
 
 #permission-bar[hidden],
@@ -514,6 +537,128 @@ button {
   display: none;
 }
 
+#findbars:empty {
+  display: none;
+}
+
+/* The find bar: a pill with the field, the two arrows, the options as chips, and
+ * the count. */
+.findbar-slot findbar {
+  appearance: none;
+  align-items: center;
+  width: max-content;
+  min-height: 0;
+  contain: none;
+  overflow: visible;
+  gap: var(--space-small);
+  box-sizing: border-box;
+  max-width: calc(100vw - 2 * var(--space-large));
+  padding: var(--space-small) var(--space-medium);
+  background: var(--panel-bg);
+  color: var(--sidebar-fg);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  font: inherit;
+}
+
+.findbar-slot findbar > .findbar-container {
+  flex: 0 0 auto;
+  overflow: visible;
+  width: max-content;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  gap: var(--space-small);
+}
+
+.findbar-slot .findbar-textbox {
+  appearance: none;
+  box-sizing: border-box;
+  width: 220px;
+  height: 30px;
+  margin: 0;
+  padding: 0 var(--space-medium);
+  color: inherit;
+  background: var(--row-hover);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font: inherit;
+  outline: none;
+}
+
+.findbar-slot .findbar-textbox:focus {
+  border-color: var(--accent);
+}
+
+.findbar-slot .findbar-textbox[status="notfound"] {
+  border-color: #d33;
+}
+
+.findbar-slot toolbarbutton {
+  appearance: none;
+  margin: 0;
+  padding: var(--space-xsmall);
+  min-width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  color: inherit;
+  -moz-context-properties: fill;
+  fill: currentColor;
+}
+
+.findbar-slot toolbarbutton:hover:not([disabled]) {
+  background: var(--row-hover);
+}
+
+.findbar-slot toolbarbutton[disabled] {
+  opacity: 0.4;
+}
+
+.findbar-slot checkbox {
+  appearance: none;
+  margin: 0;
+  padding: 0 var(--space-small);
+  height: 26px;
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: default;
+}
+
+.findbar-slot checkbox .checkbox-check {
+  display: none;
+}
+
+.findbar-slot checkbox .checkbox-label-box,
+.findbar-slot checkbox .checkbox-label {
+  margin: 0;
+  padding: 0;
+}
+
+.findbar-slot checkbox:hover {
+  background: var(--row-hover);
+}
+
+.findbar-slot checkbox[checked] {
+  color: var(--sidebar-fg);
+  background: var(--row-selected);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.findbar-slot .findbar-label {
+  margin: 0;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.findbar-slot .findbar-closebutton {
+  order: 2;
+  margin-inline-start: var(--space-xsmall);
+}
+
 #pages > browser {
   flex: 1;
   min-width: 0;
@@ -521,6 +666,64 @@ button {
 
 #pages > browser[hidden] {
   display: none;
+}
+
+.dialogStack {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+
+.dialogStack[inactive] {
+  display: none;
+}
+
+.dialogOverlay {
+  align-items: center;
+  visibility: hidden;
+  border-radius: var(--card-radius);
+
+  &[topmost="true"] {
+    z-index: 1;
+    background: rgba(0, 0, 0, 0.32);
+  }
+
+  /* Dialogs the page opened keep to the middle of the page and to the height of
+   * their own content. */
+  .content-prompt-dialog > & {
+    display: grid;
+    align-items: unset;
+    place-content: center;
+    grid-auto-rows: min(90%, var(--doc-height-px));
+  }
+}
+
+.dialogBox {
+  min-width: 0;
+  display: flex;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--panel-bg);
+  box-shadow: var(--shadow);
+  outline: 0.5px solid var(--panel-border);
+  will-change: transform;
+
+  /* The print dialog: as much of the page as it can have. */
+  &[sizeto="available"] {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    --box-max-width-default: clamp(80%, 100% + (600px - 100%) / 2, 100%);
+    --box-max-height-default: clamp(90%, 100% + (600px - 100%) / 2, 100%);
+    max-width: var(--box-max-width-requested, var(--box-max-width-default));
+    max-height: var(--box-max-height-requested, var(--box-max-height-default));
+  }
+}
+
+.dialogFrame {
+  margin: 0;
+  flex: 1;
+  width: 34em;
 }
 
 #empty {
@@ -1018,27 +1221,93 @@ dialog .buttons {
   gap: var(--space-small);
 }
 
-#downloads-dialog {
-  min-width: 420px;
+/* The downloads of the active space, in the sidebar in place of its tabs. */
+#sidebar[data-view="downloads"] :is(#favorites, #lists, #extension-actions) {
+  display: none;
+}
+
+#downloads-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--space-medium);
+  -moz-window-dragging: no-drag;
+}
+
+#downloads-panel[hidden] {
+  display: none;
+}
+
+#downloads-title {
+  margin: var(--space-medium) var(--space-small);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+#downloads-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+#sidebar.slide-next #downloads-panel {
+  animation: slide-in-next 260ms ease;
+}
+
+#sidebar.slide-prev #downloads-panel {
+  animation: slide-in-prev 260ms ease;
 }
 
 .download-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  gap: var(--space-small);
-  margin-bottom: var(--space-small);
+  gap: 2px var(--space-small);
+  padding: var(--space-small) var(--space-medium);
+  border-radius: 12px;
+}
+
+.download-row:hover {
+  background: var(--row-hover);
 }
 
 .download-name {
-  flex: 1;
+  grid-column: 1 / -1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.download-state,
+.download-state {
+  grid-column: 1;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.download-actions {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  gap: var(--space-xsmall);
+}
+
+.download-actions button {
+  border: none;
+  background: var(--row-hover);
+  border-radius: 6px;
+  padding: var(--space-xsmall) var(--space-small);
+  font-size: 12px;
+}
+
+.download-actions button:hover {
+  background: var(--accent);
+  color: white;
+}
+
 .downloads-empty {
-  opacity: 0.7;
+  margin: var(--space-medium);
+  color: var(--muted);
 }
 
 #autofill-dialog,

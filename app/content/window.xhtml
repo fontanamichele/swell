@@ -23,6 +23,8 @@
       rel="stylesheet"
       href="chrome://formautofill/content/formautofill.css"
     />
+    <link rel="localization" href="branding/brand.ftl" />
+    <link rel="localization" href="toolkit/printing/printUI.ftl" />
     <script src="chrome://global/content/customElements.js"></script>
     <script type="module" src="chrome://swell/content/window.mjs"></script>
   </head>
@@ -51,6 +53,10 @@
             <div id="today" class="tree" data-root="today"></div>
           </section>
         </div>
+        <section id="downloads-panel" hidden="">
+          <h2 id="downloads-title">Downloads</h2>
+          <div id="downloads-list"></div>
+        </section>
         <footer id="sidebar-footer">
           <div id="footer-row">
             <button
@@ -77,37 +83,39 @@
         aria-label="Resize sidebar"
       ></div>
       <main id="content">
-        <div id="permission-bar" hidden="">
-          <span class="permission-text"></span>
-          <button id="permission-allow">Allow</button>
-          <button id="permission-block">Block</button>
-          <button id="permission-later">Not now</button>
-        </div>
-        <div id="media-bar" hidden="">
-          <span class="media-text"></span>
-          <select id="media-camera" hidden=""></select>
-          <select id="media-microphone" hidden=""></select>
-          <select id="media-screen" hidden=""></select>
-          <label id="media-remember-label">
-            <input type="checkbox" id="media-remember" /> Remember
-          </label>
-          <button id="media-allow">Allow</button>
-          <button id="media-block">Block</button>
-          <button id="media-later">Not now</button>
-        </div>
-        <div id="media-indicator" hidden="">
-          <span class="media-indicator-text"></span>
-          <button id="media-stop">Stop sharing</button>
-        </div>
-        <div id="autofill-bar" hidden="">
-          <span class="autofill-text"></span>
-          <button id="autofill-save">Save</button>
-          <button id="autofill-create" hidden="">Save as new</button>
-          <button id="autofill-never">Never</button>
-          <button id="autofill-later">Not now</button>
-        </div>
         <div id="pages"></div>
-        <div id="findbars"></div>
+        <div id="floating">
+          <div id="permission-bar" hidden="">
+            <span class="permission-text"></span>
+            <button id="permission-allow">Allow</button>
+            <button id="permission-block">Block</button>
+            <button id="permission-later">Not now</button>
+          </div>
+          <div id="media-bar" hidden="">
+            <span class="media-text"></span>
+            <select id="media-camera" hidden=""></select>
+            <select id="media-microphone" hidden=""></select>
+            <select id="media-screen" hidden=""></select>
+            <label id="media-remember-label">
+              <input type="checkbox" id="media-remember" /> Remember
+            </label>
+            <button id="media-allow">Allow</button>
+            <button id="media-block">Block</button>
+            <button id="media-later">Not now</button>
+          </div>
+          <div id="media-indicator" hidden="">
+            <span class="media-indicator-text"></span>
+            <button id="media-stop">Stop sharing</button>
+          </div>
+          <div id="autofill-bar" hidden="">
+            <span class="autofill-text"></span>
+            <button id="autofill-save">Save</button>
+            <button id="autofill-create" hidden="">Save as new</button>
+            <button id="autofill-never">Never</button>
+            <button id="autofill-later">Not now</button>
+          </div>
+          <div id="findbars"></div>
+        </div>
         <div id="empty">
           <p class="empty-title">Swell</p>
           <p class="empty-hint">
@@ -168,6 +176,8 @@
           <menuitem label="New Space&#x2026;" data-action="new-space" />
           <menuseparator />
           <menuitem label="Close Tab" data-action="close-tab" />
+          <menuseparator />
+          <menuitem label="Print&#x2026;" data-action="print" />
           <!-- Gecko moves these into the menu that macOS calls by the name
                of the application, and hides them here. -->
           <menuitem id="menu_mac_hide_app" label="Hide Swell" />
@@ -175,6 +185,21 @@
           <menuitem id="menu_mac_show_all" label="Show All" />
           <menuseparator id="menu_FileQuitSeparator" />
           <menuitem id="menu_FileQuitItem" label="Quit Swell" />
+        </menupopup>
+      </menu>
+      <menu id="edit-menu" label="Edit">
+        <menupopup>
+          <menuitem label="Undo" data-action="edit:cmd_undo" />
+          <menuitem label="Redo" data-action="edit:cmd_redo" />
+          <menuseparator />
+          <menuitem label="Cut" data-action="edit:cmd_cut" />
+          <menuitem label="Copy" data-action="edit:cmd_copy" />
+          <menuitem label="Paste" data-action="edit:cmd_paste" />
+          <menuitem label="Select All" data-action="edit:cmd_selectAll" />
+          <menuseparator />
+          <menuitem label="Find&#x2026;" data-action="find" />
+          <menuitem label="Find Next" data-action="find-next" />
+          <menuitem label="Find Previous" data-action="find-previous" />
         </menupopup>
       </menu>
       <menu id="view-menu" label="View">
@@ -194,6 +219,12 @@
           <menuitem label="Addresses and Cards" data-action="autofill" />
           <menuseparator />
           <menuitem label="Import from Arc&#x2026;" data-action="import-arc" />
+        </menupopup>
+      </menu>
+      <menu id="window-menu" label="Window">
+        <menupopup>
+          <menuitem label="Minimize" data-action="minimize" />
+          <menuitem label="Zoom" data-action="zoom-window" />
         </menupopup>
       </menu>
     </menubar>
@@ -253,12 +284,6 @@
       <form id="autofill-form" hidden="" method="dialog"></form>
       <div class="buttons">
         <button type="button" id="autofill-close">Close</button>
-      </div>
-    </dialog>
-    <dialog id="downloads-dialog">
-      <div id="downloads-list"></div>
-      <div class="buttons">
-        <button type="button" id="downloads-close">Close</button>
       </div>
     </dialog>
     <dialog id="space-dialog">
