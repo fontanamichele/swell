@@ -1939,3 +1939,9 @@ textarea {
 #commandbar-list:empty {
   display: none;
 }
+
+/* When the lists are longer than the sidebar only they scroll: everything else
+   keeps its size, or the favorites would shrink under their own tiles. */
+#sidebar > :not(#lists) {
+  flex: none;
+}
