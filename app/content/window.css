@@ -1184,3 +1184,49 @@ dialog .buttons {
 .space.drop-after {
   box-shadow: 2px 0 0 var(--accent);
 }
+
+#navbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 var(--space-small) var(--space-small);
+}
+
+.nav-button {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.nav-button:hover:not(:disabled) {
+  background: var(--row-hover);
+}
+
+.nav-button:disabled {
+  opacity: 0.35;
+}
+
+.nav-address {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  margin-inline: 4px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 8px;
+  background: var(--row-hover);
+  overflow: hidden;
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-address.empty {
+  color: var(--muted);
+}

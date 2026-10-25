@@ -277,3 +277,7 @@ Not done yet: `commands`, updating all copies of an add-on, idle unload of persi
 - `SpaceCleanup.sys.mjs` forgets what the engine keeps for the container: site data and permissions (`deleteDataFromOriginAttributesPattern`), Places visits (a page visited only there is removed whole; the others get their counts recalculated), form history, the `autofill-profiles-<id>.json` file, the key of the saved logins, add-on copies and downloads. `browser_spaces.js` checks each of them against a space that stays.
 - UI: right-click on a space for Edit and Delete, drag a space button to reorder, and one dialog with an emoji picker (about 480 emoji in 9 groups, searchable by words) for creating and editing.
 - Not covered: the picker has no skin tones, and a deleted space's HSTS entries and certificate exceptions are not checked separately (they are cleared if the clear-data service handles them for the container).
+
+## Navigation controls
+
+A row at the top of the sidebar: back, forward, reload (stop while the page loads), a pill with the page's host (click opens the command bar on its address) and a button that copies the address. The engine bridge already tracked `canGoBack`, `canGoForward` and `loading` per tab and had `goBack`, `goForward`, `reload` and `stop`; this is only the face for them. Not done: the history list on a long press of back/forward, a lock icon for the connection, and editing the address in the pill itself.

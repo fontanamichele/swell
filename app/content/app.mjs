@@ -12,6 +12,7 @@ import { AutofillUI } from "chrome://swell/content/autofill.mjs";
 import { PasswordsUI } from "chrome://swell/content/passwords.mjs";
 import { ExtensionsUI } from "chrome://swell/content/extensions.mjs";
 import { MediaUI } from "chrome://swell/content/media.mjs";
+import { NavBar } from "chrome://swell/content/navbar.mjs";
 import { SpaceEditor } from "chrome://swell/content/space-editor.mjs";
 import { ExtensionActionsUI } from "chrome://swell/content/extension-actions.mjs";
 
@@ -55,6 +56,7 @@ export class App {
     this.extensionActions = new ExtensionActionsUI(this);
     this.media = new MediaUI(this);
     this.spaceEditor = new SpaceEditor(this);
+    this.navBar = new NavBar(this);
     this.#renderQueued = false;
   }
 
@@ -302,6 +304,7 @@ export class App {
   render() {
     this.sidebar.render();
     this.extensionActions.render();
+    this.navBar.render();
   }
 
   // Reports a failed command instead of leaving the window silently stale.

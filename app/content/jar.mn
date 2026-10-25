@@ -19,6 +19,7 @@ swell.jar:
   content/swell/extensions.mjs (extensions.mjs)
   content/swell/extension-actions.mjs (extension-actions.mjs)
   content/swell/media.mjs     (media.mjs)
+  content/swell/navbar.mjs    (navbar.mjs)
   content/swell/space-editor.mjs (space-editor.mjs)
   content/swell/emoji-data.mjs (emoji-data.mjs)
 % content formautofill %content/formautofill/ contentaccessible=no
