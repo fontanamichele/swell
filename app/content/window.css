@@ -44,6 +44,9 @@ body {
   margin: 0;
   height: 100%;
   background: var(--sidebar-bg);
+  /* The margins around the page and the empty parts of the strip drag the
+     window; what is clickable says so below. */
+  -moz-window-dragging: drag;
   color: var(--sidebar-fg);
   -moz-user-select: none;
   user-select: none;
@@ -128,6 +131,16 @@ button {
     -moz-default-appearance: -moz-window-button-box;
     flex: none;
     margin-inline: 12px 8px;
+  }
+
+  /* The window buttons belong to the sidebar: macOS hides them when the box
+     has no size, so they go with the sidebar and come back floating with it. */
+  :root[sidebar-collapsed]:not([sidebar-peek]) #window-buttons-box {
+    display: none;
+  }
+
+  :root[sidebar-collapsed][sidebar-peek] #window-buttons-box {
+    margin-inline-start: calc(12px + var(--peek-gap));
   }
 
   #window-controls {
@@ -1464,4 +1477,16 @@ dialog .buttons {
 
 :root[sidebar-collapsed] #sidebar-toggle {
   --icon: url("chrome://swell/content/icons/sidebar-expand.svg");
+}
+
+#sidebar,
+#content,
+#sidebar-peek-edge,
+#sidebar-resizer,
+dialog,
+button,
+input,
+select,
+textarea {
+  -moz-window-dragging: no-drag;
 }

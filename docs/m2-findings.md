@@ -299,3 +299,10 @@ A row at the top of the sidebar: back, forward, reload (stop while the page load
 ## Hidden sidebar
 
 With the sidebar hidden its button goes too and the page keeps its margin (on macOS the window buttons stay, over the page's corner). A 6px hot edge at the left of the window brings the sidebar back, sliding in over 200ms with an ease, as a card (10px radius) an 8px margin away from the window's edges, like the page, with its button and arrows, until the pointer has been off it for 300ms; the button then pins it open. The edge is an element of the window, not a mouse listener, because the window does not see the mouse over a page. Not done: revealing the sidebar when the pointer is near the edge but the mouse is dragging something.
+
+## Dragging, window buttons and the shortcut
+
+- The window background is a drag region (`-moz-window-dragging: drag` on the root), and the sidebar, the page, dialogs and every button, input and select are `no-drag`: HTML buttons are not excluded by default (only XUL ones are, in `xul.css`), and later frames cut holes in earlier drag regions. So the margins around the page card, the strip and the empty top row drag the window.
+- The macOS window buttons belong to the sidebar: with the sidebar hidden `#window-buttons-box` is `display: none`, an empty rect hides them, and they come back inside the floating card.
+- A floating sidebar that the pointer reached through the left edge stays when the pointer leaves the window, so that it can be reached by pushing against the border; it goes 300ms after the pointer has gone from it into the window.
+- Accel+S: a tap shows or hides the sidebar when the key comes up, held for 250ms a hidden sidebar floats back until the key (or the accel key; macOS sends no key up for S while Command is down) is released. Dragging, hover at the border and the held key were not tried by hand.

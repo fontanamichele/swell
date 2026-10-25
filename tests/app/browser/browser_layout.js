@@ -129,7 +129,9 @@ add_task(async function test_a_hidden_sidebar_floats_back_at_the_left_edge() {
   Assert.equal(gapAbove, gapBelow, "and centred in the height of the window");
 
   sidebar.dispatchEvent(new MouseEvent("mouseenter"));
-  sidebar.dispatchEvent(new MouseEvent("mouseleave"));
+  sidebar.dispatchEvent(
+    new MouseEvent("mouseleave", { clientX: 300, clientY: 300 })
+  );
   sidebar.dispatchEvent(new MouseEvent("mouseenter"));
   await new Promise(resolve => requestAnimationFrame(resolve));
   Assert.ok(
@@ -137,7 +139,9 @@ add_task(async function test_a_hidden_sidebar_floats_back_at_the_left_edge() {
     "coming back in time keeps it"
   );
 
-  sidebar.dispatchEvent(new MouseEvent("mouseleave"));
+  sidebar.dispatchEvent(
+    new MouseEvent("mouseleave", { clientX: 300, clientY: 300 })
+  );
   await TestUtils.waitForCondition(
     () => !document.documentElement.hasAttribute("sidebar-peek"),
     "it goes when the pointer has left"
@@ -233,4 +237,89 @@ add_task(async function test_macos_reserves_room_for_the_window_buttons() {
     rect("sidebar-toggle").left + 1,
     "before the sidebar button"
   );
+});
+
+add_task(async function test_the_window_is_dragged_by_its_margins() {
+  await swellApp();
+  const css = await (await fetch("chrome://swell/content/window.css")).text();
+  Assert.ok(
+    /html,\s*body \{[^}]*-moz-window-dragging: drag/s.test(css),
+    "the window background drags the window"
+  );
+  Assert.ok(
+    /#content,[^{]*button,[^{]*\{\s*-moz-window-dragging: no-drag/s.test(css),
+    "the page and what is clickable do not"
+  );
+});
+
+add_task(async function test_the_window_buttons_belong_to_the_sidebar() {
+  if (Services.appinfo.OS != "Darwin") {
+    return;
+  }
+  const { app } = await swellApp();
+  const box = byId("window-buttons-box");
+  Assert.notEqual(getComputedStyle(box).display, "none", "shown with it");
+  app.sidebarLayout.toggle();
+  Assert.equal(
+    getComputedStyle(box).display,
+    "none",
+    "no room for them when the sidebar is hidden, so macOS hides them"
+  );
+  byId("sidebar-peek-edge").dispatchEvent(new MouseEvent("mouseenter"));
+  Assert.notEqual(getComputedStyle(box).display, "none", "back with it");
+  Assert.greaterOrEqual(
+    box.getBoundingClientRect().left,
+    rect("sidebar").left,
+    "inside the floating sidebar"
+  );
+  app.sidebarLayout.toggle();
+});
+
+add_task(
+  async function test_the_sidebar_stays_when_the_pointer_leaves_the_window() {
+    const { app } = await swellApp();
+    const root = document.documentElement;
+    app.sidebarLayout.toggle();
+    const edge = byId("sidebar-peek-edge");
+    edge.dispatchEvent(new MouseEvent("mouseenter"));
+    edge.dispatchEvent(
+      new MouseEvent("mouseleave", { clientX: -1, clientY: 300 })
+    );
+    // A delay longer than the one that hides it.
+    // eslint-disable-next-line mozilla/no-arbitrary-setTimeout
+    await new Promise(resolve => setTimeout(resolve, 600));
+    Assert.ok(root.hasAttribute("sidebar-peek"), "it stays at the border");
+
+    edge.dispatchEvent(
+      new MouseEvent("mouseleave", { clientX: 200, clientY: 300 })
+    );
+    await TestUtils.waitForCondition(
+      () => !root.hasAttribute("sidebar-peek"),
+      "it goes when the pointer moves on over the page"
+    );
+    app.sidebarLayout.toggle();
+  }
+);
+
+add_task(async function test_holding_accel_s_shows_the_sidebar_while_held() {
+  const { app } = await swellApp();
+  const root = document.documentElement;
+  app.sidebarLayout.toggle();
+
+  EventUtils.synthesizeKey("s", { accelKey: true, type: "keydown" }, window);
+  await TestUtils.waitForCondition(
+    () => root.hasAttribute("sidebar-peek"),
+    "held, the sidebar floats in"
+  );
+  EventUtils.synthesizeKey("s", { accelKey: true, type: "keyup" }, window);
+  Assert.ok(!root.hasAttribute("sidebar-peek"), "and goes when released");
+  Assert.ok(app.sidebarLayout.collapsed, "without having been shown for good");
+
+  EventUtils.synthesizeKey("s", { accelKey: true, type: "keydown" }, window);
+  EventUtils.synthesizeKey("s", { accelKey: true, type: "keyup" }, window);
+  Assert.ok(!app.sidebarLayout.collapsed, "a tap shows it for good");
+  EventUtils.synthesizeKey("s", { accelKey: true, type: "keydown" }, window);
+  EventUtils.synthesizeKey("s", { accelKey: true, type: "keyup" }, window);
+  Assert.ok(app.sidebarLayout.collapsed, "and another hides it");
+  app.sidebarLayout.toggle();
 });

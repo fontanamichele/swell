@@ -8,6 +8,7 @@ const MIN_WIDTH = 180;
 const MAX_FRACTION = 0.5;
 const DEFAULT_WIDTH = 264;
 const PEEK_DELAY_MS = 300;
+const HOLD_MS = 250;
 
 /**
  * How wide the sidebar is and whether it is shown: dragged on the edge between
@@ -22,6 +23,7 @@ export class SidebarLayout {
   #edge;
   #sidebar;
   #peekTimer = null;
+  #hold = null;
 
   constructor(app) {
     this.#app = app;
@@ -33,10 +35,14 @@ export class SidebarLayout {
     this.#sidebar = doc.getElementById("sidebar");
     const left = doc.getElementById("titlebar-left");
     this.#edge.addEventListener("mouseenter", () => this.#peek(true));
+    this.#edge.addEventListener("mouseleave", event => this.#left(event));
     for (const area of [this.#sidebar, left]) {
       area.addEventListener("mouseenter", () => this.#holdPeek());
-      area.addEventListener("mouseleave", () => this.#releasePeek());
+      area.addEventListener("mouseleave", event => this.#left(event));
     }
+    const win = doc.defaultView;
+    win.addEventListener("keyup", event => this.#keyUp(event));
+    win.addEventListener("blur", () => this.#endHold(false));
     this.#toggle.addEventListener("click", () => this.toggle());
     this.#resizer.addEventListener("pointerdown", event => this.#drag(event));
     this.#resizer.addEventListener("dblclick", () =>
@@ -84,6 +90,65 @@ export class SidebarLayout {
   #holdPeek() {
     this.#app.document.defaultView.clearTimeout(this.#peekTimer);
     this.#peekTimer = null;
+  }
+
+  // The pointer went off the edge, the sidebar or the row above it. Out of the
+  // window (at the left border, say) it stays, so that it can be reached by
+  // pushing the pointer against the border; back in the window, over the page,
+  // it goes after a moment.
+  #left(event) {
+    const win = this.#app.document.defaultView;
+    const outside =
+      event.clientX <= 0 ||
+      event.clientY <= 0 ||
+      event.clientX >= win.innerWidth - 1 ||
+      event.clientY >= win.innerHeight - 1;
+    if (!outside) {
+      this.#releasePeek();
+    }
+  }
+
+  /**
+   * The accel+S shortcut went down. A tap shows or hides the sidebar when the
+   * key comes up; held, a hidden sidebar floats back for as long as it is held.
+   *
+   * @param {KeyboardEvent} event
+   */
+  shortcutDown(event) {
+    if (event.repeat || this.#hold) {
+      return;
+    }
+    const win = this.#app.document.defaultView;
+    const hold = { peeking: false, timer: null };
+    hold.timer = win.setTimeout(() => {
+      if (this.collapsed) {
+        hold.peeking = true;
+        this.#peek(true);
+      }
+    }, HOLD_MS);
+    this.#hold = hold;
+  }
+
+  #keyUp(event) {
+    // macOS does not send the key up of S while Command is down.
+    if (["s", "S", "Meta", "Control"].includes(event.key)) {
+      this.#endHold(true);
+    }
+  }
+
+  #endHold(tap) {
+    const hold = this.#hold;
+    if (!hold) {
+      return;
+    }
+    this.#hold = null;
+    this.#app.document.defaultView.clearTimeout(hold.timer);
+    if (hold.peeking) {
+      this.#holdPeek();
+      this.#root.toggleAttribute("sidebar-peek", false);
+    } else if (tap) {
+      this.toggle();
+    }
   }
 
   // The sidebar stays a moment after the pointer leaves, so that a slip off

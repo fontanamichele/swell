@@ -459,7 +459,7 @@ export class App {
         this.bridge.reload();
         return true;
       case "s":
-        this.sidebarLayout.toggle();
+        this.sidebarLayout.shortcutDown(event);
         return true;
       case "f":
         this.bridge.openFind();
