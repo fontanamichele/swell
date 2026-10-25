@@ -348,8 +348,8 @@ button {
 }
 
 :root {
-  /* Shorter than the page and centred in it, so that it reads as floating. */
-  --peek-gap: 16px;
+  /* The floating sidebar is as tall as the window and flush to its left edge. */
+  --peek-gap: 0px;
   --peek-top: var(--peek-gap);
   --peek-bottom: var(--peek-gap);
 }
@@ -377,7 +377,7 @@ button {
   background: var(--sidebar-bg);
   border-radius: 10px;
   box-shadow: var(--shadow);
-  transform: translateX(calc(-100% - 2 * var(--peek-gap)));
+  transform: translateX(calc(-100% - 48px));
   visibility: hidden;
   transition:
     transform 200ms ease,
@@ -388,17 +388,6 @@ button {
   transform: none;
   visibility: visible;
   transition: transform 200ms ease;
-}
-
-@media (-moz-platform: macos) {
-  :root[customtitlebar][sidebar-collapsed] #sidebar {
-    padding-top: calc(var(--titlebar-height) - var(--content-margin));
-  }
-
-  /* The row of buttons moves down with the card. */
-  :root[sidebar-collapsed][sidebar-peek] #titlebar-left {
-    margin-top: calc(var(--peek-gap) - var(--content-margin));
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1479,7 +1468,11 @@ dialog .buttons {
   --icon: url("chrome://swell/content/icons/sidebar-expand.svg");
 }
 
-#sidebar,
+#lists,
+#favorites,
+#navbar,
+#extension-actions,
+#sidebar-footer,
 #content,
 #sidebar-peek-edge,
 #sidebar-resizer,

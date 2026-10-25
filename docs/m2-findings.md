@@ -306,3 +306,6 @@ With the sidebar hidden its button goes too and the page keeps its margin (on ma
 - The macOS window buttons belong to the sidebar: with the sidebar hidden `#window-buttons-box` is `display: none`, an empty rect hides them, and they come back inside the floating card.
 - A floating sidebar that the pointer reached through the left edge stays when the pointer leaves the window, so that it can be reached by pushing against the border; it goes 300ms after the pointer has gone from it into the window.
 - Accel+S: a tap shows or hides the sidebar when the key comes up, held for 250ms a hidden sidebar floats back until the key (or the accel key; macOS sends no key up for S while Command is down) is released. Dragging, hover at the border and the held key were not tried by hand.
+
+- Window drag regions are built in document order and a later `no-drag` frame cuts a hole in an earlier `drag` one. `#titlebar` comes before `#app`, so a `no-drag` on the whole `#sidebar` cut away the top row of the sidebar. Only the clickable parts of the sidebar (`#lists`, `#favorites`, `#navbar`, the extension buttons, the footer) are `no-drag` now.
+- The floating sidebar is back to the full height of the window, flush with its left edge, with only the radius (`--peek-gap` is 0; setting it above 0 gives the card with margins again, but the macOS row then needs its offset back).

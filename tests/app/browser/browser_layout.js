@@ -118,15 +118,21 @@ add_task(async function test_a_hidden_sidebar_floats_back_at_the_left_edge() {
   Assert.equal(getComputedStyle(byId("nav-buttons")).visibility, "visible");
 
   await TestUtils.waitForCondition(
-    () => Math.round(rect("sidebar").left) == 16,
-    "it settles as far from the window's left edge as from its top and bottom"
+    () => Math.round(rect("sidebar").left) == 0,
+    "it settles flush with the window's left edge"
   );
-  const gapBelow = Math.round(window.innerHeight - rect("sidebar").bottom);
   const stripHeight =
     Services.appinfo.OS == "Darwin" ? 0 : rect("titlebar").height;
-  const gapAbove = Math.round(rect("sidebar").top - stripHeight);
-  Assert.greater(gapBelow, 8, "it is shorter than the page");
-  Assert.equal(gapAbove, gapBelow, "and centred in the height of the window");
+  Assert.equal(
+    Math.round(window.innerHeight - rect("sidebar").bottom),
+    0,
+    "down to the bottom of the window"
+  );
+  Assert.equal(
+    Math.round(rect("sidebar").top),
+    Math.round(stripHeight),
+    "and from the top of the window, under the strip where there is one"
+  );
 
   sidebar.dispatchEvent(new MouseEvent("mouseenter"));
   sidebar.dispatchEvent(
@@ -249,6 +255,10 @@ add_task(async function test_the_window_is_dragged_by_its_margins() {
   Assert.ok(
     /#content,[^{]*button,[^{]*\{\s*-moz-window-dragging: no-drag/s.test(css),
     "the page and what is clickable do not"
+  );
+  Assert.ok(
+    !/(^|\n)#sidebar,\s*[^{]*\{\s*-moz-window-dragging: no-drag/.test(css),
+    "the sidebar as a whole does not either, so that its top part drags"
   );
 });
 
