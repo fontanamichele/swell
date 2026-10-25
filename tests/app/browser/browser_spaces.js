@@ -51,9 +51,8 @@ add_task(async function test_the_dialog_creates_a_space_with_a_picked_emoji() {
   Assert.ok(picker.hidden, "the picker starts closed");
   document.getElementById("space-emoji-button").click();
   Assert.ok(!picker.hidden, "the button opens it");
-  Assert.greater(
-    document.querySelectorAll("#emoji-grid .emoji").length,
-    20,
+  await TestUtils.waitForCondition(
+    () => document.querySelectorAll("#emoji-grid .emoji").length > 100,
     "a category fills the grid"
   );
 
@@ -61,9 +60,8 @@ add_task(async function test_the_dialog_creates_a_space_with_a_picked_emoji() {
   search.value = "rocket";
   search.dispatchEvent(new Event("input"));
   const found = [...document.querySelectorAll("#emoji-grid .emoji")];
-  Assert.deepEqual(
-    found.map(button => button.textContent),
-    ["\u{1F680}"],
+  Assert.ok(
+    found.some(button => button.textContent == "\u{1F680}"),
     "a search matches the words of an emoji across categories"
   );
   search.value = "zzzz";
@@ -74,7 +72,9 @@ add_task(async function test_the_dialog_creates_a_space_with_a_picked_emoji() {
   );
   search.value = "rocket";
   search.dispatchEvent(new Event("input"));
-  document.querySelector("#emoji-grid .emoji").click();
+  [...document.querySelectorAll("#emoji-grid .emoji")]
+    .find(button => button.textContent == "\u{1F680}")
+    .click();
   Assert.ok(picker.hidden, "choosing closes the picker");
   Assert.equal(
     document.getElementById("space-emoji-button").textContent,
@@ -136,6 +136,10 @@ add_task(async function test_a_space_is_edited_from_its_context_menu() {
   document.getElementById("space-title").value = "Edited";
   document.getElementById("emoji-clear").click();
   document.getElementById("space-emoji-button").click();
+  await TestUtils.waitForCondition(
+    () => document.querySelectorAll("#emoji-grid .emoji").length > 100,
+    "the emoji load"
+  );
   const search = document.getElementById("emoji-search");
   search.value = "tree";
   search.dispatchEvent(new Event("input"));
@@ -447,5 +451,82 @@ add_task(
       "rgba(0, 0, 0, 0)",
       "and nothing opaque is drawn over it"
     );
+  }
+);
+
+add_task(
+  async function test_the_picker_has_the_whole_emoji_set_with_skin_tones() {
+    const { app } = await swellApp();
+    const data = await (
+      await fetch("chrome://swell/content/emoji-data.json")
+    ).json();
+    const all = data.flatMap(category => category.emoji);
+    Assert.greater(all.length, 1800, "all of the emoji of the data set");
+    Assert.deepEqual(
+      data.map(category => category.name),
+      [
+        "Smileys & emotion",
+        "People & body",
+        "Animals & nature",
+        "Food & drink",
+        "Travel & places",
+        "Activities",
+        "Objects",
+        "Symbols",
+        "Flags",
+      ],
+      "in the groups of Unicode"
+    );
+    Assert.greater(
+      all.filter(entry => entry[2]).length,
+      250,
+      "many have skin tones"
+    );
+
+    app.spaceEditor.create();
+    document.getElementById("space-emoji-button").click();
+    const grid = document.getElementById("emoji-grid");
+    const search = document.getElementById("emoji-search");
+    await TestUtils.waitForCondition(
+      () => grid.querySelectorAll(".emoji").length > 100,
+      "the emoji load"
+    );
+    const find = (word, glyph) => {
+      search.value = word;
+      search.dispatchEvent(new Event("input"));
+      return [...grid.querySelectorAll(".emoji")].find(
+        b => b.textContent == glyph
+      );
+    };
+    Assert.ok(find("italy", "\u{1F1EE}\u{1F1F9}"), "flags are there");
+    Assert.ok(find("wave", "\u{1F44B}"), "a waving hand, by default");
+
+    const tones = [...document.querySelectorAll("#emoji-tones .emoji-tone")];
+    Assert.equal(tones.length, 6, "no tone and the five tones");
+    tones[3].click();
+    const medium = find("wave", "\u{1F44B}\u{1F3FD}");
+    Assert.ok(medium, "the chosen skin tone shows on the emoji that have one");
+    Assert.ok(!find("wave", "\u{1F44B}"), "instead of the default");
+    Assert.ok(
+      find("rocket", "\u{1F680}"),
+      "and an emoji without tones does not change"
+    );
+    find("wave", "\u{1F44B}\u{1F3FD}").click();
+    Assert.equal(
+      document.getElementById("space-emoji-button").textContent,
+      "\u{1F44B}\u{1F3FD}",
+      "it is the emoji of the space"
+    );
+    document.getElementById("space-cancel").click();
+
+    // Leave the tone as it was found.
+    app.spaceEditor.create();
+    document.getElementById("space-emoji-button").click();
+    await TestUtils.waitForCondition(
+      () => document.querySelectorAll("#emoji-tones .emoji-tone").length == 6,
+      "the tones show"
+    );
+    document.querySelectorAll("#emoji-tones .emoji-tone")[0].click();
+    document.getElementById("space-cancel").click();
   }
 );

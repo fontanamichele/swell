@@ -1855,3 +1855,33 @@ textarea {
   width: 15px;
   height: 15px;
 }
+
+#emoji-tones {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--space-small);
+}
+
+.emoji-tone {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.emoji-tone:hover {
+  background: var(--row-hover);
+}
+
+.emoji-tone.selected {
+  background: var(--row-selected);
+  outline: 2px solid var(--accent);
+}
+
+#emoji-grid {
+  height: 220px;
+}

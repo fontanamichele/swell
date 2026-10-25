@@ -2,8 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { EMOJI_CATEGORIES } from "chrome://swell/content/emoji-data.mjs";
-
 // What a space's sidebar can be tinted with; the first is no tint at all.
 export const TINTS = [
   { name: "None", value: null },
@@ -16,6 +14,15 @@ export const TINTS = [
   { name: "Green", value: "#22c55e" },
   { name: "Teal", value: "#14b8a6" },
   { name: "Graphite", value: "#64748b" },
+];
+
+// The skin tone modifiers of Unicode, light to dark.
+const SKIN_TONES = [
+  "\u{1F3FB}",
+  "\u{1F3FC}",
+  "\u{1F3FD}",
+  "\u{1F3FE}",
+  "\u{1F3FF}",
 ];
 
 const NO_EMOJI_LABEL = "Choose an emoji";
@@ -40,7 +47,11 @@ export class SpaceEditor {
   #glyph = "";
   #tint = null;
   #tints;
-  #category = EMOJI_CATEGORIES[0].name;
+  #emojiLoaded = null;
+  #categories = [];
+  #category = null;
+  #tone = 0;
+  #tones;
 
   constructor(app) {
     this.#app = app;
@@ -55,6 +66,8 @@ export class SpaceEditor {
     this.#tabs = doc.getElementById("emoji-tabs");
     this.#grid = doc.getElementById("emoji-grid");
     this.#tints = doc.getElementById("space-tints");
+    this.#tones = doc.getElementById("emoji-tones");
+    this.#tone = Number(this.#storedTone());
     this.#renderTints();
 
     doc
@@ -83,7 +96,6 @@ export class SpaceEditor {
       true
     );
     this.#dialog.addEventListener("close", () => this.#togglePicker(false));
-    this.#renderTabs();
     this.#installDeleteDialog();
   }
 
@@ -176,14 +188,84 @@ export class SpaceEditor {
     this.#picker.hidden = !show;
     this.#emojiButton.setAttribute("aria-expanded", String(show));
     if (show) {
-      this.#renderGrid();
       this.#search.focus();
+      this.#loadEmoji().then(() => this.#renderGrid());
     }
+  }
+
+  // The emoji, in the groups and with the words of the Unicode data set
+  // (emoji-data.json, from emojibase). Read when the picker is first opened.
+  #loadEmoji() {
+    this.#emojiLoaded ??= fetch("chrome://swell/content/emoji-data.json")
+      .then(response => response.json())
+      .then(categories => {
+        this.#categories = categories;
+        this.#category = categories[0].name;
+        this.#renderTabs();
+        this.#renderTones();
+      });
+    return this.#emojiLoaded;
+  }
+
+  #storedTone() {
+    try {
+      return (
+        Services.xulStore.getValue(
+          "chrome://swell/content/window.xhtml",
+          "swell-window",
+          "emojitone"
+        ) || 0
+      );
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  #renderTones() {
+    // The first is no tone; the others are the five tones of Unicode.
+    const hands = ["\u{1F44B}", ...SKIN_TONES.map(tone => `\u{1F44B}${tone}`)];
+    const names = [
+      "Default",
+      "Light",
+      "Medium-light",
+      "Medium",
+      "Medium-dark",
+      "Dark",
+    ];
+    this.#tones.replaceChildren(
+      ...hands.map((hand, tone) => {
+        const button = this.#doc.createElement("button");
+        button.type = "button";
+        button.className = "emoji-tone";
+        button.textContent = hand;
+        button.title = `${names[tone]} skin tone`;
+        button.setAttribute("role", "radio");
+        button.setAttribute("aria-label", button.title);
+        button.setAttribute("aria-checked", String(tone == this.#tone));
+        button.classList.toggle("selected", tone == this.#tone);
+        button.addEventListener("click", () => {
+          this.#tone = tone;
+          try {
+            Services.xulStore.setValue(
+              "chrome://swell/content/window.xhtml",
+              "swell-window",
+              "emojitone",
+              String(tone)
+            );
+          } catch (e) {
+            // The tone is a convenience.
+          }
+          this.#renderTones();
+          this.#renderGrid();
+        });
+        return button;
+      })
+    );
   }
 
   #renderTabs() {
     this.#tabs.replaceChildren(
-      ...EMOJI_CATEGORIES.map(category => {
+      ...this.#categories.map(category => {
         const tab = this.#doc.createElement("button");
         tab.type = "button";
         tab.className = "emoji-tab";
@@ -201,6 +283,9 @@ export class SpaceEditor {
   }
 
   #renderGrid() {
+    if (!this.#categories.length) {
+      return;
+    }
     const query = this.#search.value.trim().toLowerCase();
     for (const tab of this.#tabs.children) {
       tab.classList.toggle(
@@ -209,20 +294,25 @@ export class SpaceEditor {
       );
     }
     const entries = query
-      ? EMOJI_CATEGORIES.flatMap(category => category.emoji).filter(
-          ([, keywords]) =>
+      ? this.#categories
+          .flatMap(category => category.emoji)
+          .filter(([, keywords]) =>
             query.split(/\s+/).every(word => keywords.includes(word))
-        )
-      : EMOJI_CATEGORIES.find(category => category.name == this.#category)
+          )
+      : this.#categories.find(category => category.name == this.#category)
           .emoji;
+    // An emoji with skin tones is shown in the chosen one.
+    const shown = ([glyph, , skins]) =>
+      skins && this.#tone ? skins[this.#tone - 1] : glyph;
     this.#grid.replaceChildren(
-      ...entries.map(([glyph, keywords]) => {
+      ...entries.map(entry => {
+        const glyph = shown(entry);
         const button = this.#doc.createElement("button");
         button.type = "button";
         button.className = "emoji";
         button.textContent = glyph;
-        button.title = keywords;
-        button.setAttribute("aria-label", keywords);
+        button.title = entry[1].split(" ").slice(0, 4).join(", ");
+        button.setAttribute("aria-label", entry[1].split(" ")[0]);
         button.classList.toggle("selected", glyph == this.#glyph);
         button.addEventListener("click", () => this.#choose(glyph));
         return button;
