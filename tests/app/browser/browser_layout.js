@@ -12,8 +12,8 @@ add_task(async function test_the_page_is_a_rounded_card_with_a_margin() {
   const content = getComputedStyle(byId("content"));
   Assert.equal(content.borderTopLeftRadius, "10px", "rounded corners");
   Assert.equal(content.overflow, "hidden", "that clip the page");
-  Assert.equal(content.marginRight, "12px", "a margin on the right");
-  Assert.equal(content.marginBottom, "12px", "and at the bottom");
+  Assert.equal(content.marginRight, "10px", "a margin on the right");
+  Assert.equal(content.marginBottom, "10px", "and at the bottom");
   Assert.equal(content.marginLeft, "0px", "next to the sidebar");
   Assert.greater(rect("content").left, rect("sidebar").right - 1);
 });

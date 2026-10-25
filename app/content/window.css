@@ -1713,15 +1713,15 @@ textarea {
 
 /* ---- Details: spacing, icons, close buttons, sliding between spaces ---- */
 :root {
-  --content-margin: 12px;
+  --content-margin: 10px;
 }
 
 #sidebar {
-  padding-inline: 12px;
+  padding-inline: 10px;
 }
 
 #titlebar-left {
-  padding-inline: 12px;
+  padding-inline: 10px;
 }
 
 .tree {
@@ -1731,15 +1731,15 @@ textarea {
 }
 
 .row .avatar {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  font-size: 10px;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  font-size: 9px;
 }
 
 .favorite .avatar {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
 }
 
 .close {

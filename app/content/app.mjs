@@ -114,6 +114,7 @@ export class App {
       this.scheduleRender();
     });
     this.#installShortcuts();
+    this.#installAppCommands();
     this.#windowChanged();
     this.render();
     this.downloads.init();
@@ -471,6 +472,39 @@ export class App {
         ? `Deleted ${space.title}, but could not remove: ${failures.join("; ")}`
         : `Deleted ${space.title}`,
     });
+  }
+
+  // The back and forward buttons of a mouse reach the window as an AppCommand,
+  // not as mouse events, and without saying where the pointer is. Over the
+  // sidebar they change the space, anywhere else they move through the history
+  // of the tab in front.
+  #installAppCommands() {
+    const win = this.document.defaultView;
+    let overSidebar = false;
+    for (const id of ["sidebar", "titlebar-left"]) {
+      const area = this.document.getElementById(id);
+      area.addEventListener("mouseenter", () => (overSidebar = true));
+      area.addEventListener("mouseleave", () => (overSidebar = false));
+    }
+    win.addEventListener(
+      "AppCommand",
+      event => {
+        const delta = { Back: -1, Forward: 1 }[event.command];
+        if (!delta) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        if (overSidebar) {
+          this.switchSpaceBy(delta);
+        } else if (delta < 0) {
+          this.bridge.goBack();
+        } else {
+          this.bridge.goForward();
+        }
+      },
+      true
+    );
   }
 
   #installShortcuts() {

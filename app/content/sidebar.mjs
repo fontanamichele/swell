@@ -47,18 +47,6 @@ export class Sidebar {
     doc
       .getElementById("new-folder")
       .addEventListener("click", () => app.newFolder());
-    // The back and forward buttons of a mouse go to the previous and next space.
-    for (const area of [
-      doc.getElementById("sidebar"),
-      doc.getElementById("titlebar-left"),
-    ]) {
-      area.addEventListener("mouseup", event => {
-        if (event.button == 3 || event.button == 4) {
-          event.preventDefault();
-          app.switchSpaceBy(event.button == 3 ? -1 : 1);
-        }
-      });
-    }
     doc
       .getElementById("downloads-button")
       .addEventListener("click", () => app.downloads.show());

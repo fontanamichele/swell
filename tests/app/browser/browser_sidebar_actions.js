@@ -9,6 +9,12 @@ const SECOND = `${BASE}file_links.html`;
 
 const byId = id => document.getElementById(id);
 
+// What the mouse's back and forward buttons send to the window.
+const appCommand = command =>
+  window.dispatchEvent(
+    new CommandEvent("AppCommand", { command, bubbles: true, cancelable: true })
+  );
+
 async function inFront(bridge, app, space, url = FIRST) {
   const tab = await openInSpace(bridge, space.id, url);
   await app.switchSpace(space.id);
@@ -77,7 +83,7 @@ add_task(async function test_the_close_button_and_icons_are_drawn_to_size() {
   Assert.equal(box.width, box.height, "in a square");
   Assert.equal(
     getComputedStyle(rowFor(first.node).querySelector(".avatar")).width,
-    "16px",
+    "14px",
     "icons are small"
   );
   await closeAllTabs(bridge);
@@ -94,12 +100,12 @@ add_task(async function test_mouse_buttons_go_back_and_forward_in_a_page() {
     () => app.selectedTab?.url == SECOND && !app.selectedTab.loading,
     "the second page loads"
   );
-  EventUtils.synthesizeMouse(tab.browser, 20, 20, { button: 3 }, window);
+  appCommand("Back");
   await rendered(
     () => app.selectedTab?.url == FIRST && !app.selectedTab.loading,
     "the back button goes back"
   );
-  EventUtils.synthesizeMouse(tab.browser, 20, 20, { button: 4 }, window);
+  appCommand("Forward");
   await rendered(
     () => app.selectedTab?.url == SECOND && !app.selectedTab.loading,
     "the forward button goes forward"
@@ -112,12 +118,9 @@ add_task(async function test_mouse_buttons_on_the_sidebar_switch_spaces() {
   const a = await freshSpace(app, "Slide A");
   const b = await freshSpace(app, "Slide B");
   const sidebar = byId("sidebar");
-  const press = button =>
-    sidebar.dispatchEvent(
-      new MouseEvent("mouseup", { button, bubbles: true, cancelable: true })
-    );
+  sidebar.dispatchEvent(new MouseEvent("mouseenter"));
 
-  press(3);
+  appCommand("Back");
   await rendered(() => app.activeSpaceId == a.id, "back is the previous space");
   await rendered(
     () => sidebar.classList.contains("slide-prev"),
@@ -127,7 +130,7 @@ add_task(async function test_mouse_buttons_on_the_sidebar_switch_spaces() {
     getComputedStyle(byId("lists")).animationName.includes("slide-in-prev"),
     "with an animation"
   );
-  press(4);
+  appCommand("Forward");
   await rendered(() => app.activeSpaceId == b.id, "forward is the next one");
   await rendered(
     () => sidebar.classList.contains("slide-next"),
@@ -135,6 +138,7 @@ add_task(async function test_mouse_buttons_on_the_sidebar_switch_spaces() {
   );
   const last = app.spaces.at(-1);
   await app.switchSpace(last.id);
-  press(4);
+  appCommand("Forward");
   Assert.equal(app.activeSpaceId, last.id, "and it stops at the last space");
+  sidebar.dispatchEvent(new MouseEvent("mouseleave"));
 });

@@ -74,7 +74,6 @@ ChromeUtils.registerWindowActor("SwellPage", {
     events: {
       contextmenu: { mozSystemGroup: true },
       click: { mozSystemGroup: true, capture: true },
-      mouseup: { mozSystemGroup: true },
     },
   },
   allFrames: false,
