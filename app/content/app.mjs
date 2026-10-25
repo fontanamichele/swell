@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { Sidebar } from "chrome://swell/content/sidebar.mjs";
+import { Sidebar, isAway } from "chrome://swell/content/sidebar.mjs";
 import { CommandBar } from "chrome://swell/content/commandbar.mjs";
 import { ContextMenu } from "chrome://swell/content/menu.mjs";
 import { Toasts } from "chrome://swell/content/toasts.mjs";
@@ -349,15 +349,27 @@ export class App {
     return next ? this.switchSpace(next.id) : null;
   }
 
-  // Pins the tab in front, or unpins it if it is pinned.
-  togglePin() {
+  // Pins the tab in front. If it is pinned and has gone to another page, the
+  // page it is on becomes the one it is pinned at; if it is on its pinned page,
+  // it is unpinned.
+  async togglePin() {
     const id = this.selectedNode;
     if (!id || !this.space) {
       return null;
     }
-    return this.state.parent(id) === this.space.todayRoot
-      ? this.pin(id)
-      : this.unpin(id);
+    if (this.state.parent(id) === this.space.todayRoot) {
+      return this.pin(id);
+    }
+    const tab = this.openTabs.get(id);
+    const info = this.state.describe(id);
+    if (tab && info && isAway(info.url, tab.url)) {
+      const done = await this.run(() =>
+        this.core.repinTab(tab.liveTab, tab.url, tab.title || tab.url)
+      );
+      this.toasts.show({ text: "Pinned page updated" });
+      return done;
+    }
+    return this.unpin(id);
   }
 
   switchSpace(id) {

@@ -45,6 +45,7 @@ const COMMANDS = [
   "onTabClosed",
   "onTabOpened",
   "onFavicon",
+  "repinTab",
   "siteZoom",
   "setSiteZoom",
   "historyCount",

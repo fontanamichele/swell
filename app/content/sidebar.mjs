@@ -37,7 +37,7 @@ function letterOf(info) {
  * @param {string} current The address it is at.
  * @returns {boolean}
  */
-function isAway(pinned, current) {
+export function isAway(pinned, current) {
   const key = url => {
     try {
       const { host, pathname, search } = new URL(url);

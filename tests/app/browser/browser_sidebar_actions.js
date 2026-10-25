@@ -212,3 +212,51 @@ add_task(
     await closeAllTabs(bridge);
   }
 );
+
+add_task(async function test_accel_d_pins_a_pinned_tab_again_where_it_is() {
+  const { bridge, app } = await swellApp();
+  const space = await freshSpace(app, "Repin");
+  const tab = await inFront(bridge, app, space);
+  await app.pin(tab.node);
+  await rendered(
+    () => app.state.parent(tab.node) === space.pinnedRoot && rowFor(tab.node),
+    "the tab is pinned"
+  );
+  tab.browser.fixupAndLoadURIString(SECOND, {
+    triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
+  });
+  await rendered(
+    () => rowFor(tab.node)?.classList.contains("away"),
+    "it went elsewhere"
+  );
+
+  EventUtils.synthesizeKey("d", { accelKey: true }, window);
+  await rendered(
+    () => app.state.describe(tab.node).url == SECOND,
+    "accel+D pins the page it is on"
+  );
+  await rendered(
+    () => !rowFor(tab.node).classList.contains("away"),
+    "so it is not away any more"
+  );
+  Assert.equal(app.state.parent(tab.node), space.pinnedRoot, "still pinned");
+
+  EventUtils.synthesizeKey("d", { accelKey: true }, window);
+  await rendered(
+    () => app.state.parent(tab.node) === space.todayRoot,
+    "and on its pinned page it unpins"
+  );
+
+  await app.pin(tab.node);
+  await rendered(
+    () => app.state.parent(tab.node) === space.pinnedRoot,
+    "pinned again"
+  );
+  await bridge.closeTab(tab.liveTab);
+  await app.openNode(tab.node);
+  await rendered(
+    () => app.selectedTab?.url == SECOND && !app.selectedTab.loading,
+    "opened again it starts from the page that was pinned"
+  );
+  await closeAllTabs(bridge);
+});
