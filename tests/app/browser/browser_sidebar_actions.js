@@ -82,6 +82,11 @@ add_task(async function test_the_close_button_and_icons_are_drawn_to_size() {
   const box = close.getBoundingClientRect();
   Assert.equal(box.width, box.height, "in a square");
   Assert.equal(
+    getComputedStyle(rowFor(first.node).querySelector(".title")).fontWeight,
+    "400",
+    "tab titles are in the regular weight"
+  );
+  Assert.equal(
     getComputedStyle(rowFor(first.node).querySelector(".avatar")).width,
     "14px",
     "icons are small"
