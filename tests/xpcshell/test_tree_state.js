@@ -165,6 +165,43 @@ add_task(function test_dropping_into_an_empty_list() {
   );
 });
 
+add_task(function test_a_collapsed_folder_keeps_its_open_pages() {
+  const state = sample();
+  state.apply(diff(new TreeOp.Updated({ node: folder("f1", true) })));
+  const rows = isOpen => state.rows("pinned", isOpen).map(r => [r.id, r.depth]);
+
+  Assert.deepEqual(rows(), [
+    ["f1", 0],
+    ["c", 0],
+  ]);
+  Assert.deepEqual(
+    rows(id => id == "b"),
+    [
+      ["f1", 0],
+      ["b", 1],
+      ["c", 0],
+    ],
+    "an open page stays under the collapsed folder"
+  );
+
+  state.apply(
+    diff(
+      new TreeOp.Inserted({ node: folder("f2"), parent: "f1", index: 2 }),
+      new TreeOp.Inserted({ node: tab("e"), parent: "f2", index: 0 })
+    )
+  );
+  Assert.deepEqual(
+    rows(id => id == "a" || id == "e" || id == "f2"),
+    [
+      ["f1", 0],
+      ["a", 1],
+      ["e", 1],
+      ["c", 0],
+    ],
+    "pages of nested folders are listed flat, and folders are never open pages"
+  );
+});
+
 add_task(function test_planning_moves_of_several_nodes() {
   const state = sample();
   const tabsOnly = new Set(["today"]);

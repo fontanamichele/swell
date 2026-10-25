@@ -133,10 +133,11 @@ export class TreeState {
   }
 
   // The rows to draw for a root: its nodes in order, folders followed by
-  // their children unless collapsed.
+  // their children unless collapsed. A collapsed folder is still followed by
+  // the pages below it, at any depth, for which `isOpen` is true.
   //
   // Returns >}
-  rows(root) {
+  rows(root, isOpen = () => false) {
     const rows = [];
     const walk = (parent, depth) => {
       for (const id of this.childrenOf(parent)) {
@@ -145,13 +146,39 @@ export class TreeState {
           continue;
         }
         rows.push({ id, node, depth });
-        if (node.kind instanceof NodeKindView.Folder && !node.kind.collapsed) {
-          walk(id, depth + 1);
+        if (node.kind instanceof NodeKindView.Folder) {
+          if (!node.kind.collapsed) {
+            walk(id, depth + 1);
+          } else {
+            for (const openId of this.#openBelow(id, isOpen)) {
+              rows.push({
+                id: openId,
+                node: this.#nodes.get(openId),
+                depth: depth + 1,
+              });
+            }
+          }
         }
       }
     };
     walk(root, 0);
     return rows;
+  }
+
+  #openBelow(folder, isOpen) {
+    const open = [];
+    for (const id of this.childrenOf(folder)) {
+      const node = this.#nodes.get(id);
+      if (!node) {
+        continue;
+      }
+      if (node.kind instanceof NodeKindView.Folder) {
+        open.push(...this.#openBelow(id, isOpen));
+      } else if (isOpen(id)) {
+        open.push(id);
+      }
+    }
+    return open;
   }
 
   /**

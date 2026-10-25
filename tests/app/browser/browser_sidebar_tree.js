@@ -352,3 +352,42 @@ add_task(async function test_dragging_a_selection_moves_all_of_it() {
   );
   Assert.deepEqual(selectedRows(), [], "dragging it cleared the selection");
 });
+
+add_task(async function test_a_collapsed_folder_keeps_its_open_pages() {
+  const { core, bridge, app } = await swellApp();
+  const space = await freshSpace(app, "Collapsed");
+  const folder = await core.createFolder(space.pinnedRoot, "Work", 0);
+  const open = await savedTab(
+    core,
+    space,
+    folder,
+    `${BASE}file_blank.html`,
+    "Open"
+  );
+  await savedTab(core, space, folder, "https://closed.test/", "Closed");
+  await rendered(
+    () => rowTitles("pinned").join() == "Work,-Open,-Closed",
+    "the folder is drawn"
+  );
+
+  rowFor(open).click();
+  await rendered(() => bridge.selectedTab?.node === open, "the page opens");
+
+  rowFor(folder).click();
+  await rendered(
+    () => rowTitles("pinned").join() == "Work,-blank",
+    "the folder collapses but keeps the open page"
+  );
+
+  app.closeNodeTab(open);
+  await rendered(
+    () => rowTitles("pinned").join() == "Work",
+    "closing the page drops its row"
+  );
+
+  rowFor(folder).click();
+  await rendered(
+    () => rowTitles("pinned").join() == "Work,-blank,-Closed",
+    "expanding shows every page again"
+  );
+});

@@ -199,7 +199,7 @@ export class Sidebar {
     const container = this.#doc.getElementById(containerId);
     container.dataset.rootId = root;
     const rows = this.#app.state
-      .rows(root)
+      .rows(root, id => this.#app.openTabs.has(id))
       .map(({ id, depth }) => this.#row(id, depth, saved));
     container.replaceChildren(...rows.filter(Boolean));
   }
