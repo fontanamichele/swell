@@ -242,3 +242,113 @@ add_task(async function test_dragging_reorders_pins_and_nests() {
   );
   await core.onTabClosed(liveTab);
 });
+
+function clickRow(id, { shift = false, accel = false } = {}) {
+  const mac = Services.appinfo.OS == "Darwin";
+  rowFor(id).dispatchEvent(
+    new MouseEvent("click", {
+      bubbles: true,
+      shiftKey: shift,
+      metaKey: accel && mac,
+      ctrlKey: accel && !mac,
+    })
+  );
+}
+
+function selectedRows() {
+  return [...document.querySelectorAll(".row.multi-selected")].map(
+    row => row.dataset.id
+  );
+}
+
+async function dragSelection(sourceId, target, where) {
+  dragEvent.transfer = new DataTransfer();
+  const source = rowFor(sourceId);
+  source.dispatchEvent(dragEvent("dragstart", source));
+  target.dispatchEvent(dragEvent("dragover", target, where));
+  target.dispatchEvent(dragEvent("drop", target, where));
+  source.dispatchEvent(dragEvent("dragend", source));
+}
+
+async function savedTabs(core, space, names) {
+  const nodes = [];
+  for (const name of names) {
+    nodes.push(
+      await savedTab(
+        core,
+        space,
+        space.pinnedRoot,
+        `https://${name.toLowerCase()}.test/`,
+        name
+      )
+    );
+  }
+  return nodes;
+}
+
+add_task(async function test_selecting_several_rows_and_making_a_folder() {
+  const { core, app } = await swellApp();
+  const space = await freshSpace(app, "Select");
+  const [a, b, c, d] = await savedTabs(core, space, ["A", "B", "C", "D"]);
+  await rendered(() => rowFor(a) && rowFor(d), "the four tabs are drawn");
+
+  clickRow(a, { accel: true });
+  clickRow(c, { accel: true });
+  Assert.deepEqual(selectedRows(), [a, c], "accel toggles single rows");
+  Assert.ok(!rowFor(a).classList.contains("open"), "nothing was opened");
+
+  clickRow(c, { accel: true });
+  Assert.deepEqual(selectedRows(), [a], "accel again deselects");
+
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+  Assert.deepEqual(selectedRows(), [], "Escape clears the selection");
+
+  clickRow(a, { accel: true });
+  clickRow(d, { shift: true });
+  Assert.deepEqual(
+    selectedRows(),
+    [a, b, c, d],
+    "shift selects from the anchor to the row"
+  );
+
+  clickRow(b, { accel: true });
+  Assert.deepEqual(selectedRows(), [a, c, d]);
+
+  rowFor(c).dispatchEvent(
+    new MouseEvent("contextmenu", { bubbles: true, cancelable: true })
+  );
+  const item = document.querySelector("#menu button");
+  Assert.equal(item.textContent, "Create folder with 3 items");
+  item.click();
+  await rendered(() => rowTitles("pinned").length == 5, "the folder is made");
+  Assert.deepEqual(
+    rowTitles("pinned").filter(title => title.startsWith("-")),
+    ["-A", "-C", "-D"],
+    "the selected rows are in the folder, in order"
+  );
+  Assert.ok(rowTitles("pinned").includes("B"), "B stayed out");
+  Assert.deepEqual(selectedRows(), [], "the selection is gone");
+});
+
+add_task(async function test_dragging_a_selection_moves_all_of_it() {
+  const { core, app } = await swellApp();
+  const space = await freshSpace(app, "MultiDrag");
+  const folder = await core.createFolder(space.pinnedRoot, "Folder", 0);
+  const [a, b, c] = await savedTabs(core, space, ["A", "B", "C"]);
+  await rendered(() => rowFor(a) && rowFor(c), "the three tabs are drawn");
+
+  clickRow(a, { accel: true });
+  clickRow(c, { accel: true });
+  await dragSelection(a, rowFor(folder), 0.5);
+  await rendered(
+    () => rowTitles("pinned").join() == "Folder,-A,-C,B",
+    "both selected tabs went into the folder"
+  );
+
+  await dragSelection(b, rowFor(folder), 0.5);
+  await rendered(
+    () => rowTitles("pinned").join() == "Folder,-A,-C,-B",
+    "a row outside the selection drags alone"
+  );
+  Assert.deepEqual(selectedRows(), [], "dragging it cleared the selection");
+});

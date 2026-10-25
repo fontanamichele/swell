@@ -57,8 +57,11 @@ const SPACE_MIME = "application/x-swell-space";
 export class Sidebar {
   #app;
   #doc;
-  #dragged = null;
+  #dragged = [];
   #draggedSpace = null;
+  #selection = new Set();
+  #anchor = null;
+  #selectionSpace = null;
 
   constructor(app) {
     this.#app = app;
@@ -78,6 +81,16 @@ export class Sidebar {
     }
     const mac = Services.appinfo.OS == "Darwin";
     doc.getElementById("new-tab-key").textContent = mac ? "⌘T" : "Ctrl+T";
+    doc.getElementById("sidebar").addEventListener("click", event => {
+      if (!event.target.closest(".row")) {
+        this.#setSelection([]);
+      }
+    });
+    doc.addEventListener("keydown", event => {
+      if (event.key == "Escape" && this.#selection.size) {
+        this.#setSelection([]);
+      }
+    });
   }
 
   /**
@@ -108,6 +121,78 @@ export class Sidebar {
     this.#renderTree("today", space.todayRoot);
     this.#renderFavorites(space.favoritesRoot);
     this.#renderSpaces();
+    if (this.#selectionSpace !== app.activeSpaceId) {
+      this.#selection.clear();
+      this.#anchor = null;
+      this.#selectionSpace = app.activeSpaceId;
+    }
+    this.#paintSelection();
+  }
+
+  // The rows drawn, top to bottom.
+  #rowIds() {
+    return [...this.#doc.querySelectorAll(".row[data-id]")].map(
+      row => row.dataset.id
+    );
+  }
+
+  // The selected nodes in the order they are drawn, without those that sit in
+  // a selected folder, which go along with it.
+  #selectedNodes() {
+    const state = this.#app.state;
+    return this.#rowIds().filter(
+      id =>
+        this.#selection.has(id) &&
+        ![...this.#selection].some(
+          other => other !== id && state.isWithin(id, other)
+        )
+    );
+  }
+
+  #setSelection(ids, anchor = this.#anchor) {
+    this.#selection = new Set(ids);
+    this.#anchor = this.#selection.size ? anchor : null;
+    this.#paintSelection();
+  }
+
+  // Marks the selected rows, forgetting those that are no longer drawn.
+  #paintSelection() {
+    const drawn = new Set(this.#rowIds());
+    for (const id of this.#selection) {
+      if (!drawn.has(id)) {
+        this.#selection.delete(id);
+      }
+    }
+    for (const row of this.#doc.querySelectorAll(".row[data-id]")) {
+      row.classList.toggle(
+        "multi-selected",
+        this.#selection.has(row.dataset.id)
+      );
+    }
+  }
+
+  // A click on a row: with the accelerator it toggles the row, with shift it
+  // selects everything from the anchor to the row, and neither opens anything.
+  #click(event, id) {
+    const mac = Services.appinfo.OS == "Darwin";
+    if (event.shiftKey) {
+      const order = this.#rowIds();
+      const from = order.indexOf(this.#anchor ?? id);
+      const to = order.indexOf(id);
+      this.#setSelection(
+        order.slice(Math.min(from, to), Math.max(from, to) + 1),
+        order[from]
+      );
+    } else if (mac ? event.metaKey : event.ctrlKey) {
+      const ids = new Set(this.#selection);
+      if (!ids.delete(id)) {
+        ids.add(id);
+      }
+      this.#setSelection(ids, id);
+    } else {
+      this.#setSelection([]);
+      this.#activate(id);
+    }
   }
 
   #renderTree(containerId, root, saved = false) {
@@ -186,7 +271,7 @@ export class Sidebar {
       });
       row.append(closeButton);
     }
-    row.addEventListener("click", () => this.#activate(id));
+    row.addEventListener("click", event => this.#click(event, id));
     row.addEventListener("auxclick", event => {
       if (event.button == 1) {
         event.preventDefault();
@@ -391,6 +476,20 @@ export class Sidebar {
   #showMenu(event, id) {
     event.preventDefault();
     const app = this.#app;
+    if (this.#selection.has(id) && this.#selection.size > 1) {
+      const nodes = this.#selectedNodes();
+      app.menu.show(event.clientX, event.clientY, [
+        {
+          label: `Create folder with ${nodes.length} items`,
+          action: () => {
+            this.#setSelection([]);
+            app.newFolderWith(nodes);
+          },
+        },
+      ]);
+      return;
+    }
+    this.#setSelection([]);
     const info = app.state.describe(id);
     const space = app.space;
     const parentId = app.state.parent(id);
@@ -432,15 +531,26 @@ export class Sidebar {
 
   #installDragSource(element, id) {
     element.addEventListener("dragstart", event => {
-      this.#dragged = id;
+      if (!this.#selection.has(id)) {
+        this.#setSelection([]);
+      }
+      this.#dragged = this.#selection.has(id) ? this.#selectedNodes() : [id];
       event.dataTransfer.setData(DRAG_TYPE, id);
       event.dataTransfer.effectAllowed = "move";
-      element.classList.add("dragging");
+      for (const dragged of this.#dragged) {
+        this.#doc
+          .querySelector(`[data-id="${CSS.escape(dragged)}"]`)
+          ?.classList.add("dragging");
+      }
       this.#doc.getElementById("sidebar").classList.add("tab-dragging");
     });
     element.addEventListener("dragend", () => {
-      this.#dragged = null;
-      element.classList.remove("dragging");
+      this.#dragged = [];
+      for (const dragging of this.#doc.querySelectorAll(
+        ".row.dragging, .favorite.dragging"
+      )) {
+        dragging.classList.remove("dragging");
+      }
       this.#doc.getElementById("sidebar").classList.remove("tab-dragging");
       this.#clearDropMarks();
     });
@@ -467,11 +577,7 @@ export class Sidebar {
       this.#clearDropMarks();
       if (drop) {
         event.preventDefault();
-        this.#app.moveNode(
-          this.#dragged,
-          drop.target.parent,
-          drop.target.index
-        );
+        this.#app.moveNodes(drop.plan);
       }
     });
   }
@@ -480,7 +586,7 @@ export class Sidebar {
   // relative to it, then asks the tree whether that drop is allowed.
   #dropFor(container, event) {
     const dragged = this.#dragged;
-    if (!dragged) {
+    if (!dragged.length) {
       return null;
     }
     const state = this.#app.state;
@@ -503,13 +609,13 @@ export class Sidebar {
       where = "inside";
       element = container;
     }
-    const target = state.dropTarget({
+    const plan = state.planMoves({
       dragged,
       target: targetId,
       where,
       tabsOnly: this.#app.tabsOnlyRoots,
     });
-    return target ? { target, where, element } : null;
+    return plan ? { plan, where, element } : null;
   }
 
   #clearDropMarks() {

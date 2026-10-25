@@ -165,6 +165,48 @@ add_task(function test_dropping_into_an_empty_list() {
   );
 });
 
+add_task(function test_planning_moves_of_several_nodes() {
+  const state = sample();
+  const tabsOnly = new Set(["today"]);
+  const plan = (dragged, target, where) =>
+    state.planMoves({ dragged, target, where, tabsOnly });
+
+  Assert.deepEqual(
+    plan(["c", "d"], "a", "before"),
+    [
+      { id: "c", parent: "f1", index: 0 },
+      { id: "d", parent: "f1", index: 1 },
+    ],
+    "they land before a, in order"
+  );
+  Assert.deepEqual(
+    plan(["c", "d"], "f1", "inside"),
+    [
+      { id: "c", parent: "f1", index: 2 },
+      { id: "d", parent: "f1", index: 3 },
+    ],
+    "they land at the end of the folder, in order"
+  );
+  Assert.deepEqual(
+    plan(["a", "b"], "c", "after"),
+    [
+      { id: "a", parent: "pinned", index: 2 },
+      { id: "b", parent: "pinned", index: 3 },
+    ],
+    "they leave a folder together"
+  );
+  Assert.deepEqual(
+    plan(["b"], "f1", "inside"),
+    null,
+    "already at the end of the folder"
+  );
+  Assert.equal(plan(["a", "b"], "b", "before"), null, "onto one of them");
+  Assert.equal(plan(["a", "f1"], "b", "before"), null, "into a dragged folder");
+  Assert.equal(plan(["c", "f1"], "d", "after"), null, "Today holds tabs only");
+  Assert.equal(plan([], "c", "before"), null, "nothing to move");
+  Assert.equal(plan(["a", "nope"], "c", "before"), null, "unknown node");
+});
+
 add_task(function test_describe_gives_plain_objects() {
   const state = sample();
   Assert.deepEqual(state.describe("f1"), {

@@ -166,42 +166,76 @@ export class TreeState {
    * @param {Set<string>} [drop.tabsOnly] Roots that hold tabs only.
    * @returns {{parent: string, index: number}|null}
    */
-  dropTarget({ dragged, target, where, tabsOnly = new Set() }) {
-    if (!this.#nodes.has(dragged) || dragged === target) {
+  dropTarget({ dragged, target, where, tabsOnly }) {
+    const plan = this.planMoves({
+      dragged: [dragged],
+      target,
+      where,
+      tabsOnly,
+    });
+    return plan ? { parent: plan[0].parent, index: plan[0].index } : null;
+  }
+
+  /**
+   * The core's move commands, to run in order, that drop several nodes before,
+   * after or inside a target row, keeping their order. Each index is the
+   * position once its node is lifted out and the moves before it are done.
+   * Nodes already in place are left out.
+   *
+   * @param {object} drop
+   * @param {string[]} drop.dragged The nodes to move, in the order they land.
+   * @param {string} drop.target A node, or a root when dropping into an empty list.
+   * @param {"before"|"after"|"inside"} drop.where
+   * @param {Set<string>} [drop.tabsOnly] Roots that hold tabs only.
+   * @returns {{id: string, parent: string, index: number}[]|null} Null if the
+   *   drop is not allowed or would change nothing.
+   */
+  planMoves({ dragged, target, where, tabsOnly = new Set() }) {
+    if (
+      !dragged.length ||
+      dragged.some(
+        id => id === target || !this.#nodes.has(id) || !this.#parents.has(id)
+      )
+    ) {
       return null;
     }
-    let parent;
-    let index;
-    if (where == "inside") {
-      parent = target;
-      index = this.childrenOf(target).length;
-    } else {
-      parent = this.#parents.get(target);
-      if (parent === undefined) {
-        return null;
+    const parent = where == "inside" ? target : this.#parents.get(target);
+    if (parent === undefined) {
+      return null;
+    }
+    if (this.#nodes.has(parent) && !this.isFolder(parent)) {
+      return null;
+    }
+    if (dragged.some(id => this.isWithin(parent, id))) {
+      return null;
+    }
+    if (tabsOnly.has(parent) && dragged.some(id => this.isFolder(id))) {
+      return null;
+    }
+    const lists = new Map();
+    const list = id => {
+      if (!lists.has(id)) {
+        lists.set(id, [...this.childrenOf(id)]);
       }
-      index =
-        this.childrenOf(parent).indexOf(target) + (where == "after" ? 1 : 0);
-    }
-    const intoRoot = !this.#nodes.has(parent);
-    if (!intoRoot && !this.isFolder(parent)) {
-      return null;
-    }
-    if (this.isWithin(parent, dragged)) {
-      return null;
-    }
-    if (tabsOnly.has(parent) && this.isFolder(dragged)) {
-      return null;
-    }
-    if (this.#parents.get(dragged) === parent) {
-      const current = this.childrenOf(parent).indexOf(dragged);
-      if (current < index) {
-        index -= 1;
+      return lists.get(id);
+    };
+    const plan = [];
+    let anchor = where == "inside" ? null : target;
+    let offset = where == "after" ? 1 : 0;
+    for (const id of dragged) {
+      const from = this.#parents.get(id);
+      const current = list(from).indexOf(id);
+      list(from).splice(current, 1);
+      const into = list(parent);
+      const index =
+        anchor === null ? into.length : into.indexOf(anchor) + offset;
+      into.splice(index, 0, id);
+      if (from !== parent || current !== index) {
+        plan.push({ id, parent, index });
       }
-      if (current === index) {
-        return null;
-      }
+      anchor = id;
+      offset = 1;
     }
-    return { parent, index };
+    return plan.length ? plan : null;
   }
 }

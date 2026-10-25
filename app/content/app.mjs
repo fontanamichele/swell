@@ -415,6 +415,35 @@ export class App {
     return this.run(() => this.core.moveNode(id, parentId, index));
   }
 
+  // Runs the moves of TreeState.planMoves one after the other.
+  async moveNodes(plan) {
+    for (const { id, parent: parentId, index } of plan) {
+      await this.moveNode(id, parentId, index);
+    }
+  }
+
+  // Puts nodes, in the order given, in a new folder where the first one is. Today
+  // and the favorites hold tabs only, so from there the folder goes to the end of
+  // Pinned.
+  async newFolderWith(ids) {
+    let parentId = this.state.parent(ids[0]);
+    let index = this.state.childrenOf(parentId).indexOf(ids[0]);
+    if (this.tabsOnlyRoots.has(parentId)) {
+      parentId = this.space.pinnedRoot;
+      index = this.state.childrenOf(parentId).length;
+    }
+    const folder = await this.run(() =>
+      this.core.createFolder(parentId, "New folder", index)
+    );
+    if (!folder) {
+      return;
+    }
+    for (const [position, id] of ids.entries()) {
+      await this.moveNode(id, folder, position);
+    }
+    this.sidebar.startRename(folder);
+  }
+
   async newFolder(parentId = this.space.pinnedRoot) {
     const count = this.state.childrenOf(parentId).length;
     const id = await this.run(() =>
