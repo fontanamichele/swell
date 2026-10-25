@@ -242,8 +242,8 @@ add_task(async function test_buttons_use_iconoir_icons() {
   );
   Assert.equal(
     getComputedStyle(byId("sidebar-toggle"), "::before").transform,
-    "matrix(-1, 0, 0, 1, 0, 0)",
-    "turned the other way round"
+    "none",
+    "the icon is as it is drawn while the sidebar is hidden"
   );
   byId("sidebar-toggle").click();
 });
