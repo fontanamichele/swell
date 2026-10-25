@@ -121,16 +121,12 @@ add_task(async function test_a_hidden_sidebar_floats_back_at_the_left_edge() {
     () => Math.round(rect("sidebar").left) == 8,
     "it settles a margin away from the window's left edge"
   );
-  Assert.equal(
-    Math.round(window.innerHeight - rect("sidebar").bottom),
-    32,
-    "and ends above the bottom of the page, so it is shorter than the page"
-  );
-  Assert.equal(
-    Math.round(rect("sidebar").top),
-    Math.round(rect("content").top) || Math.round(rect("sidebar").top),
-    "level with the page"
-  );
+  const gapBelow = Math.round(window.innerHeight - rect("sidebar").bottom);
+  const stripHeight =
+    Services.appinfo.OS == "Darwin" ? 0 : rect("titlebar").height;
+  const gapAbove = Math.round(rect("sidebar").top - stripHeight);
+  Assert.greater(gapBelow, 8, "it is shorter than the page");
+  Assert.equal(gapAbove, gapBelow, "and centred in the height of the window");
 
   sidebar.dispatchEvent(new MouseEvent("mouseenter"));
   sidebar.dispatchEvent(new MouseEvent("mouseleave"));

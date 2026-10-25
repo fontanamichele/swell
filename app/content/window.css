@@ -335,14 +335,15 @@ button {
 }
 
 :root {
-  --peek-top: var(--content-margin);
-  /* Shorter than the page, so that it reads as floating above it. */
-  --peek-bottom: calc(var(--content-margin) + 24px);
+  /* Shorter than the page and centred in it, so that it reads as floating. */
+  --peek-gap: 16px;
+  --peek-top: var(--peek-gap);
+  --peek-bottom: var(--peek-gap);
 }
 
 @media not (-moz-platform: macos) {
   :root {
-    --peek-top: var(--titlebar-height);
+    --peek-top: calc(var(--titlebar-height) + var(--peek-gap));
   }
 }
 
@@ -379,6 +380,11 @@ button {
 @media (-moz-platform: macos) {
   :root[customtitlebar][sidebar-collapsed] #sidebar {
     padding-top: calc(var(--titlebar-height) - var(--content-margin));
+  }
+
+  /* The row of buttons moves down with the card. */
+  :root[sidebar-collapsed][sidebar-peek] #titlebar-left {
+    margin-top: calc(var(--peek-gap) - var(--content-margin));
   }
 }
 
