@@ -25,7 +25,30 @@ function letterOf(info) {
 // state of its own beyond what is drawn.
 /**
  *
+ * @param pinned
+ * @param current
  */
+/**
+ * Whether a pinned tab has gone elsewhere. Two addresses are the same page if
+ * they only differ in "www.", a closing slash or the fragment, which are what a
+ * redirect or the page itself change without the person having gone anywhere.
+ *
+ * @param {string} pinned The address the tab was pinned at.
+ * @param {string} current The address it is at.
+ * @returns {boolean}
+ */
+function isAway(pinned, current) {
+  const key = url => {
+    try {
+      const { host, pathname, search } = new URL(url);
+      return `${host.replace(/^www\./, "")}${pathname.replace(/\/$/, "")}${search}`;
+    } catch (e) {
+      return url;
+    }
+  };
+  return key(pinned) != key(current);
+}
+
 const SPACE_MIME = "application/x-swell-space";
 
 /**
@@ -84,22 +107,22 @@ export class Sidebar {
     if (!space) {
       return;
     }
-    this.#renderTree("pinned", space.pinnedRoot);
+    this.#renderTree("pinned", space.pinnedRoot, true);
     this.#renderTree("today", space.todayRoot);
     this.#renderFavorites(space.favoritesRoot);
     this.#renderSpaces();
   }
 
-  #renderTree(containerId, root) {
+  #renderTree(containerId, root, saved = false) {
     const container = this.#doc.getElementById(containerId);
     container.dataset.rootId = root;
     const rows = this.#app.state
       .rows(root)
-      .map(({ id, depth }) => this.#row(id, depth));
+      .map(({ id, depth }) => this.#row(id, depth, saved));
     container.replaceChildren(...rows.filter(Boolean));
   }
 
-  #row(id, depth) {
+  #row(id, depth, saved = false) {
     const app = this.#app;
     const info = app.state.describe(id);
     if (!info) {
@@ -127,7 +150,28 @@ export class Sidebar {
     const title = doc.createElement("span");
     title.className = "title";
     title.textContent = info.title;
-    row.append(avatar, title);
+    // A pinned tab that has gone elsewhere shows where it is, and a button back
+    // to the page it was pinned at; closed, it is the pinned page again.
+    const away =
+      saved && info.kind == "tab" && !!openTab && isAway(info.url, openTab.url);
+    row.classList.toggle("away", away);
+    if (away) {
+      title.textContent = openTab.title || openTab.url;
+      const divider = doc.createElement("span");
+      divider.className = "divider";
+      row.append(avatar, divider, title);
+      const back = doc.createElement("button");
+      back.className = "back-to-pin";
+      back.title = "Back to the pinned page";
+      back.setAttribute("aria-label", "Back to the pinned page");
+      back.addEventListener("click", event => {
+        event.stopPropagation();
+        app.run(() => app.bridge.loadInTab(openTab.liveTab, info.url));
+      });
+      row.append(back);
+    } else {
+      row.append(avatar, title);
+    }
     if (openTab) {
       const closeButton = doc.createElement("button");
       closeButton.className = "close";

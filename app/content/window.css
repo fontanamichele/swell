@@ -1807,3 +1807,43 @@ textarea {
     animation: none;
   }
 }
+
+/* A pinned tab that has been navigated away from: where it is, in a pill, and
+   a button back to the pinned page. */
+.row.away {
+  background: var(--row-hover);
+}
+
+.row.away .divider {
+  flex: none;
+  width: 1px;
+  height: 16px;
+  margin-inline: -2px;
+  background: var(--panel-border);
+}
+
+.back-to-pin {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.back-to-pin::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background-color: currentColor;
+  mask: url("chrome://swell/content/icons/minus.svg") center / contain no-repeat;
+}
+
+.back-to-pin:hover {
+  background: var(--row-hover);
+  color: var(--sidebar-fg);
+}

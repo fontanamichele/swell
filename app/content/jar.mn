@@ -34,6 +34,7 @@ swell.jar:
   content/swell/icons/plus.svg (icons/plus.svg)
   content/swell/icons/download.svg (icons/download.svg)
   content/swell/icons/link.svg (icons/link.svg)
+  content/swell/icons/minus.svg (icons/minus.svg)
   content/swell/icons/LICENSE-iconoir (icons/LICENSE-iconoir)
 % content formautofill %content/formautofill/ contentaccessible=no
   content/formautofill/formautofill.css (../../../browser/extensions/formautofill/content/formautofill.css)

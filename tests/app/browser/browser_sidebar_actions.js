@@ -142,3 +142,73 @@ add_task(async function test_mouse_buttons_on_the_sidebar_switch_spaces() {
   Assert.equal(app.activeSpaceId, last.id, "and it stops at the last space");
   sidebar.dispatchEvent(new MouseEvent("mouseleave"));
 });
+
+add_task(
+  async function test_a_pinned_tab_shows_where_it_went_and_resets_on_close() {
+    const { bridge, app } = await swellApp();
+    const space = await freshSpace(app, "Pinned nav");
+    const tab = await inFront(bridge, app, space);
+    await app.pin(tab.node);
+    await rendered(
+      () => app.state.parent(tab.node) === space.pinnedRoot && rowFor(tab.node),
+      "the tab is pinned"
+    );
+    const pinnedUrl = app.state.describe(tab.node).url;
+    Assert.equal(pinnedUrl, FIRST);
+    Assert.ok(!rowFor(tab.node).classList.contains("away"), "not away yet");
+
+    tab.browser.fixupAndLoadURIString(SECOND, {
+      triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
+    });
+    await rendered(
+      () => app.selectedTab?.url == SECOND && !app.selectedTab.loading,
+      "it navigates"
+    );
+    const row = await rendered(
+      () => rowFor(tab.node)?.classList.contains("away") && rowFor(tab.node),
+      "the row shows that it went elsewhere"
+    );
+    Assert.equal(
+      row.querySelector(".title").textContent,
+      app.selectedTab.title || SECOND,
+      "with the title of the page it is on"
+    );
+    Assert.ok(row.querySelector(".divider"), "and a divider after the icon");
+    Assert.equal(
+      app.state.describe(tab.node).url,
+      FIRST,
+      "the pin did not follow"
+    );
+
+    row.querySelector(".back-to-pin").click();
+    await rendered(
+      () => app.selectedTab?.url == FIRST && !app.selectedTab.loading,
+      "the button goes back to the pinned page"
+    );
+    await rendered(
+      () => !rowFor(tab.node).classList.contains("away"),
+      "and the row is the pinned one again"
+    );
+
+    tab.browser.fixupAndLoadURIString(SECOND, {
+      triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
+    });
+    await rendered(
+      () => rowFor(tab.node)?.classList.contains("away"),
+      "away again"
+    );
+    await bridge.closeTab(tab.liveTab);
+    await rendered(
+      () => !rowFor(tab.node).classList.contains("away"),
+      "closed, it is the pinned page"
+    );
+    Assert.equal(app.state.describe(tab.node).url, FIRST);
+
+    await app.openNode(tab.node);
+    await rendered(
+      () => app.selectedTab?.url == FIRST && !app.selectedTab.loading,
+      "opened again it starts from the pinned page"
+    );
+    await closeAllTabs(bridge);
+  }
+);

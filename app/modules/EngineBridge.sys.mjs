@@ -351,6 +351,14 @@ export class EngineBridge {
     }
   }
 
+  // Loads `url` in a tab that is open, whatever tab is in front.
+  loadInTab(liveTab, url) {
+    const tab = this.#tabs.get(liveTab);
+    if (tab) {
+      this.#load(tab.browser, url);
+    }
+  }
+
   goBack() {
     this.#selected?.browser.goBack();
   }

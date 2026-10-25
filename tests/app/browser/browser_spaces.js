@@ -439,8 +439,8 @@ add_task(
       "the root does not paint the opaque window background"
     );
     Assert.ok(
-      document.documentElement.hasAttribute("macostranslucent"),
-      "the window is made transparent, so that the material shows"
+      !document.documentElement.hasAttribute("macostranslucent"),
+      "the window is only made transparent when asked to"
     );
     Assert.equal(
       getComputedStyle(document.body).backgroundColor,

@@ -87,3 +87,9 @@ pref("accessibility.typeaheadfind", false);
 pref("accessibility.typeaheadfind.timeout", 5000);
 pref("accessibility.typeaheadfind.linksonly", false);
 pref("accessibility.typeaheadfind.flashBar", 1);
+
+// macOS: make the whole window transparent (patch 0600) so that the system
+// sidebar material shows through where the page leaves it clear. Off: the
+// material already shows without it, and how the shadow and corners look with
+// it has not been judged.
+pref("swell.window.transparent", false);

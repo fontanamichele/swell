@@ -8,8 +8,12 @@ import { App } from "chrome://swell/content/app.mjs";
 // sidebar (and only shows them if this is set once the window exists); elsewhere
 // they are drawn in #window-controls.
 document.documentElement.setAttribute("customtitlebar", "true");
-// macOS: let the sidebar material of the system show through (patch 0600).
-if (Services.appinfo.OS == "Darwin") {
+// macOS: make the window itself transparent (patch 0600), for trying whether the
+// sidebar material of the system looks better through it.
+if (
+  Services.appinfo.OS == "Darwin" &&
+  Services.prefs.getBoolPref("swell.window.transparent", false)
+) {
   document.documentElement.setAttribute("macostranslucent", "true");
 }
 if (Services.appinfo.OS != "Darwin") {
