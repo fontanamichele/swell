@@ -1462,11 +1462,7 @@ dialog .buttons {
 }
 
 #sidebar-toggle {
-  --icon: url("chrome://swell/content/icons/sidebar-collapse.svg");
-}
-
-:root[sidebar-collapsed] #sidebar-toggle {
-  --icon: url("chrome://swell/content/icons/sidebar-expand.svg");
+  --icon: url("chrome://swell/content/icons/transition-right.svg");
 }
 
 #lists,

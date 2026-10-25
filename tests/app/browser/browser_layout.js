@@ -223,7 +223,7 @@ add_task(async function test_buttons_use_iconoir_icons() {
     ["nav-forward", "nav-arrow-right"],
     ["nav-reload", "refresh"],
     ["nav-copy", "link"],
-    ["sidebar-toggle", "sidebar-collapse"],
+    ["sidebar-toggle", "transition-right"],
   ]) {
     const mask = getComputedStyle(byId(id), "::before").maskImage;
     Assert.ok(mask.includes(`icons/${icon}.svg`), `${id} shows ${icon}`);
@@ -236,9 +236,9 @@ add_task(async function test_buttons_use_iconoir_icons() {
   byId("sidebar-peek-edge").dispatchEvent(new MouseEvent("mouseenter"));
   Assert.ok(
     getComputedStyle(byId("sidebar-toggle"), "::before").maskImage.includes(
-      "sidebar-expand.svg"
+      "transition-right.svg"
     ),
-    "the sidebar button changes when the sidebar is hidden"
+    "the sidebar button has the same icon when the sidebar floats"
   );
   byId("sidebar-toggle").click();
 });
