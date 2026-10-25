@@ -6,6 +6,11 @@
 pref("toolkit.defaultChromeURI", "chrome://swell/content/window.xhtml");
 pref("toolkit.defaultChromeFeatures", "chrome,dialog=no,all,resizable");
 pref("privacy.userContext.enabled", true);
+
+// Say "Firefox/<version>" in the user agent, before our own name. Sites choose
+// their modern or a basic page by it, and Google serves the basic one to a
+// browser it does not know (the same engine and version as Firefox's).
+pref("general.useragent.compatMode.firefox", true);
 pref("permissions.isolateBy.userContext", true);
 
 // Visits are recorded with the container they happened in, and :visited only
