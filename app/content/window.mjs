@@ -8,6 +8,10 @@ import { App } from "chrome://swell/content/app.mjs";
 // sidebar (and only shows them if this is set once the window exists); elsewhere
 // they are drawn in #window-controls.
 document.documentElement.setAttribute("customtitlebar", "true");
+// macOS: let the sidebar material of the system show through (patch 0600).
+if (Services.appinfo.OS == "Darwin") {
+  document.documentElement.setAttribute("macostranslucent", "true");
+}
 if (Services.appinfo.OS != "Darwin") {
   const controls = document.getElementById("window-controls");
   controls.hidden = false;
