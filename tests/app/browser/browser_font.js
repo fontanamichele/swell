@@ -4,14 +4,17 @@
 
 "use strict";
 
-// The window is set in Epilogue, from a copy that is part of the application.
+// The window is set in Atkinson Hyperlegible Next, from a copy that is part of the application.
 
-add_task(async function test_the_window_is_set_in_epilogue() {
+add_task(async function test_the_window_is_set_in_atkinson_hyperlegible_next() {
   await swellApp();
-  const faces = await document.fonts.load("13px Epilogue");
+  const faces = await document.fonts.load('13px "Atkinson Hyperlegible Next"');
   Assert.equal(faces.length, 1, "the font is found in the application");
   Assert.equal(faces[0].status, "loaded", "and loaded");
-  Assert.ok(document.fonts.check("600 13px Epilogue"), "in every weight");
+  Assert.ok(
+    document.fonts.check('600 13px "Atkinson Hyperlegible Next"'),
+    "in every weight"
+  );
 
   for (const selector of [
     "body",
@@ -25,8 +28,10 @@ add_task(async function test_the_window_is_set_in_epilogue() {
     const element = document.querySelector(selector);
     Assert.ok(element, `${selector} exists`);
     Assert.ok(
-      getComputedStyle(element).fontFamily.startsWith("Epilogue"),
-      `${selector} is in Epilogue: ${getComputedStyle(element).fontFamily}`
+      getComputedStyle(element).fontFamily.includes(
+        "Atkinson Hyperlegible Next"
+      ),
+      `${selector} is in Atkinson Hyperlegible Next: ${getComputedStyle(element).fontFamily}`
     );
   }
   const response = await fetch("chrome://swell/content/fonts/OFL.txt");

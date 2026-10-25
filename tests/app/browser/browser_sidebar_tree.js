@@ -111,9 +111,11 @@ add_task(async function test_the_context_menu_pins_unpins_and_deletes() {
       })
     );
     Assert.ok(!menu.hidden, "the menu opens");
+    const labels = [...menu.querySelectorAll("button")].map(b => b.textContent);
+    Assert.ok(labels.includes(label), `${label} is in the menu: ${labels}`);
     [...menu.querySelectorAll("button")]
       .find(b => b.textContent == label)
-      .click();
+      ?.click();
   };
 
   await choose("Unpin");

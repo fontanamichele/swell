@@ -36,7 +36,7 @@ swell.jar:
   content/swell/icons/link.svg (icons/link.svg)
   content/swell/icons/minus.svg (icons/minus.svg)
   content/swell/icons/LICENSE-iconoir (icons/LICENSE-iconoir)
-  content/swell/fonts/Epilogue.ttf (fonts/Epilogue.ttf)
+  content/swell/fonts/AtkinsonHyperlegibleNext.ttf (fonts/AtkinsonHyperlegibleNext.ttf)
   content/swell/fonts/OFL.txt (fonts/OFL.txt)
 % content formautofill %content/formautofill/ contentaccessible=no
   content/formautofill/formautofill.css (../../../browser/extensions/formautofill/content/formautofill.css)
