@@ -368,3 +368,16 @@ Fonts tried and why: Epilogue first (wide; fine coverage), then Asta Sans was ch
 `core/core-store/examples/pin_links.rs` adds links to the pinned tabs of a space of a profile (`cargo run -p core-store --example pin_links -- <data dir> <space title> < links.tsv`, one `address<TAB>title` per line; Swell must be closed, and the data should be copied first). It was used to put 36 links in a space. A pinned tab takes the title of the page when it is on its own page (the same address, ignoring the fragment, a closing slash, the scheme and "www."), so the titles that were guessed for the pages that would not answer a script are replaced by the real ones when a pin is first opened.
 
 - The menu named after the application is macOS's own, filled by Gecko from the elements it finds by id (`menu_mac_hide_app`, `menu_FileQuitItem`, and so on, which it also hides where they are). A menu of ours called "Swell" with those items showed twice; they are in the File menu now.
+
+## The developer tools
+
+The inspector and the other tools of Firefox are built (`imply_option("MOZ_DEVTOOLS", "all")` in `app/moz.configure`; before, only the server half was) and open in a window of their own: F12, accel+alt+C/I (inspector), accel+alt+K (console), accel+alt+Z (debugger), the View menu, and "Inspect" in the menu of a page. `app/modules/DevTools.sys.mjs` loads `gDevTools` through the devtools loader and talks to it with the tabs of the engine bridge.
+
+What it took:
+
+- The prefs of the tools are in `devtools/client/preferences/*.js`, which only the browser app installs. `tools/copy_devtools_prefs.py` generates `app/defaults/preferences/devtools.js` from them (run it again after a rebase).
+- The tools and the autocomplete popup use `chrome://browser/skin/...` icons. Registering that skin package (`app/content/jar.mn`) makes every file of it that is not shipped crash the application under automation, so each icon in use is listed there (`window.svg`, `tracking-protection.svg`, `history.svg`, `login.svg`).
+- Patch 0610: `DevToolsStartup` and the profiler button assumed the toolbar and `CustomizableUI` of `browser/`.
+- Only the "window" host works: the docked hosts are made by `gBrowser` of the browser window. The pref is set to "window".
+- The toolbox finds its tab through `descriptorFront.localTab`, which is set only when the tab's `tagName` is `tab`. A tab of the bridge is a small stand-in: an `EventTarget` with `tagName`, `documentGlobal` and a `TabClose` event when it is removed; the window has `gFissionBrowser`.
+- Verified only headless (`browser_devtools.js`); the size of the application grew by the client of the tools.

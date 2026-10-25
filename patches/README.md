@@ -36,6 +36,7 @@ Every patch starts with a header (text before the first `diff`/`---` line is ign
 | `0211-formautofill-per-container.patch` | address and card storage per container (own file), pluggable save prompt, behind `extensions.formautofill.isolate_by_user_context` | M2, upstreamable |
 | `0220-passwordmgr-per-container.patch` | login manager seen per container (`LoginHelper.loginsFor`), pluggable storage and prompter modules, behind `signon.isolate_by_user_context` | M2, partly upstreamable |
 | `0600-macos-translucent-window.patch` | root attribute `macostranslucent` makes a macOS window transparent so the sidebar material shows | small; upstreamable behind the attribute |
+| `0610-devtools-without-toolbar.patch` | the developer tools start in an application that has no browser toolbar (`DevToolsStartup` and the profiler button check the type of the application) | small; upstreamable |
 | `0500-isolate-hsts-cert-overrides.patch` | HSTS and certificate exceptions keyed by container, behind two prefs | M2, upstreamable |
 
 Numbering: `00xx` build and tooling (`0000` is the local top-level `moz.build` hook, `0010` test tooling, `0030` build fixes), `01xx` extensions (P4), `02xx` Places and form history (P1, P2),

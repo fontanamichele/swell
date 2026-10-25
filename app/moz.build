@@ -18,6 +18,7 @@ MOZ_SRC_FILES += [
     "modules/AutofillPrompter.sys.mjs",
     "modules/ContentPermissionPrompt.sys.mjs",
     "modules/Core.sys.mjs",
+    "modules/DevTools.sys.mjs",
     "modules/EngineBridge.sys.mjs",
     "modules/ExtensionInstaller.sys.mjs",
     "modules/LoginPrompter.sys.mjs",

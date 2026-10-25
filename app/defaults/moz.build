@@ -5,3 +5,4 @@
 DIST_SUBDIR = "app"
 
 JS_PREFERENCE_FILES += ["preferences/swell.js"]
+JS_PREFERENCE_FILES += ["preferences/devtools.js"]

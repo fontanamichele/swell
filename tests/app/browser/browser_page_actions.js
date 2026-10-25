@@ -98,7 +98,7 @@ add_task(async function test_a_plain_page_menu_has_navigation() {
     tab.browser
   );
   await rendered(() => !menu().hidden, "the menu opens");
-  Assert.deepEqual(labels(), ["Back", "Forward", "Reload"]);
+  Assert.deepEqual(labels(), ["Back", "Forward", "Reload", "Inspect"]);
   menu().hidden = true;
   await closeAllTabs(bridge);
 });
@@ -115,7 +115,7 @@ add_task(async function test_a_text_field_menu_has_edit_commands() {
     tab.browser
   );
   await rendered(() => !menu().hidden, "the menu opens");
-  Assert.deepEqual(labels(), ["Cut", "Copy", "Paste", "Select all"]);
+  Assert.deepEqual(labels(), ["Cut", "Copy", "Paste", "Select all", "Inspect"]);
   menu().hidden = true;
   await closeAllTabs(bridge);
 });

@@ -4,6 +4,9 @@
 
 import { App } from "chrome://swell/content/app.mjs";
 
+// The developer tools ask the window of a tab whether it runs with Fission.
+window.gFissionBrowser = Services.appinfo.fissionAutostart;
+
 // The titlebar is ours everywhere. macOS keeps its own window buttons over the
 // sidebar (and only shows them if this is set once the window exists); elsewhere
 // they are drawn in #window-controls.

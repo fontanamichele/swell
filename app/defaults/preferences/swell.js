@@ -103,3 +103,8 @@ pref("swell.window.transparent", false);
 // even when a mouse is what the system sees: nothing is made narrower by them.
 pref("ui.useOverlayScrollbars", 1);
 pref("ui.allowOverlayScrollbarsOverlap", 1);
+
+// The toolbox of the developer tools is a window of its own: the other places
+// for it, under and beside the page, are made by the browser window of Firefox.
+pref("devtools.toolbox.host", "window");
+pref("devtools.toolbox.previousHost", "window");

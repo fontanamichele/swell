@@ -2,6 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+const lazy = {};
+
+ChromeUtils.defineESModuleGetters(lazy, {
+  ContentDOMReference: "resource://gre/modules/ContentDOMReference.sys.mjs",
+});
+
 const SAFE_SCHEMES = ["http:", "https:", "file:", "about:"];
 
 /**
@@ -50,6 +56,8 @@ export class SwellPageChild extends JSWindowActorChild {
       password: !!this.#closest(target, "input[type=password]"),
       selection: this.contentWindow.getSelection().toString().trim(),
       editable,
+      // For the developer tools to find the element in the page.
+      contentDomReference: lazy.ContentDOMReference.get(target),
     });
   }
 

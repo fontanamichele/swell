@@ -41,3 +41,10 @@ swell.jar:
 % content formautofill %content/formautofill/ contentaccessible=no
   content/formautofill/formautofill.css (../../../browser/extensions/formautofill/content/formautofill.css)
   content/formautofill/icon-credit-card-generic.svg (../../../browser/extensions/formautofill/content/icon-credit-card-generic.svg)
+% skin browser classic/1.0 %skin/browser/
+# Two icons the developer tools ask the browser package for (the toolbox's own
+# icon, and the one of the tool for tracking), so that they are not missing.
+  skin/browser/window.svg (../../../browser/themes/shared/icons/window.svg)
+  skin/browser/history.svg (../../../browser/themes/shared/icons/history.svg)
+  skin/browser/login.svg (../../../browser/themes/shared/icons/login.svg)
+  skin/browser/tracking-protection.svg (../../../browser/themes/shared/identity-block/tracking-protection.svg)

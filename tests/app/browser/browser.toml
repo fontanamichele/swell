@@ -35,6 +35,8 @@ prefs = [
 
 ["browser_command_bar.js"]
 
+["browser_devtools.js"]
+
 ["browser_downloads.js"]
 
 ["browser_extension_install.js"]
@@ -47,11 +49,15 @@ prefs = [
 
 ["browser_favicons.js"]
 
+["browser_font.js"]
+
+["browser_icon_centering.js"]
+
 ["browser_import_arc.js"]
 
-["browser_logins.js"]
-
 ["browser_layout.js"]
+
+["browser_logins.js"]
 
 ["browser_navbar.js"]
 
@@ -69,15 +75,11 @@ prefs = [
 
 ["browser_smoke_no_firefox_ui.js"]
 
-["browser_titlebar.js"]
-
 ["browser_spaces.js"]
 
+["browser_titlebar.js"]
+
 ["browser_two_spaces.js"]
-
-["browser_font.js"]
-
-["browser_icon_centering.js"]
 
 ["browser_user_agent.js"]
 

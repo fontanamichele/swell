@@ -90,7 +90,7 @@ class ProgressListener {
 /**
  *
  */
-class Tab {
+class Tab extends EventTarget {
   liveTab = null;
   node = null;
   title = "";
@@ -110,9 +110,19 @@ class Tab {
   ready = Promise.resolve();
 
   constructor({ space, userContextId, browser }) {
+    super();
     this.space = space;
     this.userContextId = userContextId;
     this.browser = browser;
+  }
+
+  // The developer tools take a tab by this name.
+  get tagName() {
+    return "tab";
+  }
+
+  get documentGlobal() {
+    return this.browser.documentGlobal;
   }
 
   // The name the toolkit's WebExtension code knows a tab's browser by.
@@ -691,6 +701,7 @@ export class EngineBridge {
         // The browser is already gone.
       }
     }
+    tab.dispatchEvent(new CustomEvent("TabClose", { detail: {} }));
     tab.browser.remove();
     tab.findbarSlot?.remove();
     if (this.#lastSelected.get(tab.space) == tab.liveTab) {

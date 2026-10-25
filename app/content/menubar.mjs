@@ -21,6 +21,8 @@ export class MenuBar {
         app.run(() => app.bridge.closeTab(app.selectedTab.liveTab)),
       "toggle-sidebar": () => app.sidebarLayout.toggle(),
       reload: () => app.bridge.reload(),
+      inspector: () => app.openDevTools("inspector"),
+      console: () => app.openDevTools("webconsole"),
       downloads: () => app.downloads.show(),
       extensions: () => app.extensions.show(),
       passwords: () => app.passwords.show(),

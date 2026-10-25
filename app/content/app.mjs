@@ -18,6 +18,9 @@ import { MenuBar } from "chrome://swell/content/menubar.mjs";
 import { SpaceEditor } from "chrome://swell/content/space-editor.mjs";
 import { ExtensionActionsUI } from "chrome://swell/content/extension-actions.mjs";
 
+const { DevTools } = ChromeUtils.importESModule(
+  "moz-src:///swell/app/modules/DevTools.sys.mjs"
+);
 const { SwellExtensionUI } = ChromeUtils.importESModule(
   "moz-src:///swell/app/modules/SwellExtensionUI.sys.mjs"
 );
@@ -203,6 +206,7 @@ export class App {
     password,
     selection,
     editable,
+    contentDomReference,
   }) {
     const tab = this.bridge.tabForBrowser(browser);
     const space = tab?.space ?? this.activeSpaceId;
@@ -279,6 +283,16 @@ export class App {
         })
       );
     }
+    if (tab && contentDomReference) {
+      items.push(
+        { separator: true },
+        {
+          label: "Inspect",
+          action: () =>
+            this.run(() => DevTools.inspectNode(tab, contentDomReference)),
+        }
+      );
+    }
     const rect = browser.getBoundingClientRect();
     this.menu.show(rect.left + clientX, rect.top + clientY, items, {
       onHide: () => SwellExtensionUI.menuHidden(),
@@ -353,6 +367,12 @@ export class App {
     const index = this.spaces.findIndex(s => s.id == this.activeSpaceId);
     const next = this.spaces[index + delta];
     return next ? this.switchSpace(next.id) : null;
+  }
+
+  // Opens the developer tools for the tab in front, on one tool.
+  openDevTools(toolId = "inspector") {
+    const tab = this.bridge.selectedTab;
+    return tab ? this.run(() => DevTools.openToolbox(tab, toolId)) : null;
   }
 
   // Pins the tab in front. If it is pinned and has gone to another page, the
@@ -539,6 +559,10 @@ export class App {
         event.preventDefault();
         return;
       }
+      if (this.#devToolsShortcut(event, accel)) {
+        event.preventDefault();
+        return;
+      }
       if (!accel || event.altKey) {
         return;
       }
@@ -547,6 +571,37 @@ export class App {
         event.preventDefault();
       }
     });
+  }
+
+  // The keys of the developer tools, as in Firefox: the inspector is accel+alt+C
+  // (and accel+shift+C on macOS), the toolbox accel+alt+I (and F12), the
+  // console accel+alt+K, the debugger accel+alt+Z.
+  #devToolsShortcut(event, accel) {
+    const tools = {
+      KeyC: "inspector",
+      KeyI: "inspector",
+      KeyK: "webconsole",
+      KeyZ: "jsdebugger",
+    };
+    if (event.code == "F12" && !event.metaKey && !event.ctrlKey) {
+      this.openDevTools();
+      return true;
+    }
+    if (accel && event.altKey && !event.shiftKey && tools[event.code]) {
+      this.openDevTools(tools[event.code]);
+      return true;
+    }
+    if (
+      IS_MAC &&
+      accel &&
+      event.shiftKey &&
+      !event.altKey &&
+      event.code == "KeyC"
+    ) {
+      this.openDevTools("inspector");
+      return true;
+    }
+    return false;
   }
 
   #shortcut(event) {

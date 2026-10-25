@@ -5,6 +5,8 @@
 imply_option("MOZ_PLACES", True)
 imply_option("MOZ_PROFILE_MIGRATOR", False)
 imply_option("MOZ_APP_VENDOR", "Swell")
+# The developer tools with their toolbox and inspector, not only the server.
+imply_option("MOZ_DEVTOOLS", "all")
 imply_option("MOZ_APP_ID", "{4e7da7f4-09d6-4575-8804-2949e41e54ea}")
 imply_option("--with-app-basename", "Swell")
 imply_option("--with-distribution-id", "dev.swell")
