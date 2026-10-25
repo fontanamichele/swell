@@ -51,6 +51,8 @@ prefs = [
 
 ["browser_logins.js"]
 
+["browser_layout.js"]
+
 ["browser_navbar.js"]
 
 ["browser_no_mozilla_services.js"]

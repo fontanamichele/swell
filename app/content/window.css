@@ -7,6 +7,7 @@
 
 :root {
   --sidebar-width: 264px;
+  --content-margin: 8px;
   --sidebar-bg: #eceef2;
   --sidebar-fg: #1c1e23;
   --muted: #6b7080;
@@ -42,7 +43,7 @@ html,
 body {
   margin: 0;
   height: 100%;
-  background: var(--page-bg);
+  background: var(--sidebar-bg);
   color: var(--sidebar-fg);
   -moz-user-select: none;
   user-select: none;
@@ -62,22 +63,52 @@ button {
   display: none;
 }
 
-/* macOS: the system window buttons float over the top left of the sidebar, so
-   leave room for them and let the strip drag the window. */
-@media (-moz-platform: macos) {
-  :root[customtitlebar] #titlebar {
-    display: block;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: var(--sidebar-width);
-    height: 38px;
-    z-index: 5;
-    -moz-window-dragging: drag;
-  }
+/* The top row: the sidebar button and the page arrows over the sidebar, and on
+   Windows and Linux the window buttons at the other end. macOS draws its window
+   buttons over the left of the row, so it leaves room for them. */
+:root[customtitlebar] #titlebar {
+  display: flex;
+  position: fixed;
+  inset: 0 0 auto;
+  height: var(--titlebar-height);
+  z-index: 5;
+  pointer-events: none;
+}
 
-  :root[customtitlebar] #sidebar {
-    padding-top: 44px;
+#titlebar-left {
+  display: flex;
+  align-items: center;
+  width: var(--sidebar-width);
+  box-sizing: border-box;
+  padding-inline: var(--space-small);
+  pointer-events: auto;
+  -moz-window-dragging: drag;
+}
+
+#titlebar-left .nav-button {
+  -moz-window-dragging: no-drag;
+}
+
+#nav-buttons {
+  display: flex;
+  margin-inline-start: auto;
+}
+
+:root[sidebar-collapsed] #titlebar-left {
+  width: auto;
+}
+
+:root[sidebar-collapsed] #nav-buttons {
+  display: none;
+}
+
+:root {
+  --titlebar-height: 38px;
+}
+
+@media (-moz-platform: macos) {
+  #titlebar-left {
+    padding-inline-start: 80px;
   }
 
   #window-controls {
@@ -85,25 +116,34 @@ button {
   }
 }
 
-/* Windows and Linux: a strip across the window holds the window buttons. Linux
-   without client-side decorations keeps the system titlebar (see below). */
 @media not (-moz-platform: macos) {
   :root {
     --titlebar-height: 32px;
   }
 
   :root[customtitlebar] #titlebar {
-    display: flex;
-    position: fixed;
-    inset: 0 0 auto;
-    height: var(--titlebar-height);
-    z-index: 5;
+    pointer-events: auto;
     -moz-window-dragging: drag;
   }
+}
 
+:root[customtitlebar] #app {
+  box-sizing: border-box;
+}
+
+@media not (-moz-platform: macos) {
   :root[customtitlebar] #app {
-    box-sizing: border-box;
     padding-top: var(--titlebar-height);
+  }
+}
+
+:root[customtitlebar] #sidebar {
+  padding-top: var(--titlebar-height);
+}
+
+@media not (-moz-platform: macos) {
+  :root[customtitlebar] #sidebar {
+    padding-top: var(--space-small);
   }
 }
 
@@ -253,12 +293,17 @@ button {
   }
 }
 
+:root[sidebar-collapsed] #sidebar,
+:root[sidebar-collapsed] #sidebar-resizer {
+  display: none;
+}
+
 #sidebar {
   width: var(--sidebar-width);
   flex: none;
   display: flex;
   flex-direction: column;
-  background: var(--sidebar-bg);
+  background: transparent;
   color: var(--sidebar-fg);
   box-sizing: border-box;
   padding: 10px var(--space-small) var(--space-small);
@@ -272,6 +317,36 @@ button {
   display: flex;
   flex-direction: column;
   background: var(--page-bg);
+  margin: var(--content-margin);
+  margin-inline-start: 0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+:root[sidebar-collapsed] #content {
+  margin-inline-start: var(--content-margin);
+}
+
+@media not (-moz-platform: macos) {
+  #content {
+    margin-top: 0;
+  }
+}
+
+@media (-moz-platform: macos) {
+  :root[customtitlebar][sidebar-collapsed] #content {
+    margin-top: var(--titlebar-height);
+  }
+}
+
+#sidebar-resizer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--sidebar-width) - 3px);
+  width: 6px;
+  z-index: 4;
+  cursor: col-resize;
 }
 
 #pages {
@@ -595,14 +670,14 @@ kbd {
   height: var(--size-item-large);
   border: none;
   border-radius: var(--radius);
-  background: var(--row-hover);
+  background: transparent;
   text-align: left;
   padding: 0 10px;
   color: var(--muted);
 }
 
 .new-tab:hover {
-  background: var(--row-selected);
+  background: var(--row-hover);
 }
 
 #footer-row {
@@ -980,7 +1055,7 @@ dialog .buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 2px;
-  padding: 0 var(--space-small) var(--space-small);
+  padding-bottom: var(--space-small);
 }
 
 #extension-actions[hidden] {
@@ -1186,10 +1261,17 @@ dialog .buttons {
 }
 
 #navbar {
+  padding-bottom: var(--space-small);
+}
+
+.nav-pill {
   display: flex;
   align-items: center;
-  gap: 2px;
-  padding: 0 var(--space-small) var(--space-small);
+  width: 100%;
+  height: 32px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: var(--row-hover);
 }
 
 .nav-button {
@@ -1215,12 +1297,10 @@ dialog .buttons {
 .nav-address {
   flex: 1;
   min-width: 0;
-  height: 28px;
-  margin-inline: 4px;
+  height: 100%;
   padding: 0 10px;
   border: none;
-  border-radius: 8px;
-  background: var(--row-hover);
+  background: transparent;
   overflow: hidden;
   text-align: start;
   text-overflow: ellipsis;

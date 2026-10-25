@@ -12,6 +12,7 @@ import { AutofillUI } from "chrome://swell/content/autofill.mjs";
 import { PasswordsUI } from "chrome://swell/content/passwords.mjs";
 import { ExtensionsUI } from "chrome://swell/content/extensions.mjs";
 import { MediaUI } from "chrome://swell/content/media.mjs";
+import { SidebarLayout } from "chrome://swell/content/sidebar-layout.mjs";
 import { NavBar } from "chrome://swell/content/navbar.mjs";
 import { SpaceEditor } from "chrome://swell/content/space-editor.mjs";
 import { ExtensionActionsUI } from "chrome://swell/content/extension-actions.mjs";
@@ -57,6 +58,7 @@ export class App {
     this.media = new MediaUI(this);
     this.spaceEditor = new SpaceEditor(this);
     this.navBar = new NavBar(this);
+    this.sidebarLayout = new SidebarLayout(this);
     this.#renderQueued = false;
   }
 
@@ -455,6 +457,9 @@ export class App {
         return true;
       case "r":
         this.bridge.reload();
+        return true;
+      case "s":
+        this.sidebarLayout.toggle();
         return true;
       case "f":
         this.bridge.openFind();

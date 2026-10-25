@@ -34,7 +34,7 @@ add_task(async function test_macos_leaves_room_for_the_system_buttons() {
       getComputedStyle(document.getElementById("sidebar")).paddingTop,
       10
     ),
-    40,
+    38,
     "the sidebar leaves room for the window controls"
   );
   Assert.equal(

@@ -281,3 +281,11 @@ Not done yet: `commands`, updating all copies of an add-on, idle unload of persi
 ## Navigation controls
 
 A row at the top of the sidebar: back, forward, reload (stop while the page loads), a pill with the page's host (click opens the command bar on its address) and a button that copies the address. The engine bridge already tracked `canGoBack`, `canGoForward` and `loading` per tab and had `goBack`, `goForward`, `reload` and `stop`; this is only the face for them. Not done: the history list on a long press of back/forward, a lock icon for the connection, and editing the address in the pill itself.
+
+## Layout like Arc
+
+- The top row (`#titlebar-left`, as wide as the sidebar) holds the sidebar button and, at its right end, back, forward and reload. The address pill is a row of its own at full width, with the copy button inside it. On Windows and Linux the same row sits in a strip across the window with the window buttons at the other end (placement on Linux follows the GTK layout).
+- New tab is the first row of the Today list instead of a footer button.
+- The page is a rounded card (10px, 8px margin) on the sidebar's background. With the sidebar hidden on macOS the card starts below the row, which keeps the window buttons and the sidebar button.
+- The sidebar is resized by dragging its edge (a double click resets it, 180px to half the window), hidden and shown by the button or the accel key S. Width and state are kept in the XUL store.
+- macOS only shows its window buttons if `customtitlebar` is set after the window exists. Putting it on the root in `window.xhtml` hid them, so `window.mjs` sets it for every platform again; the Wayland remark about setting it before first show is not settled.

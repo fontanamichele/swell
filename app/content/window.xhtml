@@ -13,7 +13,6 @@
   screenX="60"
   screenY="40"
   persist="screenX screenY width height sizemode"
-  customtitlebar="true"
 >
   <head>
     <meta charset="utf-8" />
@@ -29,6 +28,27 @@
   </head>
   <body>
     <div id="titlebar">
+      <div id="titlebar-left">
+        <button
+          id="sidebar-toggle"
+          class="nav-button"
+          aria-label="Hide sidebar"
+          aria-expanded="true"
+        >
+          &#x25E7;
+        </button>
+        <div id="nav-buttons">
+          <button id="nav-back" class="nav-button" aria-label="Back">
+            &#x2190;
+          </button>
+          <button id="nav-forward" class="nav-button" aria-label="Forward">
+            &#x2192;
+          </button>
+          <button id="nav-reload" class="nav-button" aria-label="Reload">
+            &#x21BB;
+          </button>
+        </div>
+      </div>
       <div id="window-controls" hidden="">
         <button
           id="window-minimize"
@@ -51,24 +71,17 @@
     <div id="app">
       <aside id="sidebar">
         <div id="navbar">
-          <button id="nav-back" class="nav-button" aria-label="Back">
-            &#x2190;
-          </button>
-          <button id="nav-forward" class="nav-button" aria-label="Forward">
-            &#x2192;
-          </button>
-          <button id="nav-reload" class="nav-button" aria-label="Reload">
-            &#x21BB;
-          </button>
-          <button id="nav-address" class="nav-address"></button>
-          <button
-            id="nav-copy"
-            class="nav-button"
-            title="Copy address"
-            aria-label="Copy address"
-          >
-            &#x29C9;
-          </button>
+          <div class="nav-pill">
+            <button id="nav-address" class="nav-address"></button>
+            <button
+              id="nav-copy"
+              class="nav-button"
+              title="Copy address"
+              aria-label="Copy address"
+            >
+              &#x29C9;
+            </button>
+          </div>
         </div>
         <div id="extension-actions" hidden=""></div>
         <div id="favorites" class="favorites"></div>
@@ -84,17 +97,23 @@
           </section>
           <section class="list" id="today-section">
             <header><span class="heading">Today</span></header>
+            <button id="new-tab" class="new-tab">+ New tab</button>
             <div id="today" class="tree" data-root="today"></div>
           </section>
         </div>
         <footer id="sidebar-footer">
-          <button id="new-tab" class="new-tab">New tab</button>
           <div id="footer-row">
             <nav id="spaces" aria-label="Spaces"></nav>
             <button id="more" class="icon-button" title="More">&#x22EF;</button>
           </div>
         </footer>
       </aside>
+      <div
+        id="sidebar-resizer"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize sidebar"
+      ></div>
       <main id="content">
         <div id="permission-bar" hidden="">
           <span class="permission-text"></span>

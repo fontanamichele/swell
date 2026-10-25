@@ -4,9 +4,10 @@
 
 import { App } from "chrome://swell/content/app.mjs";
 
-// The root carries customtitlebar (window.xhtml) so the titlebar is gone before
-// the window is first shown. macOS keeps its own window buttons over the
-// sidebar; elsewhere these are drawn in #window-controls.
+// The titlebar is ours everywhere. macOS keeps its own window buttons over the
+// sidebar (and only shows them if this is set once the window exists); elsewhere
+// they are drawn in #window-controls.
+document.documentElement.setAttribute("customtitlebar", "true");
 if (Services.appinfo.OS != "Darwin") {
   const controls = document.getElementById("window-controls");
   controls.hidden = false;
