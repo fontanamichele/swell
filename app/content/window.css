@@ -801,7 +801,7 @@ kbd {
   border: none;
   border-radius: 9px;
   background: transparent;
-  font-size: 15px;
+  font-size: 13px;
 }
 
 .space:hover {
@@ -1244,7 +1244,7 @@ dialog .buttons {
   height: 36px;
   flex: none;
   background: var(--row-hover);
-  font-size: 18px;
+  font-size: 15px;
   line-height: 1;
 }
 
