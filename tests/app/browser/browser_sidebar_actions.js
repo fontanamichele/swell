@@ -260,3 +260,38 @@ add_task(async function test_accel_d_pins_a_pinned_tab_again_where_it_is() {
   );
   await closeAllTabs(bridge);
 });
+
+add_task(
+  async function test_the_bracket_shortcuts_work_on_any_keyboard_layout() {
+    const { bridge, app } = await swellApp();
+    const space = await freshSpace(app, "Brackets");
+    const tab = await inFront(bridge, app, space);
+    tab.browser.fixupAndLoadURIString(SECOND, {
+      triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
+    });
+    await rendered(
+      () => app.selectedTab?.url == SECOND && !app.selectedTab.loading,
+      "the second page loads"
+    );
+    // On an Italian keyboard the key that is "[" in US layout types "\u00e8".
+    EventUtils.synthesizeKey(
+      "\u00e8",
+      { accelKey: true, code: "BracketLeft" },
+      window
+    );
+    await rendered(
+      () => app.selectedTab?.url == FIRST && !app.selectedTab.loading,
+      "accel plus the key that is [ in US layout goes back"
+    );
+    EventUtils.synthesizeKey(
+      "*",
+      { accelKey: true, code: "BracketRight" },
+      window
+    );
+    await rendered(
+      () => app.selectedTab?.url == SECOND && !app.selectedTab.loading,
+      "and the key that is ] goes forward"
+    );
+    await closeAllTabs(bridge);
+  }
+);

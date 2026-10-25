@@ -541,7 +541,13 @@ export class App {
   }
 
   #shortcut(event) {
-    switch (event.key.toLowerCase()) {
+    // The brackets are not on the same key in every layout (on an Italian one
+    // they are behind Option), but a mouse or a keyboard shortcut means the
+    // physical keys, so those are matched by their code.
+    const key =
+      { BracketLeft: "[", BracketRight: "]" }[event.code] ??
+      event.key.toLowerCase();
+    switch (key) {
       case "t":
         this.commandBar.open({ mode: "new" });
         return true;
