@@ -10,7 +10,7 @@ const rect = id => byId(id).getBoundingClientRect();
 add_task(async function test_the_page_is_a_rounded_card_with_a_margin() {
   await swellApp();
   const content = getComputedStyle(byId("content"));
-  Assert.equal(content.borderTopLeftRadius, "10px", "rounded corners");
+  Assert.equal(content.borderTopLeftRadius, "16px", "rounded corners");
   Assert.equal(content.overflow, "hidden", "that clip the page");
   Assert.equal(content.marginRight, "10px", "a margin on the right");
   Assert.equal(content.marginBottom, "10px", "and at the bottom");
@@ -98,7 +98,11 @@ add_task(async function test_a_hidden_sidebar_floats_back_at_the_left_edge() {
   Assert.ok(document.documentElement.hasAttribute("sidebar-peek"));
   Assert.equal(getComputedStyle(sidebar).position, "fixed", "it floats");
   Assert.equal(getComputedStyle(sidebar).visibility, "visible");
-  Assert.equal(getComputedStyle(sidebar).borderTopLeftRadius, "18px");
+  Assert.equal(
+    getComputedStyle(sidebar).borderTopLeftRadius,
+    getComputedStyle(byId("content")).borderTopLeftRadius,
+    "the floating sidebar and the page are cards of the same shape"
+  );
   Assert.ok(
     getComputedStyle(sidebar).transitionDuration.includes("0.2s"),
     "it slides"

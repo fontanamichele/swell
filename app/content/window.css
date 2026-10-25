@@ -350,7 +350,7 @@ button {
 :root {
   /* The floating sidebar is as tall as the window and flush to its left edge. */
   --peek-gap: 0px;
-  --peek-radius: 18px;
+  --peek-radius: var(--card-radius);
   --peek-top: var(--peek-gap);
   --peek-bottom: var(--peek-gap);
 }
@@ -420,7 +420,7 @@ button {
   background: var(--page-bg);
   margin: var(--content-margin);
   margin-inline-start: 0;
-  border-radius: 10px;
+  border-radius: var(--card-radius);
   overflow: hidden;
 }
 
@@ -1714,6 +1714,9 @@ textarea {
 /* ---- Details: spacing, icons, close buttons, sliding between spaces ---- */
 :root {
   --content-margin: 10px;
+  /* The page and the floating sidebar are cards of one shape, rounder than
+     what sits inside the sidebar. */
+  --card-radius: 16px;
 }
 
 #sidebar {
