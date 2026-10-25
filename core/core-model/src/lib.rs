@@ -15,4 +15,4 @@ pub use diff::TreeOp;
 pub use entities::*;
 pub use error::{ModelError, Result};
 pub use ids::*;
-pub use model::Model;
+pub use model::{Model, RemovedSpace};

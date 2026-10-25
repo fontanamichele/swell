@@ -355,3 +355,78 @@ fn from_parts_round_trips() {
     assert_eq!(copy.spaces(), m.spaces());
     assert_eq!(copy.nodes().len(), m.nodes().len());
 }
+
+#[test]
+fn a_space_is_renamed_and_reordered() {
+    let mut m = model();
+    let a = space(&mut m, "A");
+    let b = space(&mut m, "B");
+    let c = space(&mut m, "C");
+    m.update_space(&b, "  Work  ", Icon::Emoji("W".into()))
+        .unwrap();
+    assert_eq!(m.space(&b).unwrap().title, "Work");
+    assert_eq!(m.space(&b).unwrap().icon, Icon::Emoji("W".into()));
+    assert!(m
+        .update_space(&b, "   ", Icon::Symbol("star".into()))
+        .is_err());
+    let order = |m: &Model| m.spaces().iter().map(|s| s.id.clone()).collect::<Vec<_>>();
+    m.move_space(&c, 0).unwrap();
+    assert_eq!(order(&m), vec![c.clone(), a.clone(), b.clone()]);
+    m.move_space(&c, 2).unwrap();
+    assert_eq!(order(&m), vec![a, b, c.clone()]);
+    assert!(m.move_space(&c, 3).is_err());
+    m.validate().unwrap();
+}
+
+#[test]
+fn deleting_a_space_removes_its_trees_identity_and_tabs() {
+    let mut m = model();
+    let a = space(&mut m, "A");
+    let b = space(&mut m, "B");
+    let window = WindowId::from("w");
+    m.open_window(window.clone());
+    m.switch_space(&window, &b).unwrap();
+    let (live, _) = m.open_url(&window, &b, "https://b.test/").unwrap();
+    let b_identity = m.space(&b).unwrap().identity_id.clone();
+    let b_context = m.identity(&b_identity).unwrap().gecko_user_context_id;
+    let nodes_before = m.nodes().len();
+
+    assert!(m.delete_space(&SpaceId::from("nope")).is_err());
+    let removed = m.delete_space(&b).unwrap();
+    assert_eq!(removed.space.id, b);
+    assert_eq!(removed.identity.as_ref().unwrap().id, b_identity);
+    assert_eq!(removed.closed, vec![live]);
+    assert_eq!(removed.moved_windows, vec![(window.clone(), a.clone())]);
+    assert_eq!(m.window(&window).unwrap().active_space, Some(a.clone()));
+    assert!(m.space(&b).is_none());
+    assert!(m.identity(&b_identity).is_none());
+    assert!(m.favorites_root(&b_identity).is_none());
+    assert_eq!(
+        m.nodes().len(),
+        nodes_before - 4,
+        "two roots, a favorites root and a tab"
+    );
+    m.validate().unwrap();
+
+    assert!(m.delete_space(&a).is_err(), "the last space stays");
+    let again = space(&mut m, "C");
+    let context = m.identity_of_space(&again).unwrap().gecko_user_context_id;
+    assert!(
+        context > b_context,
+        "a deleted container id is not given again"
+    );
+}
+
+#[test]
+fn a_shared_identity_survives_the_deletion_of_one_of_its_spaces() {
+    let mut m = model();
+    let a = space(&mut m, "A");
+    let identity = m.space(&a).unwrap().identity_id.clone();
+    let b = m
+        .create_space("B", Icon::Symbol("star".into()), Some(identity.clone()))
+        .unwrap();
+    let removed = m.delete_space(&b).unwrap();
+    assert!(removed.identity.is_none());
+    assert!(m.identity(&identity).is_some());
+    m.validate().unwrap();
+}

@@ -646,3 +646,50 @@ fn a_container_no_space_owns_has_no_logins() {
             .is_err());
     }
 }
+
+#[test]
+fn spaces_are_edited_reordered_and_deleted_and_it_all_persists() {
+    let f = fixture();
+    let a = first_space(&f.core);
+    let b = f
+        .core
+        .create_space("Work".into(), Icon::Emoji { glyph: "W".into() })
+        .unwrap();
+    f.core
+        .update_space(
+            b.clone(),
+            "Office".into(),
+            Icon::Emoji { glyph: "O".into() },
+        )
+        .unwrap();
+    f.core.move_space(b.clone(), 0).unwrap();
+    let f = reopen(f);
+    let spaces = f.core.list_spaces().unwrap();
+    assert_eq!(spaces[0].id, b);
+    assert_eq!(spaces[0].title, "Office");
+    assert_eq!(spaces[1].id, a.id);
+
+    let doomed = spaces[0].clone();
+    let deleted = f.core.delete_space(doomed.id.clone()).unwrap();
+    assert!(deleted.identity_removed);
+    assert_eq!(deleted.user_context_id, doomed.user_context_id);
+    assert!(f.core.delete_space(a.id.clone()).is_err(), "the last stays");
+
+    let f = reopen(f);
+    assert_eq!(f.core.list_spaces().unwrap().len(), 1);
+    let again = f
+        .core
+        .create_space("New".into(), Icon::Emoji { glyph: "N".into() })
+        .unwrap();
+    let again = f
+        .core
+        .list_spaces()
+        .unwrap()
+        .into_iter()
+        .find(|space| space.id == again)
+        .unwrap();
+    assert!(
+        again.user_context_id > doomed.user_context_id,
+        "the container of a deleted space is not used again, even after a restart"
+    );
+}

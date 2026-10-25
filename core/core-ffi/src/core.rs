@@ -16,6 +16,7 @@ const SUGGESTION_LIMIT: usize = 8;
 const HISTORY_CANDIDATES: usize = 30;
 const META_DEVICE: &str = "device_id";
 const META_LAST_SPACE: &str = "last_space";
+const META_NEXT_CONTEXT: &str = "next_user_context_id";
 
 enum Event {
     Tree(TreeDiff),
@@ -68,6 +69,16 @@ impl Inner {
             self.store.save_all(&self.model)
         } else {
             self.store.sync_structure(&self.model)
+        };
+        self.dirty = saved.is_err();
+        Ok(saved?)
+    }
+
+    fn persist_removals(&mut self) -> Result<(), CoreError> {
+        let saved = if self.dirty {
+            self.store.save_all(&self.model)
+        } else {
+            self.store.sync_removals(&self.model)
         };
         self.dirty = saved.is_err();
         Ok(saved?)
@@ -265,6 +276,12 @@ impl SwellCore {
             }
         };
         let mut model = store.load(Box::new(SystemEnv), &device)?;
+        if let Some(next) = store
+            .get_meta(META_NEXT_CONTEXT)?
+            .and_then(|next| next.parse().ok())
+        {
+            model.reserve_user_context_ids(next);
+        }
         if model.spaces().is_empty() {
             let id =
                 model.create_space("Personal", core_model::Icon::Symbol("person".into()), None)?;
@@ -366,6 +383,93 @@ impl SwellCore {
             events.push(Event::Spaces(inner.space_views()));
             inner.persist_structure()?;
             Ok(id.0)
+        })
+    }
+
+    /// Renames a space and changes its icon.
+    pub fn update_space(&self, space: String, title: String, icon: Icon) -> Result<(), CoreError> {
+        self.run(|inner, events| {
+            inner
+                .model
+                .update_space(&SpaceId::from(space.as_str()), &title, icon.into())?;
+            events.push(Event::Spaces(inner.space_views()));
+            inner.persist_structure()
+        })
+    }
+
+    /// Moves a space to `index` in the list of spaces.
+    pub fn move_space(&self, space: String, index: u32) -> Result<(), CoreError> {
+        self.run(|inner, events| {
+            inner
+                .model
+                .move_space(&SpaceId::from(space.as_str()), index as usize)?;
+            events.push(Event::Spaces(inner.space_views()));
+            inner.persist_structure()
+        })
+    }
+
+    /// Deletes a space: its tabs and folders, its tabs that are open (the
+    /// engine bridge is told to close them) and, when no other space shares
+    /// it, the identity with its favorites, history, logins and zoom. The
+    /// engine side still has to forget what Gecko keeps for the container.
+    pub fn delete_space(&self, space: String) -> Result<DeletedSpace, CoreError> {
+        self.run(|inner, events| {
+            let windows: Vec<(LiveTabId, WindowId)> = inner
+                .model
+                .live_tabs()
+                .into_iter()
+                .map(|tab| (tab.id, tab.window))
+                .collect();
+            let removed = inner.model.delete_space(&SpaceId::from(space.as_str()))?;
+            for live in removed.closed {
+                if let Some((_, window)) = windows.iter().find(|(id, _)| *id == live) {
+                    events.push(Event::CloseTab {
+                        window: window.0.clone(),
+                        live_tab: live.0,
+                    });
+                }
+            }
+            let last = inner.store.get_meta(META_LAST_SPACE)?;
+            let fallback = removed
+                .moved_windows
+                .first()
+                .map(|(_, space)| space.clone());
+            for (window, space) in removed.moved_windows {
+                events.push(Event::ActiveSpace {
+                    window: window.0,
+                    space: space.0,
+                });
+            }
+            if last.as_deref() == Some(space.as_str()) {
+                if let Some(fallback) =
+                    fallback.or_else(|| inner.model.spaces().first().map(|space| space.id.clone()))
+                {
+                    inner.store.set_meta(META_LAST_SPACE, fallback.as_str())?;
+                }
+            }
+            let user_context_id = removed
+                .identity
+                .as_ref()
+                .map(|identity| identity.gecko_user_context_id)
+                .unwrap_or_default();
+            if let Some(identity) = &removed.identity {
+                inner.history.clear(&identity.id.0)?;
+                inner.logins.clear(&identity.id.0)?;
+            }
+            inner.store.set_meta(
+                META_NEXT_CONTEXT,
+                &inner.model.next_user_context_id().to_string(),
+            )?;
+            events.push(Event::Spaces(inner.space_views()));
+            inner.persist_removals()?;
+            Ok(DeletedSpace {
+                user_context_id: if removed.identity.is_some() {
+                    user_context_id
+                } else {
+                    0
+                },
+                identity_removed: removed.identity.is_some(),
+            })
         })
     }
 

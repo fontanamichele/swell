@@ -105,6 +105,15 @@ pub struct SpaceView {
     pub favorites_root: String,
 }
 
+/// What deleting a space left for the engine side to clean up.
+#[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
+pub struct DeletedSpace {
+    /// The container of the space; never given to another space again.
+    pub user_context_id: u32,
+    /// False when another space shares the identity and so the container.
+    pub identity_removed: bool,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
 pub struct ChildList {
     pub parent: String,

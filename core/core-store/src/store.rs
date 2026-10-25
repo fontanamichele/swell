@@ -228,6 +228,40 @@ impl Store {
         Ok(())
     }
 
+    /// Makes the store match a model that lost spaces: forgets the spaces,
+    /// identities and nodes the model no longer has, then writes the order.
+    pub fn sync_removals(&mut self, model: &Model) -> Result<()> {
+        let tx = self.conn.transaction()?;
+        tx.execute_batch("PRAGMA defer_foreign_keys = ON")?;
+        let spaces: BTreeSet<String> = model
+            .spaces()
+            .iter()
+            .map(|space| space.id.0.clone())
+            .collect();
+        let identities: BTreeSet<String> = model
+            .identities()
+            .iter()
+            .map(|identity| identity.id.0.clone())
+            .collect();
+        let nodes: BTreeSet<String> = model.nodes().iter().map(|node| node.id.0.clone()).collect();
+        for (table, keep) in [
+            ("spaces", &spaces),
+            ("nodes", &nodes),
+            ("identities", &identities),
+        ] {
+            let stored: Vec<String> = tx
+                .prepare(&format!("SELECT id FROM {table}"))?
+                .query_map([], |row| row.get(0))?
+                .collect::<std::result::Result<_, _>>()?;
+            for id in stored.into_iter().filter(|id| !keep.contains(id)) {
+                tx.execute(&format!("DELETE FROM {table} WHERE id = ?1"), params![id])?;
+            }
+        }
+        write_structure(&tx, model)?;
+        tx.commit()?;
+        Ok(())
+    }
+
     /// Persists tree ops that were just applied to `model`, atomically: either
     /// every op lands or none does.
     pub fn apply(&mut self, model: &Model, ops: &[TreeOp]) -> Result<()> {

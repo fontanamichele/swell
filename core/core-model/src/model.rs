@@ -18,6 +18,20 @@ pub struct Model {
     nodes: HashMap<NodeId, Node>,
     windows: HashMap<WindowId, Window>,
     live_tabs: HashMap<LiveTabId, LiveTab>,
+    /// The lowest container id a new identity may get, so that the id of a
+    /// deleted space is never given to another one.
+    next_user_context_id: u32,
+}
+
+/// What deleting a space took away, for the caller to clean up after.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RemovedSpace {
+    pub space: Space,
+    /// The identity went too, because no other space used it.
+    pub identity: Option<Identity>,
+    pub closed: Vec<LiveTabId>,
+    /// Windows that showed the space and now show another one.
+    pub moved_windows: Vec<(WindowId, SpaceId)>,
 }
 
 fn not_found<T>(what: &str, id: &str) -> Result<T> {
@@ -46,7 +60,17 @@ impl Model {
             nodes: HashMap::new(),
             windows: HashMap::new(),
             live_tabs: HashMap::new(),
+            next_user_context_id: 1,
         }
+    }
+
+    pub fn next_user_context_id(&self) -> u32 {
+        self.next_user_context_id
+    }
+
+    /// Keeps container ids below `next` from being handed out again.
+    pub fn reserve_user_context_ids(&mut self, next: u32) {
+        self.next_user_context_id = self.next_user_context_id.max(next);
     }
 
     /// Rebuilds a model from persisted rows and checks every invariant.
@@ -162,7 +186,8 @@ impl Model {
             .values()
             .map(|identity| identity.gecko_user_context_id)
             .max()
-            .map_or(1, |max| max.saturating_add(1));
+            .map_or(1, |max| max.saturating_add(1))
+            .max(self.next_user_context_id);
         if next > MAX_USER_CONTEXT_ID {
             return invariant("no user context ids left");
         }
@@ -211,6 +236,95 @@ impl Model {
         self.spaces.insert(id.clone(), space);
         self.space_order.push(id.clone());
         Ok(id)
+    }
+
+    /// Changes the title and icon of a space.
+    pub fn update_space(&mut self, id: &SpaceId, title: &str, icon: Icon) -> Result<()> {
+        let title = title.trim();
+        if title.is_empty() {
+            return invariant("a space needs a name");
+        }
+        let Some(space) = self.spaces.get_mut(id) else {
+            return not_found("space", id.as_str());
+        };
+        space.title = title.to_owned();
+        space.icon = icon;
+        Ok(())
+    }
+
+    /// Moves a space to `index` in the order the sidebar lists them.
+    pub fn move_space(&mut self, id: &SpaceId, index: usize) -> Result<()> {
+        let Some(from) = self.space_order.iter().position(|s| s == id) else {
+            return not_found("space", id.as_str());
+        };
+        if index >= self.space_order.len() {
+            return invariant("index beyond the end of the spaces");
+        }
+        let space = self.space_order.remove(from);
+        self.space_order.insert(index, space);
+        Ok(())
+    }
+
+    /// Deletes a space with its trees. Its identity goes too, with the
+    /// favorites, when no other space shares it. The last space stays.
+    pub fn delete_space(&mut self, id: &SpaceId) -> Result<RemovedSpace> {
+        let Some(position) = self.space_order.iter().position(|s| s == id) else {
+            return not_found("space", id.as_str());
+        };
+        if self.space_order.len() == 1 {
+            return invariant("the last space cannot be deleted");
+        }
+        let space = self.spaces[id].clone();
+        let shared = self
+            .spaces
+            .values()
+            .any(|other| other.id != space.id && other.identity_id == space.identity_id);
+        let mut doomed: HashSet<NodeId> = self.subtree(&space.pinned_root).into_iter().collect();
+        doomed.extend(self.subtree(&space.today_root));
+        let identity = if shared {
+            None
+        } else {
+            if let Some(favorites) = self.favorites.remove(&space.identity_id) {
+                doomed.extend(self.subtree(&favorites));
+            }
+            self.identities.remove(&space.identity_id)
+        };
+        let mut closed: Vec<LiveTabId> = self
+            .live_tabs
+            .values()
+            .filter(|live| live.space == space.id || doomed.contains(&live.node))
+            .map(|live| live.id.clone())
+            .collect();
+        closed.sort();
+        for live in &closed {
+            self.live_tabs.remove(live);
+        }
+        for node in &doomed {
+            self.nodes.remove(node);
+        }
+        self.spaces.remove(id);
+        self.space_order.remove(position);
+        let fallback =
+            self.space_order[position.saturating_sub(1).min(self.space_order.len() - 1)].clone();
+        let mut moved_windows = Vec::new();
+        for window in self.windows.values_mut() {
+            if window.active_space.as_ref() == Some(id) {
+                window.active_space = Some(fallback.clone());
+                moved_windows.push((window.id.clone(), fallback.clone()));
+            }
+        }
+        moved_windows.sort();
+        if let Some(identity) = &identity {
+            self.next_user_context_id = self
+                .next_user_context_id
+                .max(identity.gecko_user_context_id.saturating_add(1));
+        }
+        Ok(RemovedSpace {
+            space,
+            identity,
+            closed,
+            moved_windows,
+        })
     }
 
     pub fn insert_folder(
