@@ -635,26 +635,6 @@ kbd {
   outline-offset: -2px;
 }
 
-.caret {
-  flex: none;
-  width: var(--size-item-xsmall);
-  height: var(--size-item-xsmall);
-  display: grid;
-  place-items: center;
-}
-
-.caret::before {
-  content: "";
-  border: 4px solid transparent;
-  border-top-color: var(--muted);
-  border-bottom-width: 0;
-  transition: transform 0.1s;
-}
-
-.caret.collapsed::before {
-  transform: rotate(-90deg);
-}
-
 .avatar {
   flex: none;
   width: 18px;
@@ -671,6 +651,12 @@ kbd {
 .avatar.icon {
   background: transparent;
   object-fit: contain;
+}
+
+.avatar.folder-icon {
+  color: inherit;
+  background-color: currentColor;
+  mask: url("chrome://swell/content/icons/folder.svg") center / contain no-repeat;
 }
 
 .avatar.loading {

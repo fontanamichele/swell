@@ -35,6 +35,7 @@ swell.jar:
   content/swell/icons/download.svg (icons/download.svg)
   content/swell/icons/link.svg (icons/link.svg)
   content/swell/icons/minus.svg (icons/minus.svg)
+  content/swell/icons/folder.svg (icons/folder.svg)
   content/swell/icons/LICENSE-iconoir (icons/LICENSE-iconoir)
   content/swell/fonts/AtkinsonHyperlegibleNext.ttf (fonts/AtkinsonHyperlegibleNext.ttf)
   content/swell/fonts/OFL.txt (fonts/OFL.txt)

@@ -221,12 +221,6 @@ export class Sidebar {
     row.classList.toggle("selected", app.selectedNode === id);
     row.classList.toggle("sharing", !!openTab?.sharing);
 
-    if (info.kind == "folder") {
-      const caret = doc.createElement("span");
-      caret.className = "caret";
-      caret.classList.toggle("collapsed", info.collapsed);
-      row.append(caret);
-    }
     const avatar = this.#avatar(info, openTab);
     avatar.classList.toggle("loading", !!openTab?.loading);
     const title = doc.createElement("span");
@@ -307,7 +301,11 @@ export class Sidebar {
     }
     const avatar = doc.createElement("span");
     avatar.className = "avatar";
-    avatar.textContent = info.kind == "folder" ? "▤" : letterOf(info);
+    if (info.kind == "folder") {
+      avatar.classList.add("folder-icon");
+    } else {
+      avatar.textContent = letterOf(info);
+    }
     return avatar;
   }
 
