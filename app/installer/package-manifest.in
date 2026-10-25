@@ -1,0 +1,163 @@
+; This Source Code Form is subject to the terms of the Mozilla Public
+; License, v. 2.0. If a copy of the MPL was not distributed with this
+; file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+; Package file for the Swell build, cut down from browser/installer/package-manifest.in.
+; It lists what is copied from dist/bin into the staging directory; the format is the
+; one described there. Left out on purpose: the updater, the crash reporter, the
+; maintenance service, the ping sender, native messaging proxy, the default browser
+; agent and everything Windows-only, none of which Swell builds or uses.
+;
+; @BINPATH@ is Contents/MacOS/ on macOS, @RESPATH@ is Contents/Resources/ there; on
+; other platforms both are the application directory.
+
+#filter substitution
+
+#ifdef XP_MACOSX
+@APPNAME@/Contents/Info.plist
+@APPNAME@/Contents/PkgInfo
+@RESPATH@/swell.icns
+@RESPATH@/@LPROJ_ROOT@.lproj/*
+#endif
+
+[@AB_CD@]
+@RESPATH@/dictionaries/*
+@RESPATH@/app/localization/*
+@RESPATH@/localization/*
+#if defined(XP_WIN) || defined(MOZ_GTK)
+@RESPATH@/fonts/*
+#endif
+@RESPATH@/hyphenation/*
+@RESPATH@/default.locale
+
+[xpcom]
+@RESPATH@/dependentlibs.list
+#ifdef MOZ_SHARED_MOZGLUE
+@BINPATH@/@DLL_PREFIX@mozglue@DLL_SUFFIX@
+#endif
+#ifndef MOZ_STATIC_JS
+@BINPATH@/@DLL_PREFIX@mozjs@DLL_SUFFIX@
+#endif
+#ifndef MOZ_SYSTEM_NSPR
+#ifndef MOZ_FOLD_LIBS
+@BINPATH@/@DLL_PREFIX@nspr4@DLL_SUFFIX@
+@BINPATH@/@DLL_PREFIX@plc4@DLL_SUFFIX@
+@BINPATH@/@DLL_PREFIX@plds4@DLL_SUFFIX@
+#endif
+#endif
+#ifdef XP_MACOSX
+@BINPATH@/XUL
+@BINPATH@/@MOZ_CHILD_PROCESS_NAME@.app/
+@BINPATH@/@MOZ_EME_PROCESS_NAME@.app/
+@BINPATH@/@MOZ_GPU_PROCESS_NAME@.app/
+#else
+@BINPATH@/@DLL_PREFIX@xul@DLL_SUFFIX@
+#endif
+#ifdef MOZ_GTK
+; Launched on Linux to check the graphics capabilities, apart so that it may crash.
+@BINPATH@/gfxtest
+@BINPATH@/@DLL_PREFIX@mozgtk@DLL_SUFFIX@
+#ifdef MOZ_WAYLAND
+@BINPATH@/@DLL_PREFIX@mozwayland@DLL_SUFFIX@
+#endif
+#endif
+
+#ifdef ONNX_RUNTIME
+@BINPATH@/@DLL_PREFIX@onnxruntime@DLL_SUFFIX@
+#endif
+
+[swell]
+#ifndef XP_MACOSX
+@BINPATH@/@MOZ_APP_NAME@-bin
+#endif
+@BINPATH@/@MOZ_APP_NAME@
+@RESPATH@/application.ini
+@RESPATH@/platform.ini
+#ifndef MOZ_FOLD_LIBS
+@BINPATH@/@DLL_PREFIX@mozsqlite3@DLL_SUFFIX@
+#endif
+@BINPATH@/@DLL_PREFIX@lgpllibs@DLL_SUFFIX@
+@BINPATH@/@DLL_PREFIX@gkcodecs@DLL_SUFFIX@
+@BINPATH@/@DLL_PREFIX@mozavutil@DLL_SUFFIX@
+@BINPATH@/@DLL_PREFIX@mozavcodec@DLL_SUFFIX@
+@BINPATH@/@DLL_PREFIX@mozinference@DLL_SUFFIX@
+
+; JavaScript components
+@RESPATH@/components/*.manifest
+
+; Modules
+@RESPATH@/app/modules/*
+@RESPATH@/modules/*
+@RESPATH@/moz-src/*
+@RESPATH@/actors/*
+
+; Chrome: Swell's own content, the toolkit's, the developer tools, the PDF viewer,
+; the security dialogs, the remote protocols and the locale
+@RESPATH@/chrome/*
+@RESPATH@/app/chrome.manifest
+@RESPATH@/app/chrome/*
+@RESPATH@/defaults/pref/debugger.js
+@RESPATH@/defaults/pref/PdfJsDefaultPrefs.js
+
+; Default preferences
+@RESPATH@/app/@PREF_DIR@/*
+@RESPATH@/greprefs.js
+@RESPATH@/defaults/autoconfig/prefcalls.js
+; Remote Settings JSON dumps
+@RESPATH@/app/defaults/settings
+
+#ifndef XP_MACOSX
+@RESPATH@/defaults/pref/channel-prefs.js
+#endif
+
+; Layout engine resources
+@RESPATH@/res/EditorOverride.css
+@RESPATH@/res/contenteditable.css
+@RESPATH@/res/designmode.css
+@RESPATH@/res/grabber.gif
+@RESPATH@/res/table-*.gif
+#ifdef XP_MACOSX
+@RESPATH@/res/cursors/*
+#endif
+@RESPATH@/res/fonts/*
+@RESPATH@/res/dtd/*
+@RESPATH@/res/language.properties
+@RESPATH@/res/locale/layout/HtmlForm.properties
+@RESPATH@/res/locale/layout/MediaDocument.properties
+@RESPATH@/res/locale/layout/xmlparser.properties
+@RESPATH@/res/locale/dom/dom.properties
+@RESPATH@/res/locale/necko/necko.properties
+#ifdef XP_MACOSX
+@RESPATH@/res/MainMenu.nib/
+#endif
+@RESPATH@/res/svg.css
+
+; Content-accessible resources
+@RESPATH@/contentaccessible/*
+
+; Personal Security Manager
+#ifndef MOZ_SYSTEM_NSS
+#if defined(XP_LINUX) && !defined(ANDROID)
+@BINPATH@/@DLL_PREFIX@freeblpriv3@DLL_SUFFIX@
+#else
+@BINPATH@/@DLL_PREFIX@freebl3@DLL_SUFFIX@
+#endif
+@BINPATH@/@DLL_PREFIX@nss3@DLL_SUFFIX@
+#ifndef MOZ_FOLD_LIBS
+@BINPATH@/@DLL_PREFIX@nssutil3@DLL_SUFFIX@
+@BINPATH@/@DLL_PREFIX@smime3@DLL_SUFFIX@
+@BINPATH@/@DLL_PREFIX@ssl3@DLL_SUFFIX@
+#endif
+@BINPATH@/@DLL_PREFIX@softokn3@DLL_SUFFIX@
+#endif
+
+; Process sandboxing
+#if defined(MOZ_SANDBOX)
+#if defined(XP_LINUX)
+@BINPATH@/@DLL_PREFIX@mozsandbox@DLL_SUFFIX@
+#endif
+#endif
+
+; Media
+@RESPATH@/gmp-clearkey/0.1/@DLL_PREFIX@clearkey@DLL_SUFFIX@
+@RESPATH@/gmp-clearkey/0.1/manifest.json

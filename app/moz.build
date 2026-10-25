@@ -2,12 +2,18 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+CONFIGURE_SUBST_FILES += ["installer/Makefile"]
+
 DIRS += ["app", "content", "defaults", "extensions", "jsm"]
 
 XPCOM_MANIFESTS += ["components.conf"]
 
+EXTRA_COMPONENTS += ["swell-l10n-registry.manifest"]
+
 MOZ_SRC_FILES += [
+    "../../browser/actors/PromptParent.sys.mjs",
     "../../browser/actors/WebRTCChild.sys.mjs",
+    "../../browser/components/prompts/PromptCollection.sys.mjs",
     "actors/SwellLinkChild.sys.mjs",
     "actors/SwellLinkParent.sys.mjs",
     "actors/SwellMediaParent.sys.mjs",

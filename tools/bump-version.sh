@@ -14,4 +14,7 @@ patch) patch=$((patch + 1)) ;;
 *) echo "error: unknown bump '$kind'" >&2; exit 2 ;;
 esac
 echo "$major.$minor.$patch" > "$file"
+# configure's dependency list is fixed and only knows Firefox's version file: touching it
+# (mtime only, git is unaffected) makes the next build reconfigure with the new version.
+touch "$here/../../browser/config/version.txt"
 echo "$major.$minor.$patch"

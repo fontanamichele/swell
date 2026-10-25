@@ -1,0 +1,18 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+STANDALONE_MAKEFILE := 1
+DIST_SUBDIR := app
+
+include $(topsrcdir)/config/rules.mk
+
+DEFINES += $(PACKAGE_MANIFEST_DEFINES)
+
+include $(topsrcdir)/toolkit/mozapps/installer/packager.mk
+
+BINPATH = $(MOZ_PKG_BINPATH)
+RESPATH = $(MOZ_PKG_RESPATH)
+
+LPROJ_ROOT = $(firstword $(subst -, ,$(AB_CD)))
+DEFINES += -DLPROJ_ROOT=$(LPROJ_ROOT)
