@@ -61,6 +61,8 @@ prefs = [
 
 ["browser_permissions.js"]
 
+["browser_sidebar_actions.js"]
+
 ["browser_sidebar_tree.js"]
 
 ["browser_smoke_no_firefox_ui.js"]

@@ -12,8 +12,8 @@ add_task(async function test_the_page_is_a_rounded_card_with_a_margin() {
   const content = getComputedStyle(byId("content"));
   Assert.equal(content.borderTopLeftRadius, "10px", "rounded corners");
   Assert.equal(content.overflow, "hidden", "that clip the page");
-  Assert.equal(content.marginRight, "8px", "a margin on the right");
-  Assert.equal(content.marginBottom, "8px", "and at the bottom");
+  Assert.equal(content.marginRight, "12px", "a margin on the right");
+  Assert.equal(content.marginBottom, "12px", "and at the bottom");
   Assert.equal(content.marginLeft, "0px", "next to the sidebar");
   Assert.greater(rect("content").left, rect("sidebar").right - 1);
 });
@@ -33,7 +33,9 @@ add_task(async function test_the_controls_sit_where_the_sidebar_is() {
     "the arrows and reload are at the right edge of the sidebar"
   );
   Assert.less(rect("nav-reload").right, row.right + 1);
-  const pill = rect("nav-address").width + rect("nav-copy").width;
+  const pill = byId("navbar")
+    .querySelector(".nav-pill")
+    .getBoundingClientRect().width;
   Assert.greaterOrEqual(
     pill,
     rect("sidebar").width - 24,

@@ -47,6 +47,18 @@ export class Sidebar {
     doc
       .getElementById("new-folder")
       .addEventListener("click", () => app.newFolder());
+    // The back and forward buttons of a mouse go to the previous and next space.
+    for (const area of [
+      doc.getElementById("sidebar"),
+      doc.getElementById("titlebar-left"),
+    ]) {
+      area.addEventListener("mouseup", event => {
+        if (event.button == 3 || event.button == 4) {
+          event.preventDefault();
+          app.switchSpaceBy(event.button == 3 ? -1 : 1);
+        }
+      });
+    }
     doc
       .getElementById("downloads-button")
       .addEventListener("click", () => app.downloads.show());
@@ -58,6 +70,24 @@ export class Sidebar {
     }
     const mac = Services.appinfo.OS == "Darwin";
     doc.getElementById("new-tab-key").textContent = mac ? "⌘T" : "Ctrl+T";
+  }
+
+  /**
+   * The lists of the sidebar slide in from the side the new space is on.
+   *
+   * @param {"next"|"prev"} direction
+   */
+  slide(direction) {
+    const sidebar = this.#doc.getElementById("sidebar");
+    sidebar.classList.remove("slide-next", "slide-prev");
+    // Restarts the animation if one is running.
+    sidebar.getBoundingClientRect();
+    sidebar.classList.add(`slide-${direction}`);
+    sidebar.addEventListener(
+      "animationend",
+      () => sidebar.classList.remove("slide-next", "slide-prev"),
+      { once: true }
+    );
   }
 
   render() {
@@ -114,7 +144,6 @@ export class Sidebar {
       const closeButton = doc.createElement("button");
       closeButton.className = "close";
       closeButton.title = "Close tab";
-      closeButton.textContent = "×";
       closeButton.addEventListener("click", event => {
         event.stopPropagation();
         app.closeNodeTab(id);
@@ -122,6 +151,12 @@ export class Sidebar {
       row.append(closeButton);
     }
     row.addEventListener("click", () => this.#activate(id));
+    row.addEventListener("auxclick", event => {
+      if (event.button == 1) {
+        event.preventDefault();
+        app.closeNodeTab(id);
+      }
+    });
     row.addEventListener("dblclick", event => {
       event.stopPropagation();
       this.startRename(id);
@@ -180,6 +215,12 @@ export class Sidebar {
         button.classList.toggle("selected", app.selectedNode === id);
         button.append(this.#avatar(info, app.openTabs.get(id)));
         button.addEventListener("click", () => app.openNode(id));
+        button.addEventListener("auxclick", event => {
+          if (event.button == 1) {
+            event.preventDefault();
+            app.closeNodeTab(id);
+          }
+        });
         button.addEventListener("contextmenu", event =>
           this.#showMenu(event, id)
         );

@@ -15,7 +15,22 @@ export class SwellPageChild extends JSWindowActorChild {
       this.#onContextMenu(event);
     } else if (event.type == "click") {
       this.#onClick(event);
+    } else if (event.type == "mouseup") {
+      this.#onMouseUp(event);
     }
+  }
+
+  // The back and forward buttons of a mouse go through the page's history. The
+  // window is asked, not the docshell, because it is the tab in front that
+  // navigates; the event is cancelled so that the engine does not do it too.
+  #onMouseUp(event) {
+    if (event.button != 3 && event.button != 4) {
+      return;
+    }
+    event.preventDefault();
+    this.sendAsyncMessage("Swell:Navigate", {
+      direction: event.button == 3 ? -1 : 1,
+    });
   }
 
   receiveMessage({ name, data }) {

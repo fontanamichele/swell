@@ -90,8 +90,15 @@ export class App {
     });
     this.core.on("activeSpaceChanged", ({ window: windowId, space }) => {
       if (windowId == this.bridge.windowId) {
+        const from = this.spaces.findIndex(s => s.id == this.activeSpaceId);
+        const to = this.spaces.findIndex(s => s.id == space);
         this.activeSpaceId = space;
-        this.#loadTree().then(() => this.scheduleRender());
+        this.#loadTree().then(() => {
+          this.scheduleRender();
+          if (from >= 0 && to >= 0 && from != to) {
+            this.sidebar.slide(to > from ? "next" : "prev");
+          }
+        });
       }
     });
     this.bridge.on("tabopened", tab => this.#tabChanged(tab));
@@ -334,6 +341,24 @@ export class App {
     }
   }
 
+  // The space `delta` places along the list, if there is one.
+  switchSpaceBy(delta) {
+    const index = this.spaces.findIndex(s => s.id == this.activeSpaceId);
+    const next = this.spaces[index + delta];
+    return next ? this.switchSpace(next.id) : null;
+  }
+
+  // Pins the tab in front, or unpins it if it is pinned.
+  togglePin() {
+    const id = this.selectedNode;
+    if (!id || !this.space) {
+      return null;
+    }
+    return this.state.parent(id) === this.space.todayRoot
+      ? this.pin(id)
+      : this.unpin(id);
+  }
+
   switchSpace(id) {
     return this.run(() => this.core.switchSpace(this.bridge.windowId, id));
   }
@@ -487,6 +512,9 @@ export class App {
         return true;
       case "s":
         this.sidebarLayout.shortcutDown(event);
+        return true;
+      case "d":
+        this.togglePin();
         return true;
       case "f":
         this.bridge.openFind();

@@ -1710,3 +1710,97 @@ textarea {
 #space-add {
   --icon: url("chrome://swell/content/icons/plus.svg");
 }
+
+/* ---- Details: spacing, icons, close buttons, sliding between spaces ---- */
+:root {
+  --content-margin: 12px;
+}
+
+#sidebar {
+  padding-inline: 12px;
+}
+
+#titlebar-left {
+  padding-inline: 12px;
+}
+
+.tree {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.row .avatar {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  font-size: 10px;
+}
+
+.favorite .avatar {
+  width: 18px;
+  height: 18px;
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 8px;
+  font-size: 0;
+}
+
+.close::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background-color: currentColor;
+  mask: url("chrome://swell/content/icons/xmark.svg") center / contain no-repeat;
+}
+
+.close:hover {
+  background: var(--row-hover);
+  color: var(--sidebar-fg);
+}
+
+#nav-copy {
+  width: 30px;
+  height: 30px;
+  margin-inline-end: 4px;
+  border-radius: 9px;
+}
+
+.nav-pill {
+  overflow: hidden;
+}
+
+@keyframes slide-in-next {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+@keyframes slide-in-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+}
+
+#sidebar.slide-next :is(#favorites, #lists, #extension-actions) {
+  animation: slide-in-next 260ms ease;
+}
+
+#sidebar.slide-prev :is(#favorites, #lists, #extension-actions) {
+  animation: slide-in-prev 260ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #sidebar.slide-next :is(#favorites, #lists, #extension-actions),
+  #sidebar.slide-prev :is(#favorites, #lists, #extension-actions) {
+    animation: none;
+  }
+}

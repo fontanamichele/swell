@@ -1,0 +1,140 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+"use strict";
+
+const FIRST = `${BASE}file_blank.html`;
+const SECOND = `${BASE}file_links.html`;
+
+const byId = id => document.getElementById(id);
+
+async function inFront(bridge, app, space, url = FIRST) {
+  const tab = await openInSpace(bridge, space.id, url);
+  await app.switchSpace(space.id);
+  bridge.selectTab(tab.liveTab);
+  await rendered(() => bridge.selectedTab === tab, "the tab is in front");
+  await rendered(() => app.selectedNode == tab.node, "its row is selected");
+  return tab;
+}
+
+add_task(async function test_accel_d_pins_and_unpins_the_tab_in_front() {
+  const { bridge, app } = await swellApp();
+  const space = await freshSpace(app, "Pin keys");
+  const tab = await inFront(bridge, app, space);
+  Assert.equal(
+    app.state.parent(tab.node),
+    space.todayRoot,
+    "open tabs start in Today"
+  );
+
+  EventUtils.synthesizeKey("d", { accelKey: true }, window);
+  await rendered(
+    () => app.state.parent(tab.node) === space.pinnedRoot,
+    "accel+D pins it"
+  );
+  EventUtils.synthesizeKey("d", { accelKey: true }, window);
+  await rendered(
+    () => app.state.parent(tab.node) === space.todayRoot,
+    "and again unpins it"
+  );
+  await closeAllTabs(bridge);
+});
+
+add_task(async function test_a_middle_click_closes_a_tab() {
+  const { bridge, app } = await swellApp();
+  const space = await freshSpace(app, "Middle click");
+  const tab = await inFront(bridge, app, space);
+  const row = await rendered(() => rowFor(tab.node), "the row shows");
+  row.dispatchEvent(
+    new MouseEvent("auxclick", { button: 1, bubbles: true, cancelable: true })
+  );
+  await rendered(() => !bridge.tab(tab.liveTab), "the tab is closed");
+});
+
+add_task(async function test_the_close_button_and_icons_are_drawn_to_size() {
+  const { bridge, app } = await swellApp();
+  const space = await freshSpace(app, "Sizes");
+  const first = await inFront(bridge, app, space);
+  const second = await openInSpace(bridge, space.id, SECOND);
+  await rendered(
+    () => rowFor(first.node) && rowFor(second.node),
+    "two rows show"
+  );
+  const a = rowFor(first.node).getBoundingClientRect();
+  const b = rowFor(second.node).getBoundingClientRect();
+  Assert.equal(
+    Math.abs(b.top - a.top),
+    a.height + 4,
+    "a small gap between tabs"
+  );
+  const close = rowFor(first.node).querySelector(".close");
+  Assert.ok(
+    getComputedStyle(close, "::before").maskImage.includes("xmark.svg"),
+    "the close button is an icon"
+  );
+  const box = close.getBoundingClientRect();
+  Assert.equal(box.width, box.height, "in a square");
+  Assert.equal(
+    getComputedStyle(rowFor(first.node).querySelector(".avatar")).width,
+    "16px",
+    "icons are small"
+  );
+  await closeAllTabs(bridge);
+});
+
+add_task(async function test_mouse_buttons_go_back_and_forward_in_a_page() {
+  const { bridge, app } = await swellApp();
+  const space = await freshSpace(app, "Mouse history");
+  const tab = await inFront(bridge, app, space);
+  tab.browser.fixupAndLoadURIString(SECOND, {
+    triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
+  });
+  await rendered(
+    () => app.selectedTab?.url == SECOND && !app.selectedTab.loading,
+    "the second page loads"
+  );
+  EventUtils.synthesizeMouse(tab.browser, 20, 20, { button: 3 }, window);
+  await rendered(
+    () => app.selectedTab?.url == FIRST && !app.selectedTab.loading,
+    "the back button goes back"
+  );
+  EventUtils.synthesizeMouse(tab.browser, 20, 20, { button: 4 }, window);
+  await rendered(
+    () => app.selectedTab?.url == SECOND && !app.selectedTab.loading,
+    "the forward button goes forward"
+  );
+  await closeAllTabs(bridge);
+});
+
+add_task(async function test_mouse_buttons_on_the_sidebar_switch_spaces() {
+  const { app } = await swellApp();
+  const a = await freshSpace(app, "Slide A");
+  const b = await freshSpace(app, "Slide B");
+  const sidebar = byId("sidebar");
+  const press = button =>
+    sidebar.dispatchEvent(
+      new MouseEvent("mouseup", { button, bubbles: true, cancelable: true })
+    );
+
+  press(3);
+  await rendered(() => app.activeSpaceId == a.id, "back is the previous space");
+  await rendered(
+    () => sidebar.classList.contains("slide-prev"),
+    "the lists slide in from the left"
+  );
+  Assert.ok(
+    getComputedStyle(byId("lists")).animationName.includes("slide-in-prev"),
+    "with an animation"
+  );
+  press(4);
+  await rendered(() => app.activeSpaceId == b.id, "forward is the next one");
+  await rendered(
+    () => sidebar.classList.contains("slide-next"),
+    "sliding in from the right"
+  );
+  const last = app.spaces.at(-1);
+  await app.switchSpace(last.id);
+  press(4);
+  Assert.equal(app.activeSpaceId, last.id, "and it stops at the last space");
+});

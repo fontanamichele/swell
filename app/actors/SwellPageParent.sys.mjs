@@ -20,6 +20,12 @@ export class SwellPageParent extends JSWindowActorParent {
     const { app } = await target.ready;
     if (name == "Swell:ContextMenu") {
       app.showPageMenu({ browser: target.browser, actor: this, ...data });
+    } else if (name == "Swell:Navigate") {
+      if (app.bridge.selectedTab?.browser === target.browser) {
+        app.run(() =>
+          data.direction < 0 ? app.bridge.goBack() : app.bridge.goForward()
+        );
+      }
     } else if (name == "Swell:OpenLink") {
       app.openLinkFrom(target.browser, data.url, data);
     }

@@ -328,3 +328,9 @@ With the sidebar hidden its button goes too and the page keeps its margin (on ma
 - Not seen by eye: the menu bar, the vibrancy and the new sizes.
 
 - Gecko treats a macOS top-level window as opaque ("always opaque", `toolkit/themes/osx/global/global.css`), so what the document leaves clear is the window's own colour, which covered the sidebar material. Patch 0600 adds a root attribute `macostranslucent` (handled in `ChromeObserver`, as `windowsmica` is for Windows) that makes the window transparent through `SetTransparencyMode`; `window.mjs` sets it on macOS. Whether the window shadow and corners still look right with a transparent window is for a look by eye.
+
+## Details after a first look
+
+- Close buttons are an Iconoir icon in a square, middle click on a tab or favorite closes it, tabs have a 4px gap, icons are 16px (18px in favorites), the page margin is 12px and so is the sidebar padding.
+- Accel+D pins the tab in front (from Today) or unpins it.
+- The mouse's back and forward buttons: over a page they go through its history (`SwellPageChild` sees the `mouseup`, cancels it so that the engine does not navigate too, and the window navigates the tab in front); over the sidebar they go to the previous and next space (not around the ends). Any change of space, by button, key or mouse, slides the lists in from the side the new space is on (260ms).
