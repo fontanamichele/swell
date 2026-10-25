@@ -336,6 +336,8 @@ button {
 
 :root {
   --peek-top: var(--content-margin);
+  /* Shorter than the page, so that it reads as floating above it. */
+  --peek-bottom: calc(var(--content-margin) + 24px);
 }
 
 @media not (-moz-platform: macos) {
@@ -356,7 +358,7 @@ button {
 
 :root[sidebar-collapsed] #sidebar {
   position: fixed;
-  inset: var(--peek-top) auto var(--content-margin) var(--content-margin);
+  inset: var(--peek-top) auto var(--peek-bottom) var(--content-margin);
   z-index: 6;
   background: var(--sidebar-bg);
   border-radius: 10px;

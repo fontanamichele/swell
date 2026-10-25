@@ -123,8 +123,8 @@ add_task(async function test_a_hidden_sidebar_floats_back_at_the_left_edge() {
   );
   Assert.equal(
     Math.round(window.innerHeight - rect("sidebar").bottom),
-    8,
-    "and from its bottom"
+    32,
+    "and ends above the bottom of the page, so it is shorter than the page"
   );
   Assert.equal(
     Math.round(rect("sidebar").top),
