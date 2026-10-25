@@ -47,6 +47,7 @@ export class SpaceEditor {
       this.#save();
     });
     this.#emojiButton.addEventListener("click", () => this.#togglePicker());
+    this.#title.addEventListener("input", () => this.#showIcon());
     doc.getElementById("emoji-clear").addEventListener("click", () => {
       this.#choose("");
     });
@@ -102,11 +103,18 @@ export class SpaceEditor {
 
   #choose(glyph) {
     this.#glyph = glyph;
-    this.#emojiButton.textContent = glyph || "\u{1F642}";
-    this.#emojiButton.classList.toggle("empty", !glyph);
+    this.#showIcon();
     this.#emojiButton.title = glyph ? `${glyph} – change` : NO_EMOJI_LABEL;
     this.#emojiButton.setAttribute("aria-label", this.#emojiButton.title);
     this.#togglePicker(false);
+  }
+
+  // The button shows what the space's button in the sidebar will show: the
+  // emoji, or the first letter of the name.
+  #showIcon() {
+    this.#emojiButton.textContent =
+      this.#glyph || this.#title.value.trim().charAt(0).toUpperCase() || "?";
+    this.#emojiButton.classList.toggle("empty", !this.#glyph);
   }
 
   #togglePicker(show = this.#picker.hidden) {

@@ -37,6 +37,16 @@ add_task(async function test_the_dialog_creates_a_space_with_a_picked_emoji() {
     "New space"
   );
   document.getElementById("space-title").value = "Picker space";
+  document.getElementById("space-title").dispatchEvent(new Event("input"));
+  Assert.equal(
+    document.getElementById("space-emoji-button").textContent,
+    "P",
+    "without an emoji the button shows the first letter, like the sidebar"
+  );
+  Assert.ok(
+    document.getElementById("space-emoji-button").classList.contains("space"),
+    "in the same square as the space buttons"
+  );
   const picker = document.getElementById("emoji-picker");
   Assert.ok(picker.hidden, "the picker starts closed");
   document.getElementById("space-emoji-button").click();
