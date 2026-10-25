@@ -10,7 +10,7 @@ const rect = id => byId(id).getBoundingClientRect();
 add_task(async function test_the_page_is_a_rounded_card_with_a_margin() {
   await swellApp();
   const content = getComputedStyle(byId("content"));
-  Assert.equal(content.borderTopLeftRadius, "16px", "rounded corners");
+  Assert.equal(content.borderTopLeftRadius, "12px", "rounded corners");
   Assert.equal(content.overflow, "hidden", "that clip the page");
   Assert.equal(content.marginRight, "10px", "a margin on the right");
   Assert.equal(content.marginBottom, "10px", "and at the bottom");

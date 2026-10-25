@@ -1716,7 +1716,7 @@ textarea {
   --content-margin: 10px;
   /* The page and the floating sidebar are cards of one shape, rounder than
      what sits inside the sidebar. */
-  --card-radius: 16px;
+  --card-radius: 12px;
 }
 
 #sidebar {
