@@ -98,3 +98,8 @@ pref("accessibility.typeaheadfind.flashBar", 1);
 // material already shows without it, and how the shadow and corners look with
 // it has not been judged.
 pref("swell.window.transparent", false);
+
+// Scrollbars float over what they scroll and are thin, as with a trackpad,
+// even when a mouse is what the system sees: nothing is made narrower by them.
+pref("ui.useOverlayScrollbars", 1);
+pref("ui.allowOverlayScrollbarsOverlap", 1);

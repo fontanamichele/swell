@@ -61,6 +61,8 @@ prefs = [
 
 ["browser_permissions.js"]
 
+["browser_scrollbar.js"]
+
 ["browser_sidebar_actions.js"]
 
 ["browser_sidebar_tree.js"]

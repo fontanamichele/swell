@@ -1916,3 +1916,12 @@ select,
 textarea {
   font: inherit;
 }
+
+/* The lists scroll under a thin, faint scrollbar that floats over them. */
+#lists,
+#autofill-dialog,
+#passwords-dialog,
+#extensions-dialog {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, currentColor 22%, transparent) transparent;
+}
