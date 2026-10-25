@@ -1848,3 +1848,10 @@ textarea {
 :root:not([sidebar-collapsed]) #sidebar-toggle::before {
   transform: scaleX(-1);
 }
+
+/* These two icons fill more of their square than the arrows beside them. */
+#sidebar-toggle::before,
+#nav-reload::before {
+  width: 15px;
+  height: 15px;
+}

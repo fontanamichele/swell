@@ -480,3 +480,16 @@ add_task(
     byId("space-cancel").click();
   }
 );
+
+add_task(
+  async function test_the_sidebar_and_reload_icons_are_not_larger_than_the_others() {
+    await swellApp();
+    const size = id => {
+      const style = getComputedStyle(byId(id), "::before");
+      return parseFloat(style.width);
+    };
+    Assert.less(size("sidebar-toggle"), size("nav-back"));
+    Assert.less(size("nav-reload"), size("nav-back"));
+    Assert.equal(size("sidebar-toggle"), size("nav-reload"));
+  }
+);
