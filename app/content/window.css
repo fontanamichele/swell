@@ -98,7 +98,11 @@ button {
   width: auto;
 }
 
-:root[sidebar-collapsed] #nav-buttons {
+:root[sidebar-collapsed][sidebar-peek] #titlebar-left {
+  width: var(--sidebar-width);
+}
+
+:root[sidebar-collapsed]:not([sidebar-peek]) :is(#nav-buttons, #sidebar-toggle) {
   display: none;
 }
 
@@ -124,6 +128,7 @@ button {
 @media not (-moz-platform: macos) {
   :root {
     --titlebar-height: 32px;
+    --edge-top: var(--titlebar-height);
   }
 
   :root[customtitlebar] #titlebar {
@@ -308,9 +313,33 @@ button {
   }
 }
 
-:root[sidebar-collapsed] #sidebar,
-:root[sidebar-collapsed] #sidebar-resizer {
+:root[sidebar-collapsed] #sidebar-resizer,
+:root[sidebar-collapsed]:not([sidebar-peek]) #sidebar {
   display: none;
+}
+
+/* A hidden sidebar comes back floating over the page while the pointer is at
+   the left edge of the window or on the sidebar itself. */
+#sidebar-peek-edge {
+  display: none;
+}
+
+:root[sidebar-collapsed] #sidebar-peek-edge {
+  display: block;
+  position: fixed;
+  top: var(--edge-top, 0);
+  bottom: 0;
+  left: 0;
+  width: 6px;
+  z-index: 4;
+}
+
+:root[sidebar-collapsed][sidebar-peek] #sidebar {
+  position: fixed;
+  inset: var(--edge-top, 0) auto 0 0;
+  z-index: 6;
+  background: var(--sidebar-bg);
+  box-shadow: var(--shadow);
 }
 
 #sidebar {
@@ -345,12 +374,6 @@ button {
 @media not (-moz-platform: macos) {
   #content {
     margin-top: 0;
-  }
-}
-
-@media (-moz-platform: macos) {
-  :root[customtitlebar][sidebar-collapsed] #content {
-    margin-top: var(--titlebar-height);
   }
 }
 

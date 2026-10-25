@@ -7,6 +7,7 @@ const STORE_ID = "swell-window";
 const MIN_WIDTH = 180;
 const MAX_FRACTION = 0.5;
 const DEFAULT_WIDTH = 264;
+const PEEK_DELAY_MS = 300;
 
 /**
  * How wide the sidebar is and whether it is shown: dragged on the edge between
@@ -18,6 +19,9 @@ export class SidebarLayout {
   #root;
   #toggle;
   #resizer;
+  #edge;
+  #sidebar;
+  #peekTimer = null;
 
   constructor(app) {
     this.#app = app;
@@ -25,6 +29,14 @@ export class SidebarLayout {
     this.#root = doc.documentElement;
     this.#toggle = doc.getElementById("sidebar-toggle");
     this.#resizer = doc.getElementById("sidebar-resizer");
+    this.#edge = doc.getElementById("sidebar-peek-edge");
+    this.#sidebar = doc.getElementById("sidebar");
+    const left = doc.getElementById("titlebar-left");
+    this.#edge.addEventListener("mouseenter", () => this.#peek(true));
+    for (const area of [this.#sidebar, left]) {
+      area.addEventListener("mouseenter", () => this.#holdPeek());
+      area.addEventListener("mouseleave", () => this.#releasePeek());
+    }
     this.#toggle.addEventListener("click", () => this.toggle());
     this.#resizer.addEventListener("pointerdown", event => this.#drag(event));
     this.#resizer.addEventListener("dblclick", () =>
@@ -61,7 +73,30 @@ export class SidebarLayout {
     }
   }
 
+  #peek(show) {
+    this.#holdPeek();
+    if (show && !this.collapsed) {
+      return;
+    }
+    this.#root.toggleAttribute("sidebar-peek", show);
+  }
+
+  #holdPeek() {
+    this.#app.document.defaultView.clearTimeout(this.#peekTimer);
+    this.#peekTimer = null;
+  }
+
+  // The sidebar stays a moment after the pointer leaves, so that a slip off
+  // its edge does not hide it.
+  #releasePeek() {
+    const win = this.#app.document.defaultView;
+    win.clearTimeout(this.#peekTimer);
+    this.#peekTimer = win.setTimeout(() => this.#peek(false), PEEK_DELAY_MS);
+  }
+
   #setCollapsed(collapsed, save) {
+    this.#holdPeek();
+    this.#root.toggleAttribute("sidebar-peek", false);
     this.#root.toggleAttribute("sidebar-collapsed", collapsed);
     this.#toggle.setAttribute("aria-expanded", String(!collapsed));
     const label = collapsed ? "Show sidebar" : "Hide sidebar";

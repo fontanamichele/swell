@@ -295,3 +295,7 @@ A row at the top of the sidebar: back, forward, reload (stop while the page load
 - With `customtitlebar`, macOS hides its window buttons (`FrameView__closeButtonOrigin` returns a point above the window) unless the page has an element with the `-moz-window-button-box` appearance, which says where they go. Setting the attribute alone, early or late, was never enough: that is why the buttons were missing, and why the M1 note that the attribute and CSS were checked but not the look was right to worry. `#window-buttons-box` in the top row is that element; it takes the size of the three buttons from the theme.
 - Button icons are Iconoir (MIT, `app/content/icons/`, licence file included), drawn as CSS masks so that they take the text colour.
 - `browser_sidebar_tree.js` failed once in a full run (the context menu item was not found) and passed in the next full run and twice alone; not understood yet.
+
+## Hidden sidebar
+
+With the sidebar hidden its button goes too and the page keeps its margin (on macOS the window buttons stay, over the page's corner). A 6px hot edge at the left of the window brings the sidebar back floating over the page, with its button and arrows, until the pointer has been off it for 300ms; the button then pins it open. The edge is an element of the window, not a mouse listener, because the window does not see the mouse over a page. Not done: revealing the sidebar when the pointer is near the edge but the mouse is dragging something.

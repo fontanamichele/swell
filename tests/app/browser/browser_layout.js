@@ -57,21 +57,71 @@ add_task(async function test_the_sidebar_is_hidden_and_shown_by_its_button() {
   const { app } = await swellApp();
   const width = rect("sidebar").width;
   const left = rect("content").left;
+  const top = rect("content").top;
   Assert.ok(!app.sidebarLayout.collapsed);
   byId("sidebar-toggle").click();
   Assert.ok(app.sidebarLayout.collapsed, "hidden");
   Assert.equal(getComputedStyle(byId("sidebar")).display, "none");
   Assert.less(rect("content").left, left, "the page takes the room");
-  Assert.equal(byId("sidebar-toggle").getAttribute("aria-expanded"), "false");
+  Assert.equal(rect("content").top, top, "the top margin stays the same");
+  Assert.equal(
+    getComputedStyle(byId("sidebar-toggle")).display,
+    "none",
+    "the button goes with the sidebar"
+  );
+  Assert.equal(getComputedStyle(byId("nav-buttons")).display, "none");
+  app.sidebarLayout.toggle();
+  Assert.ok(!app.sidebarLayout.collapsed, "shown again");
+  Assert.equal(rect("sidebar").width, width);
+  Assert.equal(rect("content").top, top);
+});
+
+add_task(async function test_a_hidden_sidebar_floats_back_at_the_left_edge() {
+  const { app } = await swellApp();
+  const sidebar = byId("sidebar");
+  const top = rect("content").top;
+  const left = rect("content").left;
+  app.sidebarLayout.toggle();
+  Assert.equal(getComputedStyle(sidebar).display, "none");
+  const edge = byId("sidebar-peek-edge");
+  Assert.equal(getComputedStyle(edge).display, "block", "there is a hot edge");
+
+  edge.dispatchEvent(new MouseEvent("mouseenter"));
+  Assert.ok(document.documentElement.hasAttribute("sidebar-peek"));
+  Assert.equal(getComputedStyle(sidebar).position, "fixed", "it floats");
+  Assert.notEqual(getComputedStyle(sidebar).display, "none");
+  Assert.ok(
+    rect("content").left < left && rect("content").top == top,
+    "the page does not move"
+  );
   Assert.notEqual(
     getComputedStyle(byId("sidebar-toggle")).display,
     "none",
-    "the button stays"
+    "the button is there to keep it open"
   );
-  Assert.equal(getComputedStyle(byId("nav-buttons")).display, "none");
+  Assert.notEqual(getComputedStyle(byId("nav-buttons")).display, "none");
+
+  sidebar.dispatchEvent(new MouseEvent("mouseenter"));
+  sidebar.dispatchEvent(new MouseEvent("mouseleave"));
+  sidebar.dispatchEvent(new MouseEvent("mouseenter"));
+  await new Promise(resolve => requestAnimationFrame(resolve));
+  Assert.ok(
+    document.documentElement.hasAttribute("sidebar-peek"),
+    "coming back in time keeps it"
+  );
+
+  sidebar.dispatchEvent(new MouseEvent("mouseleave"));
+  await TestUtils.waitForCondition(
+    () => !document.documentElement.hasAttribute("sidebar-peek"),
+    "it goes when the pointer has left"
+  );
+  Assert.equal(getComputedStyle(sidebar).display, "none");
+
+  edge.dispatchEvent(new MouseEvent("mouseenter"));
   byId("sidebar-toggle").click();
-  Assert.ok(!app.sidebarLayout.collapsed, "shown again");
-  Assert.equal(rect("sidebar").width, width);
+  Assert.ok(!app.sidebarLayout.collapsed, "the button pins it open");
+  Assert.ok(!document.documentElement.hasAttribute("sidebar-peek"));
+  Assert.equal(getComputedStyle(sidebar).position, "static");
 });
 
 add_task(async function test_the_sidebar_is_resized_by_dragging_its_edge() {
@@ -124,7 +174,9 @@ add_task(async function test_buttons_use_iconoir_icons() {
     const response = await fetch(`chrome://swell/content/icons/${icon}.svg`);
     Assert.ok(response.ok, `${icon}.svg is packaged`);
   }
-  byId("sidebar-toggle").click();
+  const { app } = await swellApp();
+  app.sidebarLayout.toggle();
+  byId("sidebar-peek-edge").dispatchEvent(new MouseEvent("mouseenter"));
   Assert.ok(
     getComputedStyle(byId("sidebar-toggle"), "::before").maskImage.includes(
       "sidebar-expand.svg"
