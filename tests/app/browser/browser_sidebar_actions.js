@@ -364,3 +364,54 @@ add_task(
     await closeAllTabs(bridge);
   }
 );
+
+add_task(
+  async function test_the_cross_closes_an_open_page_and_deletes_a_pin_that_is_not_open() {
+    const { core, bridge, app } = await swellApp();
+    const space = await freshSpace(app, "Crosses");
+    const saved = await savedTab(
+      core,
+      space,
+      space.pinnedRoot,
+      "https://a.test/",
+      "Saved"
+    );
+    const open = await inFront(bridge, app, space);
+    await app.pin(open.node);
+    await rendered(
+      () => rowFor(saved) && rowFor(open.node)?.classList.contains("open"),
+      "a pin that is not open and one that is"
+    );
+
+    const crossOf = node => rowFor(node).querySelector(".close");
+    Assert.equal(
+      crossOf(open.node).title,
+      "Close tab",
+      "an open page is closed"
+    );
+    Assert.equal(
+      crossOf(saved).title,
+      "Delete",
+      "a pin that is not open is deleted"
+    );
+    Assert.equal(
+      getComputedStyle(crossOf(saved)).visibility,
+      "hidden",
+      "the cross shows when the pointer is over the row"
+    );
+
+    crossOf(open.node).click();
+    await rendered(() => !bridge.tab(open.liveTab), "the page is closed");
+    Assert.ok(rowFor(open.node), "and its pin stays");
+    Assert.equal(app.state.parent(open.node), space.pinnedRoot);
+    await rendered(
+      () => crossOf(open.node)?.title == "Delete",
+      "now it is one that is not open, and its cross deletes"
+    );
+
+    crossOf(saved).click();
+    await rendered(() => !rowFor(saved), "a pin that is not open is deleted");
+    Assert.ok(rowFor(open.node), "the others stay");
+    await closeAllTabs(bridge);
+  }
+);

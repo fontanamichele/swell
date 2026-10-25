@@ -169,13 +169,20 @@ export class Sidebar {
     } else {
       row.append(avatar, title);
     }
-    if (openTab) {
+    if (info.kind == "tab") {
+      // The same cross on every tab: on a page that is open it closes the page
+      // (a pinned one stays pinned), on one that is not it deletes the pin.
       const closeButton = doc.createElement("button");
       closeButton.className = "close";
-      closeButton.title = "Close tab";
+      closeButton.title = openTab ? "Close tab" : "Delete";
+      closeButton.setAttribute("aria-label", closeButton.title);
       closeButton.addEventListener("click", event => {
         event.stopPropagation();
-        app.closeNodeTab(id);
+        if (openTab) {
+          app.closeNodeTab(id);
+        } else {
+          app.removeNode(id);
+        }
       });
       row.append(closeButton);
     }
