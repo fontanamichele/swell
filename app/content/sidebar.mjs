@@ -68,9 +68,6 @@ export class Sidebar {
       .getElementById("new-tab")
       .addEventListener("click", () => app.commandBar.open({ mode: "new" }));
     doc
-      .getElementById("new-folder")
-      .addEventListener("click", () => app.newFolder());
-    doc
       .getElementById("downloads-button")
       .addEventListener("click", () => app.downloads.show());
     doc

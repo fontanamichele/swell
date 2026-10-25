@@ -378,10 +378,11 @@ add_task(async function test_the_sidebar_is_laid_out_like_arcs() {
   const style = id => getComputedStyle(byId(id));
 
   Assert.equal(
-    byId("pinned-section").querySelector(".heading").offsetParent,
-    null,
-    "the sections have no headings"
+    document.querySelectorAll(".list > header").length,
+    0,
+    "the sections have no headings, and no button for a new folder"
   );
+  Assert.ok(!byId("new-folder"), "that is not in the sidebar for now");
 
   const space = await freshSpace(app, "Like Arc");
   const tab = await savedTab(

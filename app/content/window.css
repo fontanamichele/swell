@@ -565,31 +565,6 @@ kbd {
   padding-top: var(--space-xsmall);
 }
 
-.list > header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-xsmall) 6px;
-  color: var(--muted);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.icon-button {
-  border: none;
-  background: transparent;
-  width: var(--icon-size-medium);
-  height: var(--icon-size-medium);
-  line-height: 18px;
-  border-radius: 5px;
-  color: var(--muted);
-}
-
-.icon-button:hover {
-  background: var(--row-hover);
-}
-
 .tree {
   min-height: var(--size-item-medium);
   padding-bottom: 6px;
@@ -1617,33 +1592,7 @@ textarea {
   background: transparent;
 }
 
-/* Sections have no headings; a line sets the open tabs apart. The "+" for a new
-   folder shows when the pointer is over the pinned tabs. */
-#pinned-section {
-  position: relative;
-}
-
-.list > header .heading {
-  display: none;
-}
-
-#today-section > header {
-  display: none;
-}
-
-#pinned-section > header {
-  position: absolute;
-  inset: 0 0 auto auto;
-  z-index: 1;
-  padding: 0;
-  opacity: 0;
-}
-
-#pinned-section:hover > header,
-#pinned-section > header:focus-within {
-  opacity: 1;
-}
-
+/* Sections have no headings; a line sets the open tabs apart. */
 #today-section {
   margin-top: var(--space-small);
   padding-top: var(--space-small);
