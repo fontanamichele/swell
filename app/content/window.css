@@ -99,11 +99,21 @@ button {
 }
 
 :root[sidebar-collapsed][sidebar-peek] #titlebar-left {
-  width: var(--sidebar-width);
+  width: calc(var(--sidebar-width) + var(--content-margin));
+}
+
+/* They leave the row (and so its width) when the sidebar is hidden, and fade
+   in with the sidebar when it floats back. */
+#nav-buttons,
+#sidebar-toggle {
+  transition: opacity 200ms ease;
 }
 
 :root[sidebar-collapsed]:not([sidebar-peek]) :is(#nav-buttons, #sidebar-toggle) {
-  display: none;
+  position: absolute;
+  opacity: 0;
+  visibility: hidden;
+  transition: none;
 }
 
 :root {
@@ -313,15 +323,25 @@ button {
   }
 }
 
-:root[sidebar-collapsed] #sidebar-resizer,
-:root[sidebar-collapsed]:not([sidebar-peek]) #sidebar {
+:root[sidebar-collapsed] #sidebar-resizer {
   display: none;
 }
 
-/* A hidden sidebar comes back floating over the page while the pointer is at
-   the left edge of the window or on the sidebar itself. */
+/* A hidden sidebar comes back floating over the page, a card like the page and
+   as far from the window's edges, while the pointer is at the left edge of the
+   window or on the sidebar itself. */
 #sidebar-peek-edge {
   display: none;
+}
+
+:root {
+  --peek-top: var(--content-margin);
+}
+
+@media not (-moz-platform: macos) {
+  :root {
+    --peek-top: var(--titlebar-height);
+  }
 }
 
 :root[sidebar-collapsed] #sidebar-peek-edge {
@@ -334,12 +354,38 @@ button {
   z-index: 4;
 }
 
-:root[sidebar-collapsed][sidebar-peek] #sidebar {
+:root[sidebar-collapsed] #sidebar {
   position: fixed;
-  inset: var(--edge-top, 0) auto 0 0;
+  inset: var(--peek-top) auto var(--content-margin) var(--content-margin);
   z-index: 6;
   background: var(--sidebar-bg);
+  border-radius: 10px;
   box-shadow: var(--shadow);
+  transform: translateX(calc(-100% - 2 * var(--content-margin)));
+  visibility: hidden;
+  transition:
+    transform 200ms ease,
+    visibility 0s linear 200ms;
+}
+
+:root[sidebar-collapsed][sidebar-peek] #sidebar {
+  transform: none;
+  visibility: visible;
+  transition: transform 200ms ease;
+}
+
+@media (-moz-platform: macos) {
+  :root[customtitlebar][sidebar-collapsed] #sidebar {
+    padding-top: calc(var(--titlebar-height) - var(--content-margin));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[sidebar-collapsed] #sidebar,
+  #nav-buttons,
+  #sidebar-toggle {
+    transition: none;
+  }
 }
 
 #sidebar {

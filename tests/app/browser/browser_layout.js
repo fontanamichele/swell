@@ -61,15 +61,18 @@ add_task(async function test_the_sidebar_is_hidden_and_shown_by_its_button() {
   Assert.ok(!app.sidebarLayout.collapsed);
   byId("sidebar-toggle").click();
   Assert.ok(app.sidebarLayout.collapsed, "hidden");
-  Assert.equal(getComputedStyle(byId("sidebar")).display, "none");
+  await TestUtils.waitForCondition(
+    () => getComputedStyle(byId("sidebar")).visibility == "hidden",
+    "the sidebar slides out of the way"
+  );
   Assert.less(rect("content").left, left, "the page takes the room");
   Assert.equal(rect("content").top, top, "the top margin stays the same");
   Assert.equal(
-    getComputedStyle(byId("sidebar-toggle")).display,
-    "none",
+    getComputedStyle(byId("sidebar-toggle")).visibility,
+    "hidden",
     "the button goes with the sidebar"
   );
-  Assert.equal(getComputedStyle(byId("nav-buttons")).display, "none");
+  Assert.equal(getComputedStyle(byId("nav-buttons")).visibility, "hidden");
   app.sidebarLayout.toggle();
   Assert.ok(!app.sidebarLayout.collapsed, "shown again");
   Assert.equal(rect("sidebar").width, width);
@@ -82,24 +85,52 @@ add_task(async function test_a_hidden_sidebar_floats_back_at_the_left_edge() {
   const top = rect("content").top;
   const left = rect("content").left;
   app.sidebarLayout.toggle();
-  Assert.equal(getComputedStyle(sidebar).display, "none");
+  await TestUtils.waitForCondition(
+    () => getComputedStyle(sidebar).visibility == "hidden",
+    "the sidebar slides out of the way"
+  );
   const edge = byId("sidebar-peek-edge");
   Assert.equal(getComputedStyle(edge).display, "block", "there is a hot edge");
 
   edge.dispatchEvent(new MouseEvent("mouseenter"));
   Assert.ok(document.documentElement.hasAttribute("sidebar-peek"));
   Assert.equal(getComputedStyle(sidebar).position, "fixed", "it floats");
-  Assert.notEqual(getComputedStyle(sidebar).display, "none");
+  Assert.equal(getComputedStyle(sidebar).visibility, "visible");
+  Assert.equal(getComputedStyle(sidebar).borderTopLeftRadius, "10px");
+  Assert.ok(
+    getComputedStyle(sidebar).transitionDuration.includes("0.2s"),
+    "it slides"
+  );
+  Assert.equal(
+    getComputedStyle(sidebar).transitionTimingFunction,
+    "ease",
+    "with an ease"
+  );
   Assert.ok(
     rect("content").left < left && rect("content").top == top,
     "the page does not move"
   );
-  Assert.notEqual(
-    getComputedStyle(byId("sidebar-toggle")).display,
-    "none",
+  Assert.equal(
+    getComputedStyle(byId("sidebar-toggle")).visibility,
+    "visible",
     "the button is there to keep it open"
   );
-  Assert.notEqual(getComputedStyle(byId("nav-buttons")).display, "none");
+  Assert.equal(getComputedStyle(byId("nav-buttons")).visibility, "visible");
+
+  await TestUtils.waitForCondition(
+    () => Math.round(rect("sidebar").left) == 8,
+    "it settles a margin away from the window's left edge"
+  );
+  Assert.equal(
+    Math.round(window.innerHeight - rect("sidebar").bottom),
+    8,
+    "and from its bottom"
+  );
+  Assert.equal(
+    Math.round(rect("sidebar").top),
+    Math.round(rect("content").top) || Math.round(rect("sidebar").top),
+    "level with the page"
+  );
 
   sidebar.dispatchEvent(new MouseEvent("mouseenter"));
   sidebar.dispatchEvent(new MouseEvent("mouseleave"));
@@ -115,7 +146,10 @@ add_task(async function test_a_hidden_sidebar_floats_back_at_the_left_edge() {
     () => !document.documentElement.hasAttribute("sidebar-peek"),
     "it goes when the pointer has left"
   );
-  Assert.equal(getComputedStyle(sidebar).display, "none");
+  await TestUtils.waitForCondition(
+    () => getComputedStyle(sidebar).visibility == "hidden",
+    "and is out of the way once it has slid"
+  );
 
   edge.dispatchEvent(new MouseEvent("mouseenter"));
   byId("sidebar-toggle").click();
