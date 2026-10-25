@@ -118,8 +118,8 @@ add_task(async function test_a_hidden_sidebar_floats_back_at_the_left_edge() {
   Assert.equal(getComputedStyle(byId("nav-buttons")).visibility, "visible");
 
   await TestUtils.waitForCondition(
-    () => Math.round(rect("sidebar").left) == 8,
-    "it settles a margin away from the window's left edge"
+    () => Math.round(rect("sidebar").left) == 16,
+    "it settles as far from the window's left edge as from its top and bottom"
   );
   const gapBelow = Math.round(window.innerHeight - rect("sidebar").bottom);
   const stripHeight =
