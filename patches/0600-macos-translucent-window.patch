@@ -2,7 +2,7 @@ Purpose: On macOS a top level window is opaque, so the sidebar material (vibranc
 Test: ./mach test swell/tests/app/browser/browser_spaces.js --headless
 
 diff --git a/dom/xul/ChromeObserver.cpp b/dom/xul/ChromeObserver.cpp
-index 3b380b55302a..562f01d80774 100644
+index 3b380b55302a..6aceec422573 100644
 --- a/dom/xul/ChromeObserver.cpp
 +++ b/dom/xul/ChromeObserver.cpp
 @@ -84,6 +84,8 @@ void ChromeObserver::AttributeChanged(dom::Element* aElement,
@@ -14,7 +14,7 @@ index 3b380b55302a..562f01d80774 100644
      }
    }
    if (aName == nsGkAtoms::localedir) {
-@@ -106,6 +108,18 @@ void ChromeObserver::SetMica(bool aEnable) {
+@@ -106,6 +108,19 @@ void ChromeObserver::SetMica(bool aEnable) {
    }
  }
  
@@ -24,8 +24,9 @@ index 3b380b55302a..562f01d80774 100644
 +  // transparent but the window's own colour; with this the native sidebar
 +  // material (vibrancy) behind the document can show through.
 +  if (nsIWidget* mainWidget = GetWindowWidget()) {
-+    mainWidget->SetTransparencyMode(aEnable ? TransparencyMode::Transparent
-+                                            : TransparencyMode::Opaque);
++    mainWidget->SetTransparencyMode(aEnable
++                                        ? widget::TransparencyMode::Transparent
++                                        : widget::TransparencyMode::Opaque);
 +  }
 +#endif
 +}
