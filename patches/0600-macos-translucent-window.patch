@@ -1,0 +1,59 @@
+Purpose: On macOS a top level window is opaque, so the sidebar material (vibrancy) behind a document is covered. A root attribute macostranslucent makes the window transparent so the material shows. Upstreamable: small, behind an attribute that nothing sets in Firefox.
+Test: ./mach test swell/tests/app/browser/browser_spaces.js --headless
+
+diff --git a/dom/xul/ChromeObserver.cpp b/dom/xul/ChromeObserver.cpp
+index 3b380b55302a..562f01d80774 100644
+--- a/dom/xul/ChromeObserver.cpp
++++ b/dom/xul/ChromeObserver.cpp
+@@ -84,6 +84,8 @@ void ChromeObserver::AttributeChanged(dom::Element* aElement,
+       SetHideTitlebarSeparator(added);
+     } else if (aName == nsGkAtoms::windowsmica) {
+       SetMica(added);
++    } else if (aName == nsGkAtoms::macostranslucent) {
++      SetTranslucent(added);
+     }
+   }
+   if (aName == nsGkAtoms::localedir) {
+@@ -106,6 +108,18 @@ void ChromeObserver::SetMica(bool aEnable) {
+   }
+ }
+ 
++void ChromeObserver::SetTranslucent(bool aEnable) {
++#ifdef XP_MACOSX
++  // A top level window is opaque, so what the document leaves clear is not
++  // transparent but the window's own colour; with this the native sidebar
++  // material (vibrancy) behind the document can show through.
++  if (nsIWidget* mainWidget = GetWindowWidget()) {
++    mainWidget->SetTransparencyMode(aEnable ? TransparencyMode::Transparent
++                                            : TransparencyMode::Opaque);
++  }
++#endif
++}
++
+ void ChromeObserver::SetCustomTitlebar(bool aCustomTitlebar) {
+   if (nsIWidget* mainWidget = GetWindowWidget()) {
+     // SetCustomTitlebar can dispatch native events, hence doing it off a
+diff --git a/dom/xul/ChromeObserver.h b/dom/xul/ChromeObserver.h
+index 5f8c3bfb1fa9..634d83624da8 100644
+--- a/dom/xul/ChromeObserver.h
++++ b/dom/xul/ChromeObserver.h
+@@ -28,6 +28,7 @@ class ChromeObserver final : public nsStubMutationObserver {
+   void HideWindowChrome(bool aShouldHide);
+   void SetCustomTitlebar(bool);
+   void SetMica(bool);
++  void SetTranslucent(bool);
+   ~ChromeObserver() = default;
+   // A weak pointer cleared when the element will be destroyed.
+   Document* MOZ_NON_OWNING_REF mDocument;
+diff --git a/xpcom/ds/StaticAtoms.py b/xpcom/ds/StaticAtoms.py
+index 544de3713a5f..b8cde7065d6b 100644
+--- a/xpcom/ds/StaticAtoms.py
++++ b/xpcom/ds/StaticAtoms.py
+@@ -1667,6 +1667,7 @@ STATIC_ATOMS = [
+     Atom("viewTarget", "viewTarget"),
+     Atom("white_space", "white-space"),
+     Atom("windowsmica", "windowsmica"),
++    Atom("macostranslucent", "macostranslucent"),
+     Atom("word_spacing", "word-spacing"),
+     Atom("writing_mode", "writing-mode"),
+     Atom("x", "x"),
