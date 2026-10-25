@@ -62,6 +62,8 @@ export class Sidebar {
   #selection = new Set();
   #anchor = null;
   #selectionSpace = null;
+  #favoritesPreview = null;
+  #favoritesDropped = false;
 
   constructor(app) {
     this.#app = app;
@@ -533,6 +535,8 @@ export class Sidebar {
         this.#setSelection([]);
       }
       this.#dragged = this.#selection.has(id) ? this.#selectedNodes() : [id];
+      this.#favoritesPreview = null;
+      this.#favoritesDropped = false;
       event.dataTransfer.setData(DRAG_TYPE, id);
       event.dataTransfer.effectAllowed = "move";
       for (const dragged of this.#dragged) {
@@ -551,6 +555,9 @@ export class Sidebar {
       }
       this.#doc.getElementById("sidebar").classList.remove("tab-dragging");
       this.#clearDropMarks();
+      if (!this.#favoritesDropped) {
+        this.#restoreFavorites();
+      }
     });
   }
 
@@ -558,16 +565,26 @@ export class Sidebar {
     container.addEventListener("dragover", event => {
       const drop = this.#dropFor(container, event);
       this.#clearDropMarks();
+      if (container.id == "favorites") {
+        if (drop) {
+          this.#arrangeFavorites(drop.choice);
+        } else {
+          this.#restoreFavorites();
+        }
+      }
       if (!drop) {
         return;
       }
       event.preventDefault();
       event.dataTransfer.dropEffect = "move";
-      drop.element.classList.add(`drop-${drop.where}`);
+      drop.element?.classList.add(`drop-${drop.where}`);
     });
     container.addEventListener("dragleave", event => {
       if (!container.contains(event.relatedTarget)) {
         this.#clearDropMarks();
+        if (container.id == "favorites") {
+          this.#restoreFavorites();
+        }
       }
     });
     container.addEventListener("drop", event => {
@@ -575,6 +592,7 @@ export class Sidebar {
       this.#clearDropMarks();
       if (drop) {
         event.preventDefault();
+        this.#favoritesDropped ||= container.id == "favorites";
         this.#app.moveNodes(drop.plan);
       }
     });
@@ -588,6 +606,22 @@ export class Sidebar {
       return null;
     }
     const state = this.#app.state;
+    if (container.id == "favorites") {
+      const choice = this.#favoritesChoice(container, event);
+      const plan =
+        choice &&
+        state.planMoves({
+          dragged,
+          target: choice.target,
+          where: choice.where,
+          tabsOnly: this.#app.tabsOnlyRoots,
+        });
+      if (!plan) {
+        return null;
+      }
+      this.#favoritesPreview = choice;
+      return { plan, where: choice.where, element: choice.element, choice };
+    }
     const row = event.target.closest?.("[data-id]");
     let targetId;
     let where;
@@ -614,6 +648,157 @@ export class Sidebar {
       tabsOnly: this.#app.tabsOnlyRoots,
     });
     return plan ? { plan, where, element } : null;
+  }
+
+  // Where a drag over the favorites would land: before or after the tile
+  // nearest to the pointer, by its horizontal half. Over the tile being moved,
+  // or the placeholder, nothing changes from the last preview. Tiles are
+  // measured where the layout puts them, not where a slide has them for now.
+  #favoritesChoice(container, event) {
+    const tiles = [...container.querySelectorAll(".favorite")];
+    if (!tiles.some(tile => !tile.classList.contains("placeholder"))) {
+      return {
+        target: container.dataset.rootId,
+        where: "inside",
+        element: container,
+      };
+    }
+    const area = container.getBoundingClientRect();
+    const layout = tile => {
+      const left = area.left + tile.offsetLeft - container.offsetLeft;
+      const upper = area.top + tile.offsetTop - container.offsetTop;
+      return {
+        left,
+        top: upper,
+        right: left + tile.offsetWidth,
+        bottom: upper + tile.offsetHeight,
+      };
+    };
+    const { clientX: x, clientY: y } = event;
+    const distance = rect =>
+      Math.hypot(
+        Math.max(rect.left - x, 0, x - rect.right),
+        Math.max(rect.top - y, 0, y - rect.bottom)
+      );
+    let nearest = tiles[0];
+    for (const tile of tiles) {
+      nearest =
+        distance(layout(tile)) < distance(layout(nearest)) ? tile : nearest;
+    }
+    if (nearest.matches(".placeholder, .dragging")) {
+      return this.#favoritesPreview;
+    }
+    const { left, right } = layout(nearest);
+    return {
+      target: nearest.dataset.id,
+      where: x < (left + right) / 2 ? "before" : "after",
+      element: null,
+    };
+  }
+
+  // Shows the favorites as they will be once the drag is dropped: the tile
+  // being moved, or a placeholder for one coming from elsewhere, goes where the
+  // pointer says and the others make room.
+  #arrangeFavorites({ target, where }) {
+    const container = this.#doc.getElementById("favorites");
+    if (where == "inside") {
+      return;
+    }
+    const moving =
+      container.querySelector(".favorite.dragging") ??
+      container.querySelector(".placeholder") ??
+      this.#placeholder();
+    const tiles = this.#favoriteTiles(container);
+    const order = this.#app.state
+      .childrenOf(container.dataset.rootId)
+      .filter(id => !this.#dragged.includes(id))
+      .map(id => tiles.get(id))
+      .filter(Boolean);
+    order.splice(
+      order.indexOf(tiles.get(target)) + (where == "after" ? 1 : 0),
+      0,
+      moving
+    );
+    this.#applyFavoritesOrder(container, order, moving);
+  }
+
+  // Puts the favorites back as the tree has them.
+  #restoreFavorites() {
+    const container = this.#doc.getElementById("favorites");
+    this.#favoritesPreview = null;
+    container.querySelector(".placeholder")?.remove();
+    const tiles = this.#favoriteTiles(container);
+    const order = this.#app.state
+      .childrenOf(container.dataset.rootId)
+      .map(id => tiles.get(id))
+      .filter(Boolean);
+    this.#applyFavoritesOrder(container, order);
+  }
+
+  #favoriteTiles(container) {
+    return new Map(
+      [...container.querySelectorAll(".favorite:not(.placeholder)")].map(
+        tile => [tile.dataset.id, tile]
+      )
+    );
+  }
+
+  #placeholder() {
+    const placeholder = this.#doc.createElement("div");
+    placeholder.className = "favorite placeholder";
+    placeholder.setAttribute("aria-hidden", "true");
+    return placeholder;
+  }
+
+  // Reorders the tiles and slides them from where they were. The tile being
+  // dragged stays in the page, as the drag would end if it left it; the others
+  // move around it.
+  #applyFavoritesOrder(container, order, moving = null) {
+    const current = [...container.children];
+    if (
+      order.length == current.length &&
+      order.every((tile, i) => tile === current[i])
+    ) {
+      return;
+    }
+    const before = new Map(
+      current.map(tile => [tile, tile.getBoundingClientRect()])
+    );
+    for (const tile of current) {
+      for (const slide of tile.getAnimations()) {
+        slide.cancel();
+      }
+    }
+    const pivot = container.querySelector(".favorite.dragging");
+    if (pivot && order.includes(pivot)) {
+      const at = order.indexOf(pivot);
+      for (const tile of order.slice(0, at)) {
+        pivot.before(tile);
+      }
+      for (const tile of order.slice(at + 1).reverse()) {
+        pivot.after(tile);
+      }
+    } else {
+      container.replaceChildren(...order);
+    }
+    const win = this.#doc.defaultView;
+    if (win.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    for (const [tile, from] of before) {
+      const to = tile.getBoundingClientRect();
+      if (tile !== moving && (from.left != to.left || from.top != to.top)) {
+        tile.animate(
+          [
+            {
+              transform: `translate(${from.left - to.left}px, ${from.top - to.top}px)`,
+            },
+            { transform: "none" },
+          ],
+          { duration: 150, easing: "ease-out" }
+        );
+      }
+    }
   }
 
   #clearDropMarks() {
