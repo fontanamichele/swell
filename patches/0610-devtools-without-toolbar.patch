@@ -21,3 +21,20 @@ index c4338f523f96..5896eb8d1e82 100644
  }
  
  function ensureButtonInNavbar() {
+diff --git a/devtools/startup/DevToolsStartup.sys.mjs b/devtools/startup/DevToolsStartup.sys.mjs
+index 9f0d0067a352..34c54bef0306 100644
+--- a/devtools/startup/DevToolsStartup.sys.mjs
++++ b/devtools/startup/DevToolsStartup.sys.mjs
+@@ -591,7 +591,11 @@ export class DevToolsStartup {
+   onWindowReady(window) {
+     if (
+       this.isDisabledByPolicy() ||
+-      AppConstants.MOZ_APP_NAME == "thunderbird"
++      AppConstants.MOZ_APP_NAME == "thunderbird" ||
++      // A window of an application that does not have the toolbar, the menus
++      // and the keys of the browser to put the entry points in. The tools are
++      // opened by the application itself (gDevTools.showToolboxForTab).
++      !window.document.getElementById("navigator-toolbox")
+     ) {
+       return;
+     }
