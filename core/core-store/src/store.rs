@@ -52,6 +52,7 @@ const MIGRATIONS: &[&str] = &[
         PRIMARY KEY (identity_id, host)
     );
 ",
+    "ALTER TABLE spaces ADD COLUMN tint TEXT;",
 ];
 
 pub struct Store {
@@ -148,7 +149,7 @@ impl Store {
 
         let mut spaces = Vec::new();
         let mut stmt = self.conn.prepare(
-            "SELECT id, title, icon, identity_id, pinned_root, today_root FROM spaces ORDER BY position",
+            "SELECT id, title, icon, identity_id, pinned_root, today_root, tint FROM spaces ORDER BY position",
         )?;
         let mut rows = stmt.query([])?;
         while let Some(row) = rows.next()? {
@@ -157,6 +158,7 @@ impl Store {
                 id: row.get::<_, String>(0)?.into(),
                 title: row.get(1)?,
                 icon,
+                tint: row.get(6)?,
                 identity_id: row.get::<_, String>(3)?.into(),
                 pinned_root: row.get::<_, String>(4)?.into(),
                 today_root: row.get::<_, String>(5)?.into(),
@@ -354,11 +356,12 @@ fn write_structure(tx: &Transaction, model: &Model) -> Result<()> {
     }
     for (position, space) in model.spaces().iter().enumerate() {
         tx.execute(
-            "INSERT INTO spaces (id, title, icon, identity_id, pinned_root, today_root, position)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+            "INSERT INTO spaces (id, title, icon, identity_id, pinned_root, today_root, position, tint)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
              ON CONFLICT(id) DO UPDATE SET title = excluded.title, icon = excluded.icon,
                identity_id = excluded.identity_id, pinned_root = excluded.pinned_root,
-               today_root = excluded.today_root, position = excluded.position",
+               today_root = excluded.today_root, position = excluded.position,
+               tint = excluded.tint",
             params![
                 space.id.as_str(),
                 space.title,
@@ -366,7 +369,8 @@ fn write_structure(tx: &Transaction, model: &Model) -> Result<()> {
                 space.identity_id.as_str(),
                 space.pinned_root.as_str(),
                 space.today_root.as_str(),
-                position as i64
+                position as i64,
+                space.tint
             ],
         )?;
     }

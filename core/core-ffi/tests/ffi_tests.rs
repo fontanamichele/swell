@@ -693,3 +693,22 @@ fn spaces_are_edited_reordered_and_deleted_and_it_all_persists() {
         "the container of a deleted space is not used again, even after a restart"
     );
 }
+
+#[test]
+fn a_space_tint_persists() {
+    let f = fixture();
+    let a = first_space(&f.core);
+    assert_eq!(a.tint, None);
+    f.core
+        .set_space_tint(a.id.clone(), Some("#7c9cff".into()))
+        .unwrap();
+    assert!(f
+        .core
+        .set_space_tint(a.id.clone(), Some("blue".into()))
+        .is_err());
+    let f = reopen(f);
+    assert_eq!(first_space(&f.core).tint.as_deref(), Some("#7c9cff"));
+    f.core.set_space_tint(a.id, None).unwrap();
+    let f = reopen(f);
+    assert_eq!(first_space(&f.core).tint, None);
+}

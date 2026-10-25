@@ -95,6 +95,7 @@ impl Inner {
                     id: space.id.0.clone(),
                     title: space.title.clone(),
                     icon: (&space.icon).into(),
+                    tint: space.tint.clone(),
                     identity_id: identity.id.0.clone(),
                     user_context_id: identity.gecko_user_context_id,
                     pinned_root: space.pinned_root.0.clone(),
@@ -392,6 +393,17 @@ impl SwellCore {
             inner
                 .model
                 .update_space(&SpaceId::from(space.as_str()), &title, icon.into())?;
+            events.push(Event::Spaces(inner.space_views()));
+            inner.persist_structure()
+        })
+    }
+
+    /// Sets the colour that tints the space's sidebar (`#rrggbb`), or clears it.
+    pub fn set_space_tint(&self, space: String, tint: Option<String>) -> Result<(), CoreError> {
+        self.run(|inner, events| {
+            inner
+                .model
+                .set_space_tint(&SpaceId::from(space.as_str()), tint.as_deref())?;
             events.push(Event::Spaces(inner.space_views()));
             inner.persist_structure()
         })

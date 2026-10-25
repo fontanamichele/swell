@@ -227,6 +227,7 @@ impl Model {
             id: id.clone(),
             title: title.to_owned(),
             icon,
+            tint: None,
             identity_id,
             pinned_root: pinned.id.clone(),
             today_root: today.id.clone(),
@@ -249,6 +250,21 @@ impl Model {
         };
         space.title = title.to_owned();
         space.icon = icon;
+        Ok(())
+    }
+
+    /// Sets the colour that tints a space's sidebar (`#rrggbb`), or clears it.
+    pub fn set_space_tint(&mut self, id: &SpaceId, tint: Option<&str>) -> Result<()> {
+        if let Some(tint) = tint {
+            let hex = tint.strip_prefix('#').unwrap_or_default();
+            if hex.len() != 6 || !hex.chars().all(|c| c.is_ascii_hexdigit()) {
+                return invariant("a tint is #rrggbb");
+            }
+        }
+        let Some(space) = self.spaces.get_mut(id) else {
+            return not_found("space", id.as_str());
+        };
+        space.tint = tint.map(str::to_lowercase);
         Ok(())
     }
 

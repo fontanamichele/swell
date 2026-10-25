@@ -430,3 +430,18 @@ fn a_shared_identity_survives_the_deletion_of_one_of_its_spaces() {
     assert!(m.identity(&identity).is_some());
     m.validate().unwrap();
 }
+
+#[test]
+fn a_space_has_an_optional_tint() {
+    let mut m = model();
+    let a = space(&mut m, "A");
+    assert_eq!(m.space(&a).unwrap().tint, None);
+    m.set_space_tint(&a, Some("#3B6CF4")).unwrap();
+    assert_eq!(m.space(&a).unwrap().tint.as_deref(), Some("#3b6cf4"));
+    for bad in ["red", "#12345", "#12345g", "3b6cf4", "#3b6cf4ff"] {
+        assert!(m.set_space_tint(&a, Some(bad)).is_err(), "{bad}");
+    }
+    m.set_space_tint(&a, None).unwrap();
+    assert_eq!(m.space(&a).unwrap().tint, None);
+    assert!(m.set_space_tint(&SpaceId::from("nope"), None).is_err());
+}

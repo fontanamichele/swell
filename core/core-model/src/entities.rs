@@ -29,6 +29,8 @@ pub struct Space {
     pub id: SpaceId,
     pub title: String,
     pub icon: Icon,
+    /// The colour that tints the sidebar of the space, `#rrggbb`.
+    pub tint: Option<String>,
     pub identity_id: IdentityId,
     pub pinned_root: NodeId,
     pub today_root: NodeId,
