@@ -1,0 +1,23 @@
+Purpose: DevTools startup asks the profiler button whether it is in the toolbar, which needs CustomizableUI from browser/. An application without a toolbar (Swell) has none, so isInNavbar answers false instead of throwing, which broke the toolbox's key shortcuts. Upstreamable: small and Thunderbird already special-cases it.
+Test: ./mach test swell/tests/app/browser/browser_devtools.js --headless
+
+diff --git a/devtools/client/performance-new/popup/menu-button.sys.mjs b/devtools/client/performance-new/popup/menu-button.sys.mjs
+index c4338f523f96..5896eb8d1e82 100644
+--- a/devtools/client/performance-new/popup/menu-button.sys.mjs
++++ b/devtools/client/performance-new/popup/menu-button.sys.mjs
+@@ -66,8 +66,13 @@ function isInNavbar() {
+     return false;
+   }
+ 
+-  const { CustomizableUI } = lazy.CustomizableUI();
+-  return Boolean(CustomizableUI.getPlacementOfWidget("profiler-button"));
++  try {
++    const { CustomizableUI } = lazy.CustomizableUI();
++    return Boolean(CustomizableUI.getPlacementOfWidget("profiler-button"));
++  } catch (e) {
++    // An application without a customizable toolbar has no profiler button.
++    return false;
++  }
+ }
+ 
+ function ensureButtonInNavbar() {
