@@ -807,7 +807,9 @@ kbd {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding-top: 14vh;
+  /* The input stays at a fixed height above the middle and the list grows
+     below it, so typing never moves the input. */
+  padding-top: 30vh;
   /* The bar is in the middle of the page, which is what is left of the window
      after the sidebar and the margin around the page. */
   padding-inline: var(--sidebar-width) var(--content-margin);
