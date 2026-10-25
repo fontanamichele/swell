@@ -833,7 +833,15 @@ kbd {
   justify-content: center;
   align-items: flex-start;
   padding-top: 14vh;
+  /* The bar is in the middle of the page, which is what is left of the window
+     after the sidebar and the margin around the page. */
+  padding-inline: var(--sidebar-width) var(--content-margin);
+  box-sizing: border-box;
   background: rgba(0, 0, 0, 0.25);
+}
+
+:root[sidebar-collapsed] #commandbar {
+  padding-inline-start: var(--content-margin);
 }
 
 #commandbar[hidden],
@@ -842,7 +850,7 @@ kbd {
 }
 
 #commandbar .panel {
-  width: min(640px, 90vw);
+  width: min(640px, calc(100% - 40px));
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
   border-radius: 14px;

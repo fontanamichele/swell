@@ -207,3 +207,31 @@ add_task(async function test_accel_f_opens_the_find_bar_of_the_selected_tab() {
     "find bars go with their tabs"
   );
 });
+
+add_task(async function test_the_bar_is_in_the_middle_of_the_page() {
+  const { app } = await swellApp();
+  const middle = element => {
+    const rect = element.getBoundingClientRect();
+    return rect.left + rect.width / 2;
+  };
+  const panel = document.querySelector("#commandbar .panel");
+  const page = document.getElementById("content");
+
+  app.commandBar.open({ mode: "new" });
+  Assert.less(
+    Math.abs(middle(panel) - middle(page)),
+    1.5,
+    "over the page, not over the window and the sidebar"
+  );
+  app.commandBar.close();
+
+  app.sidebarLayout.toggle();
+  app.commandBar.open({ mode: "new" });
+  Assert.less(
+    Math.abs(middle(panel) - middle(page)),
+    1.5,
+    "also with the sidebar hidden"
+  );
+  app.commandBar.close();
+  app.sidebarLayout.toggle();
+});
