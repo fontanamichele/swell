@@ -1374,8 +1374,14 @@ dialog .buttons {
 }
 
 .row.sharing .title::before {
-  content: "\25CF  ";
-  color: #c0392b;
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-inline-end: 7px;
+  border-radius: 50%;
+  background: #c0392b;
+  vertical-align: middle;
 }
 
 .extension-row {
