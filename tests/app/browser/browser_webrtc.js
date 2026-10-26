@@ -43,7 +43,7 @@ function outcome(tab) {
 
 add_setup(() => {
   registerCleanupFunction(() => {
-    for (const type of ["camera", "microphone"]) {
+    for (const type of ["camera", "microphone", "MediaManagerVideo"]) {
       Services.perms.removeByType(type);
     }
   });
@@ -71,6 +71,16 @@ add_task(async function test_a_page_asks_and_shares_and_can_be_stopped() {
     (await outcome(tab)).tracks.sort(),
     ["audio", "video"],
     "Allow gives the page both"
+  );
+  // The camera service captures only for an origin that holds this permission; a real
+  // camera fails with NotReadableError without it, and a fake one does not need it.
+  Assert.equal(
+    Services.perms.testExactPermissionFromPrincipal(
+      tab.browser.contentPrincipal,
+      "MediaManagerVideo"
+    ),
+    Services.perms.ALLOW_ACTION,
+    "allowing a camera lets the camera service capture for the page"
   );
 
   await TestUtils.waitForCondition(
@@ -165,8 +175,12 @@ add_task(async function test_screen_sharing_asks_for_a_screen() {
     await TestUtils.waitForCondition(() => indicator().hidden, "stopped");
   } else {
     // Without a screen or the system's screen recording permission, as in a
-    // headless run, the system refuses to capture after the user said yes.
-    Assert.equal(result.error, "NotReadableError", "the system refused");
+    // headless run, the system refuses after the user said yes: before the capture
+    // starts when it says so (NotFoundError), or when the capture starts.
+    Assert.ok(
+      ["NotFoundError", "NotReadableError"].includes(result.error),
+      `the system refused: ${result.error}`
+    );
   }
   await closeAllTabs(bridge);
 });
