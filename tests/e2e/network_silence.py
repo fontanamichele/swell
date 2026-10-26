@@ -108,8 +108,11 @@ def main():
     args = parser.parse_args()
     profile = tempfile.mkdtemp(prefix="swell-net-")
     logs = tempfile.mkdtemp(prefix="swell-netlog-")
-    if args.no_autocheck:
-        with open(os.path.join(profile, "user.js"), "w") as f:
+    with open(os.path.join(profile, "user.js"), "w") as f:
+        # Marionette would otherwise switch off telemetry, safe browsing, region
+        # and connectivity checks and so on, and hide what Swell does by itself.
+        f.write('user_pref("remote.prefs.recommended", false);\n')
+        if args.no_autocheck:
             f.write('user_pref("swell.update.autocheck", false);\n')
     allowed = ALLOWED if args.no_autocheck else ALLOWED | {UPDATE_CHECK}
     try:

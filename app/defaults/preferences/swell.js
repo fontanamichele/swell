@@ -76,6 +76,7 @@ pref("network.connectivity-service.enabled", false);
 pref("network.captive-portal-service.enabled", false);
 pref("captivedetect.canonicalURL", "");
 pref("browser.region.update.enabled", false);
+pref("browser.region.network.url", "");
 pref("geo.provider.network.url", "");
 pref("dom.push.enabled", false);
 pref("toolkit.telemetry.server", "");
