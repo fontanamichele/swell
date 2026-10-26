@@ -399,3 +399,13 @@ What it took:
 - **Floating bars.** `#floating` at the bottom of the page holds the find bar and the permission, media, media-indicator and autofill bars as rounded cards. The toolkit's `findbar` has `contain: inline-size` (xul.css) and its container `flex="1"` (a UA rule; the attribute has to be removed, a style cannot override it), which made it a sliver.
 - **Spell check.** Suggestions work on a real right-click; the page actor now covers subframes (`allFrames`), so the menu position comes from `screenX/Y`, and it waits while the first spell pass is pending.
 - **Downloads** are a panel in the sidebar instead of a dialog: the button toggles it, going left of the first space opens it and going right closes it.
+
+## Rebase onto Firefox ESR 153
+
+- **Base:** `FIREFOX_REV` is ESR 153.6.0. Patch 0199 backports Bug 2025999 (Places schema v87) and Bug 2079759 (schema v88, `userContextId` on visits) so patch 0200 has the column; drop it when the base has them. On ESR the remote type is a string, so 0200 reads the container from the `userContextId=` attribute of its origin suffix.
+- **Build system:** ESR has no `mozbuild.packaging` and no `MacOSBundle`/`SOURCE_HEADERS`; packaging variables live in `app/installer/Makefile.in` and the bundle is made by `app/app/Makefile.in`. Bindings need `MOZ_TOPOBJDIR=$PWD/obj-swell ./mach uniffi generate`, and the core is pinned to `uniffi = "0.31"`.
+- **Modules install into the app directory only if their `moz.build` says so.** `devtools/moz.build` opted in for `browser` only, so `resource:///modules/DevToolsStartup.sys.mjs` was missing and startup crashed (`CheckForBrokenChromeURL`). Patch 0610 sets `DIST_SUBDIR = "app"` for `swell/app`.
+- **ESR lacks** `AutofillDataTypes` (the prompter has `promptToSaveAddress`/`promptToSaveCreditCard`), a `SharedWeb` remote type class, and `notifyUserGestureActivation` marking the page as interacted (tests click for real).
+- **Test harness:** with a `gBrowser` shim the harness calls `NewTabPagePreloading.removePreloadedBrowser` and `BrowserTestUtils.browserLoaded` calls `gBrowser._insertBrowser`; the window defines both as no-ops. Without them the last test file waited 370 s for the timeout.
+- **Remote Settings** now also uses `firefox-settings-attachments.cdn.mozilla.net` and `content-signature-2.cdn.mozilla.net` at startup (the startup bundle and the signature chains); the network test and `PRIVACY.md` list them.
+- Results on ESR: cargo 100%, xpcshell 3, window tests 578, isolation 77 (real) and the self-test detects sharing, restart and downloads persistence, network silence.
