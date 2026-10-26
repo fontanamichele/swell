@@ -6,10 +6,10 @@ Test: ./mach test swell/tests/app/browser --headless
 Upstreamable: no (names a downstream application).
 
 diff --git a/python/mozbuild/mozbuild/base.py b/python/mozbuild/mozbuild/base.py
-index 7325c8b4b847..c2910ab56e28 100644
+index 08f41d502c10..f131eff82185 100644
 --- a/python/mozbuild/mozbuild/base.py
 +++ b/python/mozbuild/mozbuild/base.py
-@@ -1118,6 +1118,13 @@ class MachCommandConditions:
+@@ -1071,6 +1071,13 @@ class MachCommandConditions:
              return build_obj.substs.get("MOZ_BUILD_APP") == "browser"
          return False
  
@@ -23,7 +23,7 @@ index 7325c8b4b847..c2910ab56e28 100644
      @staticmethod
      def is_jsshell(build_obj):
          """Must have a jsshell build."""
-@@ -1184,9 +1191,11 @@ class MachCommandConditions:
+@@ -1137,9 +1144,11 @@ class MachCommandConditions:
      @staticmethod
      def has_build(build_obj):
          """Must have a build."""
@@ -61,10 +61,10 @@ index eafa0ee93a06..d6c73c0f0a16 100644
        triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
      });
 diff --git a/testing/mochitest/browser-test.js b/testing/mochitest/browser-test.js
-index 66333694ef56..588717b826aa 100644
+index 6d5285fe11e0..88468f841350 100644
 --- a/testing/mochitest/browser-test.js
 +++ b/testing/mochitest/browser-test.js
-@@ -664,8 +664,11 @@ Tester.prototype = {
+@@ -494,8 +494,11 @@ Tester.prototype = {
          : "Found an unexpected {elt}";
  
      // Clean up the Firefox window.
@@ -78,7 +78,7 @@ index 66333694ef56..588717b826aa 100644
        // Remove stale tabs
        if (this.currentTest && window.gBrowser && gBrowser.tabs.length > 1) {
          let lastURI = "";
-@@ -1225,6 +1228,10 @@ Tester.prototype = {
+@@ -882,6 +885,10 @@ Tester.prototype = {
     * fresh Session Restore state.
     */
    resetSessionState() {
@@ -90,7 +90,7 @@ index 66333694ef56..588717b826aa 100644
      while (window.SessionStore.getClosedWindowCount() > 0) {
        window.SessionStore.forgetClosedWindow(0);
 diff --git a/testing/mochitest/mach_commands.py b/testing/mochitest/mach_commands.py
-index 3bf3f072756c..c8b5dd587643 100644
+index c5d559c31dd6..2445077ce9cf 100644
 --- a/testing/mochitest/mach_commands.py
 +++ b/testing/mochitest/mach_commands.py
 @@ -51,7 +51,7 @@ test path(s):
@@ -103,7 +103,7 @@ index 3bf3f072756c..c8b5dd587643 100644
  parser = None
  
 diff --git a/testing/mochitest/mochitest_options.py b/testing/mochitest/mochitest_options.py
-index d7ba9540c8d8..13e262261f91 100644
+index 6d1d515c3053..bc565c90038a 100644
 --- a/testing/mochitest/mochitest_options.py
 +++ b/testing/mochitest/mochitest_options.py
 @@ -51,7 +51,7 @@ ALL_FLAVORS = {

@@ -5,17 +5,17 @@ Test: MOZCONFIG=swell/mozconfig ./mach build compiles widget/cocoa (no behaviour
 Upstreamable: yes, 3 lines.
 
 diff --git a/widget/cocoa/nsMenuBarX.mm b/widget/cocoa/nsMenuBarX.mm
-index 44fffabdf7a7..38d9a9430fe8 100644
+index eb422491806a..9ad63d996dd4 100644
 --- a/widget/cocoa/nsMenuBarX.mm
 +++ b/widget/cocoa/nsMenuBarX.mm
-@@ -25,7 +25,9 @@
- #include "mozilla/dom/Document.h"
- #include "nsIAppStartup.h"
+@@ -21,7 +21,9 @@
+ #include "nsThreadUtils.h"
+ 
  #include "nsIContent.h"
 -#include "nsIShellService.h"
 +#ifdef MOZ_BUILD_APP_IS_BROWSER
 +#  include "nsIShellService.h"
 +#endif
+ #include "mozilla/dom/Document.h"
+ #include "nsIAppStartup.h"
  #include "nsIStringBundle.h"
- #include "nsToolkitCompsCID.h"
- 

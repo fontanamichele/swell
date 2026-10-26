@@ -1,0 +1,1201 @@
+Purpose: Backport of Bug 2025999 and Bug 2079759 so Places on ESR 153 records the container of every visit.
+Test: MOZCONFIG=swell/mozconfig ./mach test toolkit/components/places/tests/migration/test_current_from_v87.js toolkit/components/places/tests/history/test_insert_userContextId.js
+
+diff --git a/docshell/base/IHistory.h b/docshell/base/IHistory.h
+index 34fc8853c730..40d9234f2da2 100644
+--- a/docshell/base/IHistory.h
++++ b/docshell/base/IHistory.h
+@@ -145,9 +145,16 @@ class IHistory : public nsISupports {
+    *        The VisitFlags describing this visit.
+    * @param aBrowserId
+    *        The id of browser used for this visit.
++   * @param aUserContextId
++   *        The user context id (container) of this visit. Only used when the
++   *        visit is recorded in the same process as the docshell. Content
++   *        processes forward the visit to the parent through
++   *        PBrowser::VisitURI without this value, and the parent takes it
++   *        from the BrowserParent's browsing context.
+    */
+   NS_IMETHOD VisitURI(nsIWidget* aWidget, nsIURI* aURI, nsIURI* aLastVisitedURI,
+-                      uint32_t aFlags, uint64_t aBrowserId) = 0;
++                      uint32_t aFlags, uint64_t aBrowserId,
++                      uint32_t aUserContextId) = 0;
+ 
+   /**
+    * Set the title of the URI.
+diff --git a/docshell/base/nsDocShell.cpp b/docshell/base/nsDocShell.cpp
+index 4f6e936420e6..4610029b7c0e 100644
+--- a/docshell/base/nsDocShell.cpp
++++ b/docshell/base/nsDocShell.cpp
+@@ -11669,8 +11669,10 @@ void nsDocShell::SaveLastVisit(nsIChannel* aChannel, nsIURI* aURI,
+           IHistory::REDIRECT_SOURCE | IHistory::REDIRECT_SOURCE_UPGRADED;
+     }
+ 
+-    (void)history->VisitURI(aWidget, aURI, aPreviousURI, visitURIFlags,
+-                            aBrowsingContext->BrowserId());
++    (void)history->VisitURI(
++        aWidget, aURI, aPreviousURI, visitURIFlags,
++        aBrowsingContext->BrowserId(),
++        aBrowsingContext->OriginAttributesRef().mUserContextId);
+   }
+ }
+ 
+diff --git a/dom/base/PlacesVisit.h b/dom/base/PlacesVisit.h
+index 2bb6abb81f19..c5fb269b83b1 100644
+--- a/dom/base/PlacesVisit.h
++++ b/dom/base/PlacesVisit.h
+@@ -40,6 +40,7 @@ class PlacesVisit final : public PlacesEvent {
+   void GetLastKnownTitle(nsString& aLastKnownTitle) {
+     aLastKnownTitle = mLastKnownTitle;
+   }
++  uint32_t UserContextId() { return mUserContextId; }
+ 
+   // It's convenient for these to be directly available in C++, so just expose
+   // them. These are generally passed around with const qualifiers anyway, so
+@@ -55,6 +56,7 @@ class PlacesVisit final : public PlacesEvent {
+   uint32_t mVisitCount;
+   uint32_t mTypedCount;
+   nsString mLastKnownTitle;
++  uint32_t mUserContextId = 0;
+ 
+  private:
+   ~PlacesVisit() = default;
+diff --git a/dom/chrome-webidl/PlacesEvent.webidl b/dom/chrome-webidl/PlacesEvent.webidl
+index d41de887bdf8..f4ecb92e25d7 100644
+--- a/dom/chrome-webidl/PlacesEvent.webidl
++++ b/dom/chrome-webidl/PlacesEvent.webidl
+@@ -148,6 +148,11 @@ interface PlacesVisit : PlacesEvent {
+    * and might be null if it is not known.
+    */
+   readonly attribute DOMString? lastKnownTitle;
++
++  /**
++   * The userContextId of the visit, 0 for the default container.
++   */
++  readonly attribute unsigned long userContextId;
+ };
+ 
+ /**
+diff --git a/dom/ipc/BrowserParent.cpp b/dom/ipc/BrowserParent.cpp
+index 7efb717cde78..26da0dcf38ee 100644
+--- a/dom/ipc/BrowserParent.cpp
++++ b/dom/ipc/BrowserParent.cpp
+@@ -4282,7 +4282,10 @@ mozilla::ipc::IPCResult BrowserParent::RecvVisitURI(
+   }
+   nsCOMPtr<IHistory> history = components::History::Service();
+   if (history) {
+-    (void)history->VisitURI(widget, aURI, aLastVisitedURI, aFlags, aBrowserId);
++    // The container isn't sent by the content process, so it can't be forged.
++    (void)history->VisitURI(
++        widget, aURI, aLastVisitedURI, aFlags, aBrowserId,
++        mBrowsingContext->OriginAttributesRef().mUserContextId);
+   }
+   return IPC_OK();
+ }
+diff --git a/mobile/shared/components/geckoview/GeckoViewHistory.cpp b/mobile/shared/components/geckoview/GeckoViewHistory.cpp
+index 86aedf78103d..f0839ea8eade 100644
+--- a/mobile/shared/components/geckoview/GeckoViewHistory.cpp
++++ b/mobile/shared/components/geckoview/GeckoViewHistory.cpp
+@@ -235,7 +235,7 @@ NS_IMPL_ISUPPORTS(OnVisitedCallback, nsIGeckoViewEventCallback)
+ NS_IMETHODIMP
+ GeckoViewHistory::VisitURI(nsIWidget* aWidget, nsIURI* aURI,
+                            nsIURI* aLastVisitedURI, uint32_t aFlags,
+-                           uint64_t aBrowserId) {
++                           uint64_t aBrowserId, uint32_t aUserContextId) {
+   AssertIsOnMainThread();
+   if (!aURI) {
+     return NS_OK;
+diff --git a/mobile/shared/components/geckoview/GeckoViewHistory.h b/mobile/shared/components/geckoview/GeckoViewHistory.h
+index a3b96ba58ff2..6964e93775bf 100644
+--- a/mobile/shared/components/geckoview/GeckoViewHistory.h
++++ b/mobile/shared/components/geckoview/GeckoViewHistory.h
+@@ -33,7 +33,8 @@ class GeckoViewHistory final : public mozilla::BaseHistory {
+ 
+   // IHistory
+   NS_IMETHOD VisitURI(nsIWidget*, nsIURI*, nsIURI* aLastVisitedURI,
+-                      uint32_t aFlags, uint64_t aBrowserId) final;
++                      uint32_t aFlags, uint64_t aBrowserId,
++                      uint32_t aUserContextId) final;
+   NS_IMETHOD SetURITitle(nsIURI*, const nsAString&) final;
+ 
+   static already_AddRefed<GeckoViewHistory> GetSingleton();
+diff --git a/toolkit/components/downloads/DownloadHistory.sys.mjs b/toolkit/components/downloads/DownloadHistory.sys.mjs
+index 490e9fb618c6..4522cf4b14b5 100644
+--- a/toolkit/components/downloads/DownloadHistory.sys.mjs
++++ b/toolkit/components/downloads/DownloadHistory.sys.mjs
+@@ -294,6 +294,7 @@ let DownloadCache = {
+           referrer: download.source.referrerInfo
+             ? download.source.referrerInfo.originalReferrer
+             : null,
++          userContextId: download.source.userContextId,
+         },
+       ],
+     });
+diff --git a/toolkit/components/downloads/test/unit/test_DownloadHistory.js b/toolkit/components/downloads/test/unit/test_DownloadHistory.js
+index 093d85ecacb8..b2057232535a 100644
+--- a/toolkit/components/downloads/test/unit/test_DownloadHistory.js
++++ b/toolkit/components/downloads/test/unit/test_DownloadHistory.js
+@@ -271,3 +271,39 @@ add_task(async function test_DownloadHistory() {
+   allView2.expected = allView.expected;
+   await allView2.waitForExpected();
+ });
++
++add_task(async function test_DownloadHistory_userContextId() {
++  await PlacesUtils.history.clear();
++
++  for (let userContextId of [0, 2]) {
++    const sourceUrl = httpUrl(`container-${userContextId}.txt`);
++    const targetFile = getTempFile(
++      `${TEST_TARGET_FILE_NAME}-container-${userContextId}`
++    );
++    const download = await Downloads.createDownload({
++      source: { url: sourceUrl, userContextId },
++      target: { path: targetFile.path },
++      startTime: new Date(),
++      succeeded: true,
++    });
++
++    const visit = promiseWaitForVisit(sourceUrl);
++    await DownloadHistory.addDownloadToHistory(download);
++    await visit;
++
++    const db = await PlacesUtils.promiseDBConnection();
++    const rows = await db.execute(
++      `SELECT v.userContextId FROM moz_historyvisits v
++       JOIN moz_places h ON h.id = v.place_id
++       WHERE h.url_hash = hash(:url) AND h.url = :url`,
++      { url: sourceUrl }
++    );
++    Assert.deepEqual(
++      rows.map(r => r.getResultByName("userContextId")),
++      [userContextId],
++      "The download visit is stored in the container of the download"
++    );
++  }
++
++  await PlacesUtils.history.clear();
++});
+diff --git a/toolkit/components/places/Database.cpp b/toolkit/components/places/Database.cpp
+index 413d9b852326..ccbdf4418958 100644
+--- a/toolkit/components/places/Database.cpp
++++ b/toolkit/components/places/Database.cpp
+@@ -1408,18 +1408,36 @@ nsresult Database::InitSchema(bool* aDatabaseMigrated) {
+       // The schema 84 migration was the same as 85, we had to re-run it to
+       // correct issues with origin frecency.
+ 
++      // Firefox 147 uses schema version 84
++
+       if (currentSchemaVersion < 85) {
+         rv = MigrateV85Up();
+         NS_ENSURE_SUCCESS(rv, rv);
+       }
+ 
+-      // Firefox 147 uses schema version 84
++      // Firefox 148 uses schema version 85
+ 
+       if (currentSchemaVersion < 86) {
+         rv = MigrateV86Up();
+         NS_ENSURE_SUCCESS(rv, rv);
+       }
+ 
++      // Firefox 150 uses schema version 86
++
++      if (currentSchemaVersion < 87) {
++        rv = MigrateV87Up();
++        NS_ENSURE_SUCCESS(rv, rv);
++      }
++
++      // Firefox 155 uses schema version 87
++
++      if (currentSchemaVersion < 88) {
++        rv = MigrateV88Up();
++        NS_ENSURE_SUCCESS(rv, rv);
++      }
++
++      // Firefox 160 uses schema version 88
++
+       // Schema Upgrades must add migration code here.
+       // >>> IMPORTANT! <<<
+       // NEVER MIX UP SYNC AND ASYNC EXECUTION IN MIGRATORS, YOU MAY LOCK THE
+@@ -2381,6 +2399,88 @@ nsresult Database::MigrateV86Up() {
+   return NS_OK;
+ }
+ 
++nsresult Database::MigrateV87Up() {
++  // Invert the moz_origins UNIQUE constraint to (host, prefix), so the higher
++  // cardinality column comes first and queries only filtering on host, like the
++  // address bar ones, can use the index.
++
++  {
++    // The statement must be finalized before the table it reads is dropped.
++    nsCOMPtr<mozIStorageStatement> stmt;
++    nsresult rv = mMainConn->CreateStatement(
++        nsLiteralCString("SELECT 1 FROM sqlite_master "
++                         "WHERE type = 'table' AND name = 'moz_origins' "
++                         "AND sql LIKE '%UNIQUE (host, prefix)%'"),
++        getter_AddRefs(stmt));
++    NS_ENSURE_SUCCESS(rv, rv);
++    bool hasResult = false;
++    if (NS_SUCCEEDED(stmt->ExecuteStep(&hasResult)) && hasResult) {
++      // The constraint has already been inverted.
++      return NS_OK;
++    }
++  }
++
++  // The table must be rebuilt, but it can't be dropped while moz_places
++  // references it. Deferring the foreign keys allows the drop: it leaves every
++  // referencing page orphaned until the table is refilled, which resolves them
++  // again before the transaction commits.
++  nsresult rv =
++      mMainConn->ExecuteSimpleSQL("PRAGMA defer_foreign_keys = ON"_ns);
++  NS_ENSURE_SUCCESS(rv, rv);
++
++  rv = mMainConn->ExecuteSimpleSQL(
++      "CREATE TEMP TABLE moz_origins_stash_temp AS "
++      "SELECT * FROM moz_origins"_ns);
++  NS_ENSURE_SUCCESS(rv, rv);
++
++  rv = mMainConn->ExecuteSimpleSQL("DROP TABLE moz_origins"_ns);
++  NS_ENSURE_SUCCESS(rv, rv);
++
++  rv = mMainConn->ExecuteSimpleSQL(
++      "CREATE TABLE moz_origins ( "
++      "id INTEGER PRIMARY KEY, "
++      "prefix TEXT NOT NULL, "
++      "host TEXT NOT NULL, "
++      "frecency INTEGER NOT NULL, "
++      "recalc_frecency INTEGER NOT NULL DEFAULT 0, "
++      "alt_frecency INTEGER, "
++      "recalc_alt_frecency INTEGER NOT NULL DEFAULT 0, "
++      "block_until_ms INTEGER, "
++      "block_pages_until_ms INTEGER, "
++      "UNIQUE (host, prefix) "
++      ")"_ns);
++  NS_ENSURE_SUCCESS(rv, rv);
++
++  // Inserting the rows into a table with the same name as the original resolves
++  // the deferred constraint violations accumulated during the DROP.
++  rv = mMainConn->ExecuteSimpleSQL(
++      "INSERT INTO moz_origins "
++      "(id, prefix, host, frecency, recalc_frecency, alt_frecency, "
++      "recalc_alt_frecency, block_until_ms, block_pages_until_ms) "
++      "SELECT id, prefix, host, frecency, recalc_frecency, alt_frecency, "
++      "recalc_alt_frecency, block_until_ms, block_pages_until_ms "
++      "FROM moz_origins_stash_temp"_ns);
++  NS_ENSURE_SUCCESS(rv, rv);
++
++  rv = mMainConn->ExecuteSimpleSQL("DROP TABLE moz_origins_stash_temp"_ns);
++  NS_ENSURE_SUCCESS(rv, rv);
++
++  return NS_OK;
++}
++
++nsresult Database::MigrateV88Up() {
++  nsCOMPtr<mozIStorageStatement> stmt;
++  nsresult rv = mMainConn->CreateStatement(
++      "SELECT userContextId FROM moz_historyvisits"_ns, getter_AddRefs(stmt));
++  if (NS_FAILED(rv)) {
++    rv = mMainConn->ExecuteSimpleSQL(
++        "ALTER TABLE moz_historyvisits "
++        "ADD COLUMN userContextId INTEGER NOT NULL DEFAULT 0"_ns);
++    NS_ENSURE_SUCCESS(rv, rv);
++  }
++  return NS_OK;
++}
++
+ int64_t Database::CreateMobileRoot() {
+   MOZ_ASSERT(NS_IsMainThread());
+ 
+diff --git a/toolkit/components/places/Database.h b/toolkit/components/places/Database.h
+index 44f8f920676f..a8a0f5d22ad3 100644
+--- a/toolkit/components/places/Database.h
++++ b/toolkit/components/places/Database.h
+@@ -334,6 +334,8 @@ class Database final : public nsIObserver, public nsSupportsWeakReference {
+   nsresult MigrateV83Up();
+   nsresult MigrateV85Up();
+   nsresult MigrateV86Up();
++  nsresult MigrateV87Up();
++  nsresult MigrateV88Up();
+ 
+   nsresult UpdateBookmarkRootTitles();
+ 
+diff --git a/toolkit/components/places/History.cpp b/toolkit/components/places/History.cpp
+index 6839700f053e..26db6e3ae5ed 100644
+--- a/toolkit/components/places/History.cpp
++++ b/toolkit/components/places/History.cpp
+@@ -3,7 +3,9 @@
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
+ #include "mozilla/Attributes.h"
++#include "mozilla/CheckedInt.h"
+ #include "mozilla/DebugOnly.h"
++#include "mozilla/FloatingPoint.h"
+ #include "mozilla/MemoryReporting.h"
+ 
+ #include "mozilla/dom/ContentChild.h"
+@@ -92,7 +94,8 @@ struct VisitData {
+         source(nsINavHistoryService::VISIT_SOURCE_ORGANIC),
+         triggeringPlaceId(0),
+         triggeringSponsoredURLVisitTimeMS(0),
+-        bookmarked(false) {
++        bookmarked(false),
++        userContextId(0) {
+     guid.SetIsVoid(true);
+     title.SetIsVoid(true);
+     baseDomain.SetIsVoid(true);
+@@ -119,7 +122,8 @@ struct VisitData {
+         source(nsINavHistoryService::VISIT_SOURCE_ORGANIC),
+         triggeringPlaceId(0),
+         triggeringSponsoredURLVisitTimeMS(0),
+-        bookmarked(false) {
++        bookmarked(false),
++        userContextId(0) {
+     MOZ_ASSERT(aURI);
+     if (aURI) {
+       (void)aURI->GetSpec(spec);
+@@ -191,6 +195,7 @@ struct VisitData {
+   nsCString triggeringSponsoredURLBaseDomain;
+   int64_t triggeringSponsoredURLVisitTimeMS;
+   bool bookmarked;
++  uint32_t userContextId;
+ };
+ 
+ ////////////////////////////////////////////////////////////////////////////////
+@@ -356,12 +361,12 @@ nsresult GetIntFromJSObject(JSContext* aCtx, JS::Handle<JSObject*> aObject,
+   NS_ENSURE_ARG(value.isPrimitive());
+   NS_ENSURE_ARG(value.isNumber());
+ 
+-  double num;
+-  rc = JS::ToNumber(aCtx, value, &num);
+-  NS_ENSURE_TRUE(rc, NS_ERROR_UNEXPECTED);
+-  NS_ENSURE_ARG(IntType(num) == num);
++  int64_t num;
++  NS_ENSURE_ARG(mozilla::NumberEqualsInt64(value.toNumber(), &num));
++  CheckedInt<IntType> checked(num);
++  NS_ENSURE_ARG(checked.isValid());
+ 
+-  *_int = IntType(num);
++  *_int = checked.value();
+   return NS_OK;
+ }
+ 
+@@ -589,6 +594,7 @@ class NotifyManyVisitsObservers : public Runnable {
+     visitEvent->mVisitCount = aPlace.visitCount + 1;  // Add current visit
+     visitEvent->mTypedCount = static_cast<uint32_t>(aPlace.typed);
+     visitEvent->mLastKnownTitle.Assign(aPlace.title);
++    visitEvent->mUserContextId = aPlace.userContextId;
+ 
+     bool success = !!aEvents.AppendElement(visitEvent.forget(), fallible);
+     MOZ_RELEASE_ASSERT(success);
+@@ -1182,9 +1188,9 @@ class InsertVisitedURIs final : public Runnable {
+     stmt = mHistory->GetStatement(
+         "INSERT INTO moz_historyvisits "
+         "(from_visit, place_id, visit_date, visit_type, session, source, "
+-        "triggeringPlaceId) "
++        "triggeringPlaceId, userContextId) "
+         "VALUES (:from_visit, :page_id, :visit_date, :visit_type, 0, :source, "
+-        ":triggeringPlaceId) ");
++        ":triggeringPlaceId, :userContextId) ");
+     NS_ENSURE_STATE(stmt);
+     mozStorageStatementScoper scoper(stmt);
+ 
+@@ -1209,6 +1215,8 @@ class InsertVisitedURIs final : public Runnable {
+       rv = stmt->BindNullByName("triggeringPlaceId"_ns);
+     }
+     NS_ENSURE_SUCCESS(rv, rv);
++    rv = stmt->BindInt64ByName("userContextId"_ns, _place.userContextId);
++    NS_ENSURE_SUCCESS(rv, rv);
+ 
+     rv = stmt->Execute();
+     NS_ENSURE_SUCCESS(rv, rv);
+@@ -1926,7 +1934,8 @@ void History::AppendToRecentlyVisitedURIs(nsIURI* aURI, bool aHidden) {
+ 
+ NS_IMETHODIMP
+ History::VisitURI(nsIWidget* aWidget, nsIURI* aURI, nsIURI* aLastVisitedURI,
+-                  uint32_t aFlags, uint64_t aBrowserId) {
++                  uint32_t aFlags, uint64_t aBrowserId,
++                  uint32_t aUserContextId) {
+   MOZ_ASSERT(NS_IsMainThread());
+   NS_ENSURE_ARG(aURI);
+ 
+@@ -2035,6 +2044,7 @@ History::VisitURI(nsIWidget* aWidget, nsIURI* aURI, nsIURI* aLastVisitedURI,
+   place.visitTime = PR_Now();
+   place.SetTransitionType(transitionType);
+   place.hidden = isHidden;
++  place.userContextId = aUserContextId;
+ 
+   if (isRedirect) {
+     place.useFrecencyRedirectBonus =
+@@ -2321,6 +2331,16 @@ History::UpdatePlaces(JS::Handle<JS::Value> aPlaceInfos,
+       if (referrer) {
+         (void)referrer->GetSpec(data.referrerSpec);
+       }
++
++      JS::Rooted<JS::Value> userContextIdVal(aCtx);
++      if (!JS_GetProperty(aCtx, visit, "userContextId", &userContextIdVal)) {
++        return NS_ERROR_UNEXPECTED;
++      }
++      if (!userContextIdVal.isUndefined()) {
++        rv = GetIntFromJSObject(aCtx, visit, "userContextId",
++                                &data.userContextId);
++        NS_ENSURE_SUCCESS(rv, rv);
++      }
+     }
+   }
+ 
+diff --git a/toolkit/components/places/History.h b/toolkit/components/places/History.h
+index c106a58f1e3c..51c72724ba81 100644
+--- a/toolkit/components/places/History.h
++++ b/toolkit/components/places/History.h
+@@ -51,7 +51,8 @@ class History final : public BaseHistory,
+ 
+   // IHistory
+   NS_IMETHOD VisitURI(nsIWidget*, nsIURI*, nsIURI* aLastVisitedURI,
+-                      uint32_t aFlags, uint64_t aBrowserId) final;
++                      uint32_t aFlags, uint64_t aBrowserId,
++                      uint32_t aUserContextId) final;
+   NS_IMETHOD SetURITitle(nsIURI*, const nsAString&) final;
+ 
+   // BaseHistory
+diff --git a/toolkit/components/places/History.sys.mjs b/toolkit/components/places/History.sys.mjs
+index 6ba465f49248..f1ba7f8db2b8 100644
+--- a/toolkit/components/places/History.sys.mjs
++++ b/toolkit/components/places/History.sys.mjs
+@@ -65,6 +65,8 @@
+  *  as argument may hold `nsIURI` or `string` values for property `referrer`,
+  *  but `VisitInfo` objects returned by this module always hold `URL`
+  *  values.
++ * @property {number} [userContextId]
++ *  The userContextId of the visit. Missing or 0 means the default container.
+  */
+ 
+ /**
+@@ -814,6 +816,7 @@ function convertForUpdatePlaces(pageInfo) {
+       referrerURI: inVisit.referrer
+         ? lazy.PlacesUtils.toURI(inVisit.referrer)
+         : undefined,
++      userContextId: inVisit.userContextId,
+     };
+     info.visits.push(visit);
+   }
+diff --git a/toolkit/components/places/PlacesUtils.sys.mjs b/toolkit/components/places/PlacesUtils.sys.mjs
+index dafb6717f2f1..4d4002ac7e3e 100644
+--- a/toolkit/components/places/PlacesUtils.sys.mjs
++++ b/toolkit/components/places/PlacesUtils.sys.mjs
+@@ -408,6 +408,10 @@ const PAGEINFO_VALIDATORS = Object.freeze({
+       if (inVisit.referrer) {
+         visit.referrer = PlacesUtils.normalizeToURLOrGUID(inVisit.referrer);
+       }
++
++      if (inVisit.userContextId) {
++        visit.userContextId = inVisit.userContextId;
++      }
+       visits.push(visit);
+     }
+     return visits;
+diff --git a/toolkit/components/places/nsINavHistoryService.idl b/toolkit/components/places/nsINavHistoryService.idl
+index 101a575dab80..da06bd671fb2 100644
+--- a/toolkit/components/places/nsINavHistoryService.idl
++++ b/toolkit/components/places/nsINavHistoryService.idl
+@@ -909,7 +909,7 @@ interface nsINavHistoryService : nsISupports
+   // The current database schema version.
+   // To migrate to a new version bump this, add a MigrateVXXUp function to
+   // Database.cpp/h, and a test into tests/migration/
+-  const unsigned long DATABASE_SCHEMA_VERSION = 86;
++  const unsigned long DATABASE_SCHEMA_VERSION = 88;
+ 
+   /**
+    * System Notifications:
+diff --git a/toolkit/components/places/nsPlacesTables.h b/toolkit/components/places/nsPlacesTables.h
+index 5d4995c57653..37a02279f162 100644
+--- a/toolkit/components/places/nsPlacesTables.h
++++ b/toolkit/components/places/nsPlacesTables.h
+@@ -29,17 +29,18 @@
+       ", recalc_alt_frecency INTEGER NOT NULL DEFAULT 0" \
+       ")")
+ 
+-#define CREATE_MOZ_HISTORYVISITS            \
+-  nsLiteralCString(                         \
+-      "CREATE TABLE moz_historyvisits ("    \
+-      "  id INTEGER PRIMARY KEY"            \
+-      ", from_visit INTEGER"                \
+-      ", place_id INTEGER"                  \
+-      ", visit_date INTEGER"                \
+-      ", visit_type INTEGER"                \
+-      ", session INTEGER"                   \
+-      ", source INTEGER DEFAULT 0 NOT NULL" \
+-      ", triggeringPlaceId INTEGER"         \
++#define CREATE_MOZ_HISTORYVISITS                   \
++  nsLiteralCString(                                \
++      "CREATE TABLE moz_historyvisits ("           \
++      "  id INTEGER PRIMARY KEY"                   \
++      ", from_visit INTEGER"                       \
++      ", place_id INTEGER"                         \
++      ", visit_date INTEGER"                       \
++      ", visit_type INTEGER"                       \
++      ", session INTEGER"                          \
++      ", source INTEGER DEFAULT 0 NOT NULL"        \
++      ", triggeringPlaceId INTEGER"                \
++      ", userContextId INTEGER NOT NULL DEFAULT 0" \
+       ")")
+ 
+ // These two tables were designed to store data with json in mind
+@@ -185,7 +186,7 @@
+       "recalc_alt_frecency INTEGER NOT NULL DEFAULT 0, " \
+       "block_until_ms INTEGER, "                         \
+       "block_pages_until_ms INTEGER, "                   \
+-      "UNIQUE (prefix, host) "                           \
++      "UNIQUE (host, prefix) "                           \
+       ")")
+ 
+ // Note: this should be kept up-to-date with the definition in
+diff --git a/toolkit/components/places/nsPlacesTriggers.h b/toolkit/components/places/nsPlacesTriggers.h
+index cadb657addad..8ef54c7e3dc7 100644
+--- a/toolkit/components/places/nsPlacesTriggers.h
++++ b/toolkit/components/places/nsPlacesTriggers.h
+@@ -64,7 +64,7 @@
+       "  (prefix, host, frecency, recalc_frecency, recalc_alt_frecency) " \
+       "VALUES (get_prefix(NEW.url), get_host_and_port(NEW.url), "         \
+       "        NEW.frecency, 1, 1)  "                                     \
+-      "ON CONFLICT(prefix, host) DO UPDATE "                              \
++      "ON CONFLICT(host, prefix) DO UPDATE "                              \
+       "  SET recalc_frecency = 1, recalc_alt_frecency = 1 "               \
+       "  WHERE EXCLUDED.recalc_frecency = 0 OR "                          \
+       "        EXCLUDED.recalc_alt_frecency = 0; "                        \
+diff --git a/toolkit/components/places/tests/browser/browser.toml b/toolkit/components/places/tests/browser/browser.toml
+index 890060895e4f..4e6405829f95 100644
+--- a/toolkit/components/places/tests/browser/browser.toml
++++ b/toolkit/components/places/tests/browser/browser.toml
+@@ -144,3 +144,6 @@ skip-if = [
+   "os == 'win' && os_version == '11.26100' && arch == 'x86_64' && debug && verify-standalone",
+   "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && debug && verify-standalone",
+ ]
++
++["browser_visituri_userContextId.js"]
++support-files = ["empty_page.html"]
+diff --git a/toolkit/components/places/tests/browser/browser_visituri_userContextId.js b/toolkit/components/places/tests/browser/browser_visituri_userContextId.js
+new file mode 100644
+index 000000000000..9d8b9ae8afa8
+--- /dev/null
++++ b/toolkit/components/places/tests/browser/browser_visituri_userContextId.js
+@@ -0,0 +1,60 @@
++/* Any copyright is dedicated to the Public Domain.
++   http://creativecommons.org/publicdomain/zero/1.0/ */
++
++"use strict";
++
++const TEST_PATH = getRootDirectory(gTestPath).replace(
++  "chrome://mochitests/content",
++  "https://example.com"
++);
++
++add_setup(async function () {
++  await SpecialPowers.pushPrefEnv({
++    set: [["privacy.userContext.enabled", true]],
++  });
++  await PlacesUtils.history.clear();
++  registerCleanupFunction(() => PlacesUtils.history.clear());
++});
++
++add_task(async function test_visit_in_container() {
++  for (let userContextId of [0, 2]) {
++    const url = `${TEST_PATH}empty_page.html?container=${userContextId}`;
++
++    let promiseVisited = PlacesTestUtils.waitForNotification(
++      "page-visited",
++      events => events.some(e => e.url === url)
++    );
++
++    let tab = BrowserTestUtils.addTab(gBrowser, url, { userContextId });
++    await BrowserTestUtils.browserLoaded(tab.linkedBrowser, false, url);
++    Assert.equal(
++      tab.linkedBrowser.browsingContext.originAttributes.userContextId,
++      userContextId,
++      "The tab is loaded in the expected container"
++    );
++
++    let events = await promiseVisited;
++    let visitEvents = events.filter(e => e.url === url);
++    Assert.equal(visitEvents.length, 1, "One page-visited event");
++    Assert.equal(
++      visitEvents[0].userContextId,
++      userContextId,
++      "page-visited reports the container of the visit"
++    );
++
++    let db = await PlacesUtils.promiseDBConnection();
++    let rows = await db.execute(
++      `SELECT v.userContextId FROM moz_historyvisits v
++       JOIN moz_places h ON h.id = v.place_id
++       WHERE h.url_hash = hash(:url) AND h.url = :url`,
++      { url }
++    );
++    Assert.deepEqual(
++      rows.map(r => r.getResultByName("userContextId")),
++      [userContextId],
++      "The visit is stored in the container of the tab"
++    );
++
++    BrowserTestUtils.removeTab(tab);
++  }
++});
+diff --git a/toolkit/components/places/tests/gtest/places_test_harness.cpp b/toolkit/components/places/tests/gtest/places_test_harness.cpp
+index e994ef81b4d7..c1640f21ef16 100644
+--- a/toolkit/components/places/tests/gtest/places_test_harness.cpp
++++ b/toolkit/components/places/tests/gtest/places_test_harness.cpp
+@@ -172,7 +172,7 @@ void addURI(nsIURI* aURI) {
+   nsCOMPtr<mozilla::IHistory> history = do_GetService(NS_IHISTORY_CONTRACTID);
+   do_check_true(history);
+   nsresult rv = history->VisitURI(nullptr, aURI, nullptr,
+-                                  mozilla::IHistory::TOP_LEVEL, 0);
++                                  mozilla::IHistory::TOP_LEVEL, 0, 0);
+   do_check_success(rv);
+ 
+   do_wait_async_updates();
+diff --git a/toolkit/components/places/tests/gtest/test_IHistory.cpp b/toolkit/components/places/tests/gtest/test_IHistory.cpp
+index edaf80eefc33..234bf07de4f1 100644
+--- a/toolkit/components/places/tests/gtest/test_IHistory.cpp
++++ b/toolkit/components/places/tests/gtest/test_IHistory.cpp
+@@ -270,7 +270,7 @@ void test_visituri_inserts() {
+   nsCOMPtr<nsIURI> visitedURI = new_test_uri();
+ 
+   history->VisitURI(nullptr, visitedURI, lastURI, mozilla::IHistory::TOP_LEVEL,
+-                    0);
++                    0, 0);
+ 
+   RefPtr<VisitURIObserver> finisher = new VisitURIObserver();
+   finisher->WaitForNotification();
+@@ -293,12 +293,12 @@ void test_visituri_updates() {
+   RefPtr<VisitURIObserver> finisher;
+ 
+   history->VisitURI(nullptr, visitedURI, lastURI, mozilla::IHistory::TOP_LEVEL,
+-                    0);
++                    0, 0);
+   finisher = new VisitURIObserver();
+   finisher->WaitForNotification();
+ 
+   history->VisitURI(nullptr, visitedURI, lastURI, mozilla::IHistory::TOP_LEVEL,
+-                    0);
++                    0, 0);
+   finisher = new VisitURIObserver();
+   finisher->WaitForNotification();
+ 
+@@ -316,10 +316,10 @@ void test_visituri_preserves_shown_and_typed() {
+   nsCOMPtr<nsIURI> visitedURI = new_test_uri();
+ 
+   history->VisitURI(nullptr, visitedURI, lastURI, mozilla::IHistory::TOP_LEVEL,
+-                    0);
++                    0, 0);
+   // this simulates the uri visit happening in a frame.  Normally frame
+   // transitions would be hidden unless it was previously loaded top-level
+-  history->VisitURI(nullptr, visitedURI, lastURI, 0, 0);
++  history->VisitURI(nullptr, visitedURI, lastURI, 0, 0, 0);
+ 
+   RefPtr<VisitURIObserver> finisher = new VisitURIObserver(2);
+   finisher->WaitForNotification();
+@@ -337,7 +337,7 @@ void test_visituri_creates_visit() {
+   nsCOMPtr<nsIURI> visitedURI = new_test_uri();
+ 
+   history->VisitURI(nullptr, visitedURI, lastURI, mozilla::IHistory::TOP_LEVEL,
+-                    0);
++                    0, 0);
+   RefPtr<VisitURIObserver> finisher = new VisitURIObserver();
+   finisher->WaitForNotification();
+ 
+@@ -360,7 +360,7 @@ void test_visituri_frecency() {
+   RefPtr<WaitForNotificationSpinner> spinner =
+       new WaitForNotificationSpinner(PlacesEventType::Pages_rank_changed);
+   history->VisitURI(nullptr, visitedURI, nullptr, mozilla::IHistory::TOP_LEVEL,
+-                    0);
++                    0, 0);
+   RefPtr<VisitURIObserver> finisher = new VisitURIObserver();
+   finisher->WaitForNotification();
+   spinner->SpinUntilCompleted();
+@@ -377,7 +377,7 @@ void test_visituri_hidden() {
+     nsCOMPtr<nsIURI> visitedURI = new_test_uri();
+     nsCOMPtr<nsINavHistoryService> navHistory = do_get_NavHistory();
+     navHistory->MarkPageAsFollowedLink(visitedURI);
+-    history->VisitURI(nullptr, visitedURI, nullptr, 0, 0);
++    history->VisitURI(nullptr, visitedURI, nullptr, 0, 0, 0);
+     RefPtr<VisitURIObserver> finisher = new VisitURIObserver();
+     finisher->WaitForNotification();
+     PlaceRecord place;
+@@ -388,7 +388,7 @@ void test_visituri_hidden() {
+   // Insert a redirect.
+   nsCOMPtr<nsIURI> visitedURI = new_test_uri();
+   history->VisitURI(nullptr, visitedURI, nullptr,
+-                    mozilla::IHistory::TOP_LEVEL | IHistory::REDIRECT_SOURCE,
++                    mozilla::IHistory::TOP_LEVEL | IHistory::REDIRECT_SOURCE, 0,
+                     0);
+   {
+     RefPtr<VisitURIObserver> finisher = new VisitURIObserver();
+@@ -400,7 +400,7 @@ void test_visituri_hidden() {
+ 
+   // Now add a non-hidden visit to the hidden page, check it gets unhidden.
+   history->VisitURI(nullptr, visitedURI, nullptr, mozilla::IHistory::TOP_LEVEL,
+-                    0);
++                    0, 0);
+   {
+     RefPtr<VisitURIObserver> finisher = new VisitURIObserver();
+     finisher->WaitForNotification();
+@@ -411,7 +411,7 @@ void test_visituri_hidden() {
+ 
+   // Add another hidden visit, it should stay unhidden.
+   history->VisitURI(nullptr, visitedURI, nullptr,
+-                    mozilla::IHistory::TOP_LEVEL | IHistory::REDIRECT_SOURCE,
++                    mozilla::IHistory::TOP_LEVEL | IHistory::REDIRECT_SOURCE, 0,
+                     0);
+   {
+     RefPtr<VisitURIObserver> finisher = new VisitURIObserver();
+@@ -432,7 +432,7 @@ void test_visituri_transition_typed() {
+ 
+   navHistory->MarkPageAsTyped(visitedURI);
+   history->VisitURI(nullptr, visitedURI, lastURI, mozilla::IHistory::TOP_LEVEL,
+-                    0);
++                    0, 0);
+   RefPtr<VisitURIObserver> finisher = new VisitURIObserver();
+   finisher->WaitForNotification();
+ 
+@@ -451,7 +451,7 @@ void test_visituri_transition_embed() {
+   nsCOMPtr<nsIURI> lastURI = new_test_uri();
+   nsCOMPtr<nsIURI> visitedURI = new_test_uri();
+ 
+-  history->VisitURI(nullptr, visitedURI, lastURI, 0, 0);
++  history->VisitURI(nullptr, visitedURI, lastURI, 0, 0, 0);
+   RefPtr<VisitURIObserver> finisher = new VisitURIObserver();
+   finisher->WaitForNotification();
+ 
+@@ -471,7 +471,7 @@ void test_new_visit_adds_place_guid() {
+   nsCOMPtr<nsIURI> visitedURI = new_test_uri();
+   nsCOMPtr<IHistory> history = do_get_IHistory();
+   nsresult rv = history->VisitURI(nullptr, visitedURI, nullptr,
+-                                  mozilla::IHistory::TOP_LEVEL, 0);
++                                  mozilla::IHistory::TOP_LEVEL, 0, 0);
+   do_check_success(rv);
+   RefPtr<VisitURIObserver> finisher = new VisitURIObserver();
+   finisher->WaitForNotification();
+diff --git a/toolkit/components/places/tests/history/test_insert_userContextId.js b/toolkit/components/places/tests/history/test_insert_userContextId.js
+new file mode 100644
+index 000000000000..c116e0dba059
+--- /dev/null
++++ b/toolkit/components/places/tests/history/test_insert_userContextId.js
+@@ -0,0 +1,62 @@
++/* Any copyright is dedicated to the Public Domain.
++   http://creativecommons.org/publicdomain/zero/1.0/ */
++
++// Tests the userContextId (container) of visits added through the JS APIs.
++
++"use strict";
++
++const TEST_URL = "https://example.com/userContextId";
++
++add_task(async function test_insert_invalid_userContextId() {
++  for (let userContextId of [-1, 1.5, 2 ** 32, "1", {}]) {
++    await Assert.rejects(
++      PlacesUtils.history.insert({
++        url: TEST_URL,
++        visits: [{ transition: TRANSITION_LINK, userContextId }],
++      }),
++      e => e.result === Cr.NS_ERROR_INVALID_ARG,
++      `History.insert should reject userContextId ${String(userContextId)}`
++    );
++  }
++  Assert.ok(
++    !(await PlacesUtils.history.hasVisits(TEST_URL)),
++    "No visit was added"
++  );
++});
++
++add_task(async function test_insert_valid_userContextId() {
++  await PlacesUtils.history.clear();
++
++  for (let userContextId of [0, 2, 2 ** 32 - 1]) {
++    let url = `${TEST_URL}/${userContextId}`;
++    let promiseVisited = PlacesTestUtils.waitForNotification(
++      "page-visited",
++      events => events.some(e => e.url === url)
++    );
++    await PlacesUtils.history.insert({
++      url,
++      visits: [{ transition: TRANSITION_LINK, userContextId }],
++    });
++    let events = await promiseVisited;
++    Assert.equal(
++      events.find(e => e.url === url).userContextId,
++      userContextId,
++      "page-visited reports the container of the visit"
++    );
++
++    let db = await PlacesUtils.promiseDBConnection();
++    let rows = await db.execute(
++      `SELECT v.userContextId FROM moz_historyvisits v
++       JOIN moz_places h ON h.id = v.place_id
++       WHERE h.url_hash = hash(:url) AND h.url = :url`,
++      { url }
++    );
++    Assert.deepEqual(
++      rows.map(r => r.getResultByName("userContextId")),
++      [userContextId],
++      "The visit is stored in the right container"
++    );
++  }
++
++  await PlacesUtils.history.clear();
++});
+diff --git a/toolkit/components/places/tests/history/xpcshell.toml b/toolkit/components/places/tests/history/xpcshell.toml
+index 9032b5673cf2..d550f7bd76a9 100644
+--- a/toolkit/components/places/tests/history/xpcshell.toml
++++ b/toolkit/components/places/tests/history/xpcshell.toml
+@@ -22,6 +22,8 @@ head = "head_history.js"
+ 
+ ["test_insert_null_title.js"]
+ 
++["test_insert_userContextId.js"]
++
+ ["test_remove.js"]
+ 
+ ["test_removeByFilter.js"]
+diff --git a/toolkit/components/places/tests/migration/places_v87.sqlite b/toolkit/components/places/tests/migration/places_v87.sqlite
+new file mode 100644
+index 000000000000..fd275bf1c23a
+Binary files /dev/null and b/toolkit/components/places/tests/migration/places_v87.sqlite differ
+diff --git a/toolkit/components/places/tests/migration/places_v88.sqlite b/toolkit/components/places/tests/migration/places_v88.sqlite
+new file mode 100644
+index 000000000000..a605e4b85dc2
+Binary files /dev/null and b/toolkit/components/places/tests/migration/places_v88.sqlite differ
+diff --git a/toolkit/components/places/tests/migration/test_current_from_v86.js b/toolkit/components/places/tests/migration/test_current_from_v86.js
+new file mode 100644
+index 000000000000..e12defc99220
+--- /dev/null
++++ b/toolkit/components/places/tests/migration/test_current_from_v86.js
+@@ -0,0 +1,173 @@
++/* Any copyright is dedicated to the Public Domain.
++ * http://creativecommons.org/publicdomain/zero/1.0/ */
++
++"use strict";
++
++const ORIGINS_COLUMNS = [
++  "id",
++  "prefix",
++  "host",
++  "frecency",
++  "recalc_frecency",
++  "alt_frecency",
++  "recalc_alt_frecency",
++  "block_until_ms",
++  "block_pages_until_ms",
++];
++
++// An origin the fixture already contains, to exercise the upsert conflict.
++const KNOWN_PREFIX = "https://";
++const KNOWN_HOST = "www.mozilla.org";
++
++async function fetchOrigins(db) {
++  let rows = await db.execute(
++    `SELECT ${ORIGINS_COLUMNS.join(", ")} FROM moz_origins ORDER BY id`
++  );
++  return rows.map(r => ORIGINS_COLUMNS.map(c => r.getResultByName(c)));
++}
++
++async function fetchPages(db) {
++  let rows = await db.execute(
++    "SELECT id, origin_id FROM moz_places ORDER BY id"
++  );
++  return rows.map(r => [
++    r.getResultByName("id"),
++    r.getResultByName("origin_id"),
++  ]);
++}
++
++async function fetchOriginId(db, prefix, host) {
++  let rows = await db.execute(
++    "SELECT id FROM moz_origins WHERE prefix = :prefix AND host = :host",
++    { prefix, host }
++  );
++  return rows.length ? rows[0].getResultByName("id") : null;
++}
++
++async function fetchUniqueIndexColumns(db) {
++  let indexes = await db.execute(
++    "SELECT name FROM pragma_index_list('moz_origins') WHERE origin = 'u'"
++  );
++  Assert.equal(
++    indexes.length,
++    1,
++    "moz_origins should have a single unique index"
++  );
++  let columns = await db.execute(
++    "SELECT name FROM pragma_index_info(:index) ORDER BY seqno",
++    { index: indexes[0].getResultByName("name") }
++  );
++  return columns.map(r => r.getResultByName("name"));
++}
++
++let gOrigins;
++let gPages;
++
++add_task(async function setup() {
++  let path = await setupPlacesDatabase("places_v86.sqlite");
++
++  let db = await Sqlite.openConnection({ path });
++
++  Assert.equal(
++    await db.getSchemaVersion(),
++    86,
++    "The fixture should be at schema version 86"
++  );
++  Assert.deepEqual(
++    await fetchUniqueIndexColumns(db),
++    ["prefix", "host"],
++    "moz_origins should be keyed on (prefix, host) before migration"
++  );
++
++  gOrigins = await fetchOrigins(db);
++  gPages = await fetchPages(db);
++  Assert.greater(gOrigins.length, 0, "There should be origins to migrate");
++  Assert.ok(
++    gPages.some(([, originId]) => originId !== null),
++    "There should be pages referencing an origin"
++  );
++  Assert.ok(
++    await fetchOriginId(db, KNOWN_PREFIX, KNOWN_HOST),
++    "There should be a known origin to conflict with later on"
++  );
++
++  await db.close();
++});
++
++add_task(async function database_is_valid() {
++  // Accessing the database for the first time triggers migration.
++  Assert.equal(
++    PlacesUtils.history.databaseStatus,
++    PlacesUtils.history.DATABASE_STATUS_UPGRADED
++  );
++
++  const db = await PlacesUtils.promiseDBConnection();
++  Assert.equal(await db.getSchemaVersion(), CURRENT_SCHEMA_VERSION);
++});
++
++add_task(async function moz_origins_was_rebuilt() {
++  const db = await PlacesUtils.promiseDBConnection();
++
++  Assert.deepEqual(
++    await fetchUniqueIndexColumns(db),
++    ["host", "prefix"],
++    "moz_origins should be keyed on (host, prefix) after migration"
++  );
++});
++
++add_task(async function contents_are_preserved() {
++  const db = await PlacesUtils.promiseDBConnection();
++
++  Assert.deepEqual(
++    await fetchOrigins(db),
++    gOrigins,
++    "All origins should survive the rebuild unchanged"
++  );
++  Assert.deepEqual(
++    await fetchPages(db),
++    gPages,
++    "All pages should keep pointing to their origin"
++  );
++});
++
++add_task(async function foreign_key_is_intact() {
++  const db = await PlacesUtils.promiseDBConnection();
++
++  let keys = await db.execute(
++    `SELECT "table", "from", "to" FROM pragma_foreign_key_list('moz_places')`
++  );
++  Assert.deepEqual(
++    keys.map(r => [
++      r.getResultByName("table"),
++      r.getResultByName("from"),
++      r.getResultByName("to"),
++    ]),
++    [["moz_origins", "origin_id", "id"]],
++    "moz_places should still reference the rebuilt moz_origins"
++  );
++
++  let violations = await db.execute("SELECT * FROM pragma_foreign_key_check()");
++  Assert.equal(
++    violations.length,
++    0,
++    "There should be no foreign key violations"
++  );
++});
++
++add_task(async function origins_are_still_usable() {
++  const db = await PlacesUtils.promiseDBConnection();
++  let knownId = await fetchOriginId(db, KNOWN_PREFIX, KNOWN_HOST);
++
++  await PlacesTestUtils.addVisits(`${KNOWN_PREFIX}${KNOWN_HOST}/new-page`);
++  Assert.equal(
++    await fetchOriginId(db, KNOWN_PREFIX, KNOWN_HOST),
++    knownId,
++    "Visiting a known origin should update it rather than add a new one"
++  );
++
++  await PlacesTestUtils.addVisits("https://example.com/new-page");
++  Assert.ok(
++    await fetchOriginId(db, "https://", "example.com"),
++    "Visiting an unknown origin should add it"
++  );
++});
+diff --git a/toolkit/components/places/tests/migration/test_current_from_v87.js b/toolkit/components/places/tests/migration/test_current_from_v87.js
+new file mode 100644
+index 000000000000..f8d72af30534
+--- /dev/null
++++ b/toolkit/components/places/tests/migration/test_current_from_v87.js
+@@ -0,0 +1,118 @@
++/* Any copyright is dedicated to the Public Domain.
++ * http://creativecommons.org/publicdomain/zero/1.0/ */
++
++"use strict";
++
++async function hasUserContextIdColumn(db) {
++  let rows = await db.execute(
++    "SELECT 1 FROM pragma_table_info('moz_historyvisits') WHERE name = 'userContextId'"
++  );
++  return rows.length === 1;
++}
++
++async function fetchVisitIds(db) {
++  let rows = await db.execute("SELECT id FROM moz_historyvisits ORDER BY id");
++  return rows.map(r => r.getResultByName("id"));
++}
++
++async function fetchUserContextIds(db, url) {
++  let rows = await db.execute(
++    `SELECT v.userContextId FROM moz_historyvisits v
++     JOIN moz_places h ON h.id = v.place_id
++     WHERE h.url_hash = hash(:url) AND h.url = :url
++     ORDER BY v.visit_date`,
++    { url }
++  );
++  return rows.map(r => r.getResultByName("userContextId"));
++}
++
++let gVisitIds;
++
++add_task(async function setup() {
++  let path = await setupPlacesDatabase("places_v87.sqlite");
++
++  let db = await Sqlite.openConnection({ path });
++
++  Assert.equal(
++    await db.getSchemaVersion(),
++    87,
++    "The fixture should be at schema version 87"
++  );
++  Assert.ok(
++    !(await hasUserContextIdColumn(db)),
++    "moz_historyvisits should not have userContextId before migration"
++  );
++
++  gVisitIds = await fetchVisitIds(db);
++  Assert.greater(gVisitIds.length, 0, "There should be visits to migrate");
++
++  await db.close();
++});
++
++add_task(async function database_is_valid() {
++  // Accessing the database for the first time triggers migration.
++  Assert.equal(
++    PlacesUtils.history.databaseStatus,
++    PlacesUtils.history.DATABASE_STATUS_UPGRADED
++  );
++
++  const db = await PlacesUtils.promiseDBConnection();
++  Assert.equal(await db.getSchemaVersion(), CURRENT_SCHEMA_VERSION);
++});
++
++add_task(async function userContextId_column_was_added() {
++  const db = await PlacesUtils.promiseDBConnection();
++
++  Assert.ok(
++    await hasUserContextIdColumn(db),
++    "moz_historyvisits should have userContextId after migration"
++  );
++  Assert.deepEqual(
++    await fetchVisitIds(db),
++    gVisitIds,
++    "All visits should survive the migration"
++  );
++
++  let columns = await db.execute(
++    `SELECT "notnull", dflt_value FROM pragma_table_info('moz_historyvisits')
++     WHERE name = 'userContextId'`
++  );
++  Assert.equal(
++    columns[0].getResultByName("notnull"),
++    1,
++    "userContextId should be NOT NULL"
++  );
++  Assert.equal(
++    columns[0].getResultByName("dflt_value"),
++    "0",
++    "userContextId should default to 0"
++  );
++
++  let rows = await db.execute(
++    "SELECT COUNT(*) AS count FROM moz_historyvisits WHERE userContextId <> 0"
++  );
++  Assert.equal(
++    rows[0].getResultByName("count"),
++    0,
++    "Existing visits should belong to the default container"
++  );
++});
++
++add_task(async function userContextId_is_stored() {
++  const url = "https://example.com/container-page";
++  await PlacesUtils.history.insert({
++    url,
++    visits: [
++      { date: new Date(Date.now() - 2000) },
++      { date: new Date(Date.now() - 1000), userContextId: 0 },
++      { date: new Date(), userContextId: 2 },
++    ],
++  });
++
++  const db = await PlacesUtils.promiseDBConnection();
++  Assert.deepEqual(
++    await fetchUserContextIds(db, url),
++    [0, 0, 2],
++    "The default container should be stored as 0"
++  );
++});
+diff --git a/toolkit/components/places/tests/migration/xpcshell.toml b/toolkit/components/places/tests/migration/xpcshell.toml
+index c73200bdbc08..669b3955dcf5 100644
+--- a/toolkit/components/places/tests/migration/xpcshell.toml
++++ b/toolkit/components/places/tests/migration/xpcshell.toml
+@@ -33,6 +33,8 @@ support-files = [
+   "places_v83.sqlite",
+   "places_v85.sqlite",
+   "places_v86.sqlite",
++  "places_v87.sqlite",
++  "places_v88.sqlite",
+ ]
+ 
+ ["test_current_from_downgraded.js"]
+@@ -68,3 +70,7 @@ support-files = [
+ ["test_current_from_v83.js"]
+ 
+ ["test_current_from_v85.js"]
++
++["test_current_from_v86.js"]
++
++["test_current_from_v87.js"]
+diff --git a/tools/@types/generated/lib.gecko.dom.d.ts b/tools/@types/generated/lib.gecko.dom.d.ts
+index 2971239f788e..001a8061ba1c 100644
+--- a/tools/@types/generated/lib.gecko.dom.d.ts
++++ b/tools/@types/generated/lib.gecko.dom.d.ts
+@@ -17710,6 +17710,7 @@ interface PlacesVisit extends PlacesEvent {
+     readonly transitionType: number;
+     readonly typedCount: number;
+     readonly url: string;
++    readonly userContextId: number;
+     readonly visitCount: number;
+     readonly visitId: number;
+     readonly visitTime: number;

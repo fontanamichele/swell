@@ -47,10 +47,10 @@ index 5f8c3bfb1fa9..634d83624da8 100644
    // A weak pointer cleared when the element will be destroyed.
    Document* MOZ_NON_OWNING_REF mDocument;
 diff --git a/xpcom/ds/StaticAtoms.py b/xpcom/ds/StaticAtoms.py
-index 544de3713a5f..b8cde7065d6b 100644
+index aaf37107103c..d3aece3b47ad 100644
 --- a/xpcom/ds/StaticAtoms.py
 +++ b/xpcom/ds/StaticAtoms.py
-@@ -1667,6 +1667,7 @@ STATIC_ATOMS = [
+@@ -1660,6 +1660,7 @@ STATIC_ATOMS = [
      Atom("viewTarget", "viewTarget"),
      Atom("white_space", "white-space"),
      Atom("windowsmica", "windowsmica"),

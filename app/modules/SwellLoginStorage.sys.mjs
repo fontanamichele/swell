@@ -420,7 +420,10 @@ class SwellLoginStorage {
 }
 
 export const LoginManagerStorage = {
-  create() {
-    return Promise.resolve(new SwellLoginStorage());
+  // The login manager takes the store at once and is told when it is ready.
+  create(callback) {
+    const store = new SwellLoginStorage();
+    store.initialize().then(() => callback?.());
+    return store;
   },
 };

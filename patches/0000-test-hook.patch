@@ -3,10 +3,10 @@ Test: ./mach test swell/tests/isolation/browser/browser_smoke.js --headless
 Local only; never upstreamed.
 
 diff --git a/moz.build b/moz.build
-index d839dd775647..fb96997d785a 100644
+index 1709f8b7771e..fe9596543a09 100644
 --- a/moz.build
 +++ b/moz.build
-@@ -279,6 +279,7 @@ DIRS += [
+@@ -177,6 +177,7 @@ DIRS += [
      "build",
      "config",
      "python",

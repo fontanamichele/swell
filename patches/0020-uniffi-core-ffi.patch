@@ -8,10 +8,10 @@ Companion: 0021 holds the regenerated output.
 Upstreamable: no.
 
 diff --git a/Cargo.lock b/Cargo.lock
-index 4bd60e70d077..ab740213ea22 100644
+index 7286a0abdf21..3f48226c6d7d 100644
 --- a/Cargo.lock
 +++ b/Cargo.lock
-@@ -1163,6 +1163,19 @@ dependencies = [
+@@ -1154,6 +1154,19 @@ dependencies = [
   "version_check",
  ]
  
@@ -31,7 +31,7 @@ index 4bd60e70d077..ab740213ea22 100644
  [[package]]
  name = "core-foundation"
  version = "0.9.999"
-@@ -1217,6 +1230,46 @@ dependencies = [
+@@ -1208,6 +1221,46 @@ dependencies = [
   "libc",
  ]
  
@@ -78,19 +78,19 @@ index 4bd60e70d077..ab740213ea22 100644
  [[package]]
  name = "core-text"
  version = "20.1.0"
-@@ -3138,6 +3191,7 @@ dependencies = [
-  "autofill",
+@@ -3017,6 +3070,7 @@ version = "0.1.0"
+ dependencies = [
   "breach-alerts",
   "context_id",
 + "core-ffi",
-  "db-crypto",
   "error-support",
   "filter_adult",
+  "init_rust_components",
 diff --git a/Cargo.toml b/Cargo.toml
-index 86584577e97b..a9ada5d3a818 100644
+index 665d02c00cbf..e37c9258b7fe 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
-@@ -90,6 +90,7 @@ exclude = [
+@@ -85,6 +85,7 @@ exclude = [
    # Excluded because these crates have their own Cargo workspaces so they can't
    # be included in the top-level one.
    "gfx/wr",
@@ -99,34 +99,34 @@ index 86584577e97b..a9ada5d3a818 100644
    # Excluded because they are used only as dependencies, not top-level targets,
    # so we don't need to vendor their dev-dependencies.
 diff --git a/toolkit/components/uniffi-bindgen-gecko-js/components/Cargo.toml b/toolkit/components/uniffi-bindgen-gecko-js/components/Cargo.toml
-index d3345a0950e7..133429e107a0 100644
+index b67e0eba5e3c..49dc5e5d7f26 100644
 --- a/toolkit/components/uniffi-bindgen-gecko-js/components/Cargo.toml
 +++ b/toolkit/components/uniffi-bindgen-gecko-js/components/Cargo.toml
-@@ -34,6 +34,7 @@ logins = { version = "0.1", features = ["keydb", "allow_empty_passwords", "ignor
+@@ -29,6 +29,7 @@ tracing-support = "0.1"
+ logins = { version = "0.1", features = ["keydb", "allow_empty_passwords", "ignore_form_action_origin_validation_errors", "perform_additional_origin_fixups"] }
  init_rust_components = { version = "0.1", features = ["keydb"] }
  breach-alerts = { version = "0.1" }
- db-crypto = { version = "0.1", features = ["keydb"] }
 +core-ffi = { path = "../../../../swell/core/core-ffi" }
  
- rc_crypto = { path = "../../../../third_party/application-services/components/support/rc_crypto", optional = true }
- 
+ [features]
+ # Should we depend on xpcom crates?
 diff --git a/toolkit/components/uniffi-bindgen-gecko-js/components/lib.rs b/toolkit/components/uniffi-bindgen-gecko-js/components/lib.rs
-index 958a3f873102..1a01c3b42afc 100644
+index ec02cc437645..ee8171323b49 100644
 --- a/toolkit/components/uniffi-bindgen-gecko-js/components/lib.rs
 +++ b/toolkit/components/uniffi-bindgen-gecko-js/components/lib.rs
-@@ -19,6 +19,7 @@ mod reexport_appservices_uniffi_scaffolding {
+@@ -15,6 +15,7 @@ mod reexport_appservices_uniffi_scaffolding {
+     logins::uniffi_reexport_scaffolding!();
      init_rust_components::uniffi_reexport_scaffolding!();
      breach_alerts::uniffi_reexport_scaffolding!();
-     db_crypto::uniffi_reexport_scaffolding!();
 +    core_ffi::uniffi_reexport_scaffolding!();
  }
  
  // Define extern "C" versions of these UniFFI functions, so that they can be called from C++
 diff --git a/toolkit/components/uniffi-bindgen-gecko-js/components/moz.build b/toolkit/components/uniffi-bindgen-gecko-js/components/moz.build
-index 881433937fe1..f8173dfa087f 100644
+index b57b3a49d98c..5561a0d92d58 100644
 --- a/toolkit/components/uniffi-bindgen-gecko-js/components/moz.build
 +++ b/toolkit/components/uniffi-bindgen-gecko-js/components/moz.build
-@@ -16,6 +16,7 @@ MOZ_SRC_FILES += [
+@@ -12,6 +12,7 @@ MOZ_SRC_FILES += [
      "generated/RustRemoteSettings.sys.mjs",
      "generated/RustSearch.sys.mjs",
      "generated/RustSuggest.sys.mjs",
@@ -135,10 +135,10 @@ index 881433937fe1..f8173dfa087f 100644
      "generated/RustTabs.sys.mjs",
      "generated/RustTracing.sys.mjs",
 diff --git a/toolkit/components/uniffi-bindgen-gecko-js/config.toml b/toolkit/components/uniffi-bindgen-gecko-js/config.toml
-index e4a8643b077e..1b31b73a5761 100644
+index 693b9ed9f8ff..61d341bf99c8 100644
 --- a/toolkit/components/uniffi-bindgen-gecko-js/config.toml
 +++ b/toolkit/components/uniffi-bindgen-gecko-js/config.toml
-@@ -128,6 +128,18 @@ WebExtStorageStore = "AsyncWrapped"
+@@ -83,6 +83,18 @@ WebExtStorageStore = "AsyncWrapped"
  "unregister_event_sink" = "Sync"
  "EventSink.on_event" = "FireAndForget"
  

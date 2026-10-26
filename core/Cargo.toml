@@ -19,5 +19,5 @@ core-store = { path = "core-store" }
 core-search = { path = "core-search" }
 core-history = { path = "core-history" }
 core-logins = { path = "core-logins" }
-uniffi = "0.32"
+uniffi = "0.31"
 tempfile = "3"

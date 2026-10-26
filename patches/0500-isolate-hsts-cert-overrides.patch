@@ -2,10 +2,10 @@ Purpose: HSTS state and certificate exceptions ignore the container (userContext
 Test: MOZCONFIG=swell/mozconfig ./mach test swell/tests/app/isolation/browser/browser_security.js --headless
 
 diff --git a/modules/libpref/init/StaticPrefList.yaml b/modules/libpref/init/StaticPrefList.yaml
-index 17f9237d1f05..9117d347320d 100644
+index ce7b15fbe97b..343389801368 100644
 --- a/modules/libpref/init/StaticPrefList.yaml
 +++ b/modules/libpref/init/StaticPrefList.yaml
-@@ -19325,6 +19325,20 @@
+@@ -18475,6 +18475,20 @@
    value: false
    mirror: always
  
@@ -27,18 +27,19 @@ index 17f9237d1f05..9117d347320d 100644
  - name: security.cert_pinning.enforcement_level
    type: RelaxedAtomicUint32
 diff --git a/security/manager/ssl/nsCertOverrideService.cpp b/security/manager/ssl/nsCertOverrideService.cpp
-index 30ca5460270a..a849a5a3ba6c 100644
+index 068d9702fd01..18085ad23501 100644
 --- a/security/manager/ssl/nsCertOverrideService.cpp
 +++ b/security/manager/ssl/nsCertOverrideService.cpp
-@@ -7,6 +7,7 @@
+@@ -6,6 +6,8 @@
+ 
  #include "NSSCertDBTrustDomain.h"
  #include "mozilla/Assertions.h"
- #include "mozilla/Components.h"
++#include "mozilla/Components.h"
 +#include "mozilla/StaticPrefs_security.h"
  #include "mozilla/ScopeExit.h"
  #include "mozilla/TaskQueue.h"
- #include "mozilla/TextUtils.h"
-@@ -461,7 +462,8 @@ nsCertOverrideService::HasMatchingOverride(
+ #include "mozilla/glean/SecurityManagerSslMetrics.h"
+@@ -459,7 +461,8 @@ nsCertOverrideService::HasMatchingOverride(
        GetOverrideFor(aHostName, aPort, aOriginAttributes));
    // If there is no corresponding override and the given OriginAttributes isn't
    // the default, try to look up an override using the default OriginAttributes.
@@ -48,7 +49,7 @@ index 30ca5460270a..a849a5a3ba6c 100644
      settings = GetOverrideFor(aHostName, aPort, OriginAttributes());
    }
    if (!settings) {
-@@ -746,8 +748,11 @@ void nsCertOverrideService::GetKeyString(
+@@ -751,8 +754,11 @@ void nsCertOverrideService::GetKeyString(
    GetHostWithPort(aHostName, aPort, keyString);
    keyString.Append(':');
    OriginAttributes strippedAttributes(aOriginAttributes);

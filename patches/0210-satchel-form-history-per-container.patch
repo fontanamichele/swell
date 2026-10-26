@@ -2,7 +2,7 @@ Purpose: Form history ignores the container (userContextId): a value typed in on
 Test: MOZCONFIG=swell/mozconfig ./mach test toolkit/components/satchel/test/unit; ./mach test swell/tests/app/isolation/browser/browser_form_history.js --headless
 
 diff --git a/toolkit/components/satchel/FormHistory.sys.mjs b/toolkit/components/satchel/FormHistory.sys.mjs
-index 1a3b37be571e..62d357602dd9 100644
+index a55bcb0e7ca6..cc8380fde349 100644
 --- a/toolkit/components/satchel/FormHistory.sys.mjs
 +++ b/toolkit/components/satchel/FormHistory.sys.mjs
 @@ -91,7 +91,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
@@ -202,7 +202,7 @@ index 1a3b37be571e..62d357602dd9 100644
        });
        if (results.length > 1) {
          const error =
-@@ -1201,6 +1260,7 @@ export let FormHistory = {
+@@ -1199,6 +1258,7 @@ export let FormHistory = {
     * @param {object} params zero or more filter properties:
     *   - fieldname
     *   - source
@@ -210,7 +210,7 @@ index 1a3b37be571e..62d357602dd9 100644
     * @param {Function} [isCancelled] optional function that can return true
     *   to cancel result retrieval
     * @returns {Promise<FormHistoryResultType[]>}
-@@ -1266,6 +1326,10 @@ export let FormHistory = {
+@@ -1264,6 +1324,10 @@ export let FormHistory = {
  
      params.now = Date.now() * 1000; // convert from ms to microseconds
  
@@ -222,11 +222,11 @@ index 1a3b37be571e..62d357602dd9 100644
        where += `AND EXISTS(
          SELECT 1 FROM moz_history_to_sources
 diff --git a/toolkit/components/satchel/FormHistoryParent.sys.mjs b/toolkit/components/satchel/FormHistoryParent.sys.mjs
-index b3d67d689bcc..b021081ee5c0 100644
+index 54abed8a57be..499ff17e51a7 100644
 --- a/toolkit/components/satchel/FormHistoryParent.sys.mjs
 +++ b/toolkit/components/satchel/FormHistoryParent.sys.mjs
-@@ -29,6 +29,15 @@ ChromeUtils.defineLazyGetter(lazy, "SmartFormFillAutocomplete", () => {
-   return undefined;
+@@ -12,6 +12,15 @@ ChromeUtils.defineESModuleGetters(lazy, {
+   LoginHelper: "resource://gre/modules/LoginHelper.sys.mjs",
  });
  
 +// Keep entries apart per container (userContextId) instead of sharing them
@@ -241,7 +241,7 @@ index b3d67d689bcc..b021081ee5c0 100644
  XPCOMUtils.defineLazyPreferenceGetter(
    lazy,
    "PREFERENCE_PREFIX_WEIGHT",
-@@ -42,6 +51,14 @@ XPCOMUtils.defineLazyPreferenceGetter(
+@@ -25,6 +34,14 @@ XPCOMUtils.defineLazyPreferenceGetter(
  );
  
  export class FormHistoryParent extends JSWindowActorParent {
@@ -256,7 +256,7 @@ index b3d67d689bcc..b021081ee5c0 100644
    receiveMessage({ name, data }) {
      switch (name) {
        case "FormHistory:FormSubmitEntries":
-@@ -72,6 +89,7 @@ export class FormHistoryParent extends JSWindowActorParent {
+@@ -55,6 +72,7 @@ export class FormHistoryParent extends JSWindowActorParent {
          op: "bump",
          fieldname: entry.name,
          value: entry.value,
@@ -264,7 +264,7 @@ index b3d67d689bcc..b021081ee5c0 100644
        }));
  
      if (changes.length) {
-@@ -113,9 +131,10 @@ export class FormHistoryParent extends JSWindowActorParent {
+@@ -91,9 +109,10 @@ export class FormHistoryParent extends JSWindowActorParent {
          )
        );
      } else {
@@ -276,7 +276,7 @@ index b3d67d689bcc..b021081ee5c0 100644
        );
      }
  
-@@ -160,6 +179,7 @@ export class FormHistoryParent extends JSWindowActorParent {
+@@ -125,6 +144,7 @@ export class FormHistoryParent extends JSWindowActorParent {
        fieldname: inputName,
        value,
        guid,
