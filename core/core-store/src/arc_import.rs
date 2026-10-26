@@ -187,7 +187,9 @@ fn format_error<T>(what: &str) -> Result<T, ImportError> {
 fn pairs(value: &Value) -> Vec<(&Value, &Value)> {
     match value.as_array() {
         Some(list) => list
-            .chunks_exact(2)
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|pair| (&pair[0], &pair[1]))
             .collect(),
         None => Vec::new(),
@@ -385,7 +387,7 @@ fn parse(doc: &Value) -> Result<Parsed, ImportError> {
             pinned: Vec::new(),
             today: Vec::new(),
         };
-        for pair in containers.chunks_exact(2) {
+        for pair in containers.as_chunks::<2>().0 {
             let kind = match &pair[0] {
                 Value::Object(map) => map.keys().next().map(String::as_str),
                 Value::String(name) => Some(name.as_str()),
