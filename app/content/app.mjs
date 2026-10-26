@@ -8,6 +8,7 @@ import { ContextMenu } from "chrome://swell/content/menu.mjs";
 import { Toasts } from "chrome://swell/content/toasts.mjs";
 import { PermissionBar } from "chrome://swell/content/permissions.mjs";
 import { AboutDialog } from "chrome://swell/content/about.mjs";
+import { UpdateNotifier } from "chrome://swell/content/update-notifier.mjs";
 import { DownloadsPanel } from "chrome://swell/content/downloads.mjs";
 import { AutofillUI } from "chrome://swell/content/autofill.mjs";
 import { PasswordsUI } from "chrome://swell/content/passwords.mjs";
@@ -61,6 +62,7 @@ export class App {
     this.commandBar = new CommandBar(this);
     this.permissions = new PermissionBar(this);
     this.downloads = new DownloadsPanel(this);
+    this.updates = new UpdateNotifier(this);
     this.about = new AboutDialog(this);
     this.autofill = new AutofillUI(this);
     this.passwords = new PasswordsUI(this);
@@ -129,6 +131,7 @@ export class App {
     this.#windowChanged();
     this.render();
     this.downloads.init();
+    this.updates.start();
   }
 
   // Opens an address in a new tab of the active space.

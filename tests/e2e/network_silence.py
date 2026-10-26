@@ -10,7 +10,9 @@ Run from the firefox/ directory:
 Fails if anything but localhost was contacted by the browser itself. No web page
 is loaded, so every request in the log comes from the application: telemetry,
 connectivity checks, update and settings services, and so on. --report prints
-the hosts and the log lines that name them without failing.
+the hosts and the log lines that name them without failing. The automatic update
+check (api.github.com, about 30 s after start) is allowed, and must happen, in a
+run of at least 40 s; --no-autocheck turns it off and then allows no GitHub at all.
 """
 
 import argparse
@@ -35,6 +37,8 @@ ALLOWED = {
     "firefox-settings-attachments.cdn.mozilla.net",
     "content-signature-2.cdn.mozilla.net",
 }
+UPDATE_CHECK = "api.github.com"
+UPDATE_CHECK_WAIT = 40
 LOCAL = {"localhost", "127.0.0.1", "[::1]", "::1", "0.0.0.0"}
 
 HOST = re.compile(r"(?:https?|wss?)://([A-Za-z0-9._\-\[\]:]+?)(?::\d+)?(?:/|\s|$|\")")
@@ -92,6 +96,11 @@ def main():
     parser.add_argument("--seconds", type=int, default=90)
     parser.add_argument("--report", action="store_true")
     parser.add_argument(
+        "--no-autocheck",
+        action="store_true",
+        help="run with swell.update.autocheck off: no request to GitHub is allowed",
+    )
+    parser.add_argument(
         "--control",
         action="store_true",
         help="make one request from chrome to prove the capture sees requests",
@@ -99,6 +108,10 @@ def main():
     args = parser.parse_args()
     profile = tempfile.mkdtemp(prefix="swell-net-")
     logs = tempfile.mkdtemp(prefix="swell-netlog-")
+    if args.no_autocheck:
+        with open(os.path.join(profile, "user.js"), "w") as f:
+            f.write('user_pref("swell.update.autocheck", false);\n')
+    allowed = ALLOWED if args.no_autocheck else ALLOWED | {UPDATE_CHECK}
     try:
         proc, client = launch(profile, os.path.join(logs, "http.log"))
         client.execute_async_script(
@@ -126,19 +139,23 @@ def main():
     external = {
         h: line
         for h, line in found.items()
-        if h.lower() not in LOCAL and h.lower() not in ALLOWED
+        if h.lower() not in LOCAL and h.lower() not in allowed
     }
     print(f"hosts seen: {sorted(found)}")
     if args.report:
         for host, line in sorted(external.items()):
             print(f"  {host}\n    {line[:200]}")
         return 0
+    if not args.no_autocheck and args.seconds >= UPDATE_CHECK_WAIT:
+        if UPDATE_CHECK not in found:
+            print(f"FAIL: the automatic update check never contacted {UPDATE_CHECK}")
+            return 1
     if external:
         print("FAIL: Swell contacted hosts it should not have:")
         for host, line in sorted(external.items()):
             print(f"  {host}\n    {line[:200]}")
         return 1
-    print(f"OK: nothing but localhost and {sorted(ALLOWED)} in {args.seconds}s idle")
+    print(f"OK: nothing but localhost and {sorted(allowed)} in {args.seconds}s idle")
     return 0
 
 

@@ -963,6 +963,49 @@ kbd {
   background: var(--row-hover);
 }
 
+#update-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xsmall);
+  margin-top: var(--space-small);
+}
+
+#update-row[hidden] {
+  display: none;
+}
+
+#update-badge {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--size-item-large);
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  text-align: left;
+  padding: 0 10px;
+  color: var(--accent);
+}
+
+#update-badge:hover {
+  background: var(--row-hover);
+}
+
+#update-badge::before {
+  content: "";
+  display: block;
+  width: 16px;
+  height: 16px;
+  background-color: currentColor;
+  mask: url("chrome://swell/content/icons/arrow-up.svg") center / contain no-repeat;
+}
+
+#update-dismiss {
+  --icon: url("chrome://swell/content/icons/xmark.svg");
+  color: var(--muted);
+}
+
 #footer-row {
   display: flex;
   align-items: flex-start;
@@ -1335,6 +1378,13 @@ dialog .buttons {
 .about-links {
   display: flex;
   gap: var(--space-medium);
+}
+
+.about-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-small);
+  margin-top: var(--space-small);
 }
 
 .about-status {

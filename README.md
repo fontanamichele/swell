@@ -18,7 +18,8 @@ of the same site side by side, and deleting a space deletes everything it kept.
   keychain. WebExtensions per space. Camera, microphone and screen sharing per space.
 - Downloads per space, find in page, print, spell check (English), zoom per site and space,
   developer tools, import from Arc (`StorableSidebar.json`).
-- No telemetry, no crash reporter, no automatic updater. See [PRIVACY.md](PRIVACY.md).
+- No telemetry, no crash reporter, and no update is ever installed for you; a daily check for a
+  newer release on GitHub can be turned off. See [PRIVACY.md](PRIVACY.md).
 
 Not built yet: sync, Linux and Windows builds, history view, Save Page As, translations
 (the interface is English), notarized builds.

@@ -58,6 +58,18 @@
           <div id="downloads-list"></div>
         </section>
         <footer id="sidebar-footer">
+          <div id="update-row" hidden="">
+            <button id="update-badge" type="button">
+              <span id="update-label"></span>
+            </button>
+            <button
+              id="update-dismiss"
+              type="button"
+              class="nav-button"
+              title="Hide until the next release"
+              aria-label="Hide until the next release"
+            ></button>
+          </div>
           <div id="footer-row">
             <button
               id="downloads-button"
@@ -308,6 +320,10 @@
           >Notices</a
         >
       </p>
+      <label class="about-option">
+        <input type="checkbox" id="about-autocheck" />
+        Check for updates automatically
+      </label>
       <p id="about-update-status" class="about-status" aria-live="polite"></p>
       <div class="buttons">
         <button type="button" id="about-download" hidden="">Download</button>

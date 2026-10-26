@@ -27,6 +27,7 @@ prefs = [
   "media.navigator.permission.disabled=false",
   "media.navigator.permission.fake=true",
   "media.getusermedia.screensharing.enabled=true",
+  "swell.update.autocheck=false",
 ]
 
 ["browser_about.js"]
@@ -96,6 +97,8 @@ prefs = [
 ["browser_two_spaces.js"]
 
 ["browser_undo.js"]
+
+["browser_update_notifier.js"]
 
 ["browser_user_agent.js"]
 

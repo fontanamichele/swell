@@ -6,8 +6,7 @@ const { AppConstants } = ChromeUtils.importESModule(
   "resource://gre/modules/AppConstants.sys.mjs"
 );
 
-const REPOSITORY_PREF = "swell.update.repository";
-const CHANNEL_PREF = "swell.update.channel";
+const AUTOCHECK_PREF = "swell.update.autocheck";
 
 /**
  * Compares two versions of the form `v1.2.3` or `1.2.3` (a pre-release suffix is
@@ -99,6 +98,7 @@ export class AboutDialog {
   #status;
   #check;
   #download;
+  #autocheck;
   #update = null;
 
   constructor(app) {
@@ -108,6 +108,13 @@ export class AboutDialog {
     this.#status = doc.getElementById("about-update-status");
     this.#check = doc.getElementById("about-check");
     this.#download = doc.getElementById("about-download");
+    this.#autocheck = doc.getElementById("about-autocheck");
+    this.#autocheck.addEventListener("change", () => {
+      Services.prefs.setBoolPref(AUTOCHECK_PREF, this.#autocheck.checked);
+      if (this.#autocheck.checked) {
+        this.#app.updates.start();
+      }
+    });
     this.#check.addEventListener("click", () => this.#checkNow());
     this.#download.addEventListener("click", () => {
       if (this.#update) {
@@ -137,6 +144,7 @@ export class AboutDialog {
     doc.getElementById("about-version").textContent = `Version ${this.version}`;
     doc.getElementById("about-build").textContent =
       `Build ${buildDate(info.appBuildID)} · Gecko ${info.platformVersion} · ${AppConstants.platform} ${Services.sysinfo.getProperty("arch")}`;
+    this.#autocheck.checked = Services.prefs.getBoolPref(AUTOCHECK_PREF, false);
     this.#reset();
     if (!this.#dialog.open) {
       this.#dialog.showModal();
@@ -155,12 +163,7 @@ export class AboutDialog {
     this.#download.hidden = true;
     this.#status.textContent = "Checking…";
     try {
-      const result = await checkForUpdate({
-        current: this.version,
-        repository: Services.prefs.getStringPref(REPOSITORY_PREF, ""),
-        prereleases:
-          Services.prefs.getStringPref(CHANNEL_PREF, "alpha") != "stable",
-      });
+      const result = await this.#app.updates.check({ manual: true });
       if (result.available) {
         this.#update = result;
         this.#status.textContent = `Swell ${result.version} is available.`;

@@ -69,9 +69,9 @@ pref("browser.download.useDownloadDir", true);
 pref("browser.download.folderList", 1);
 
 // Nothing here talks to Mozilla or Google on its own. An idle first run makes
-// no request (tests/e2e/network_silence.py); these keep it so if a service
-// that is currently not started ever gets started. Remote Settings stays:
-// read-only blocklist and revocation downloads.
+// no request other than the update check below (tests/e2e/network_silence.py);
+// these keep it so if a service that is currently not started ever gets
+// started. Remote Settings stays: read-only blocklist and revocation downloads.
 pref("network.connectivity-service.enabled", false);
 pref("network.captive-portal-service.enabled", false);
 pref("captivedetect.canonicalURL", "");
@@ -110,6 +110,10 @@ pref("devtools.toolbox.host", "window");
 pref("devtools.toolbox.previousHost", "window");
 
 // The project on GitHub whose releases "Check for updates" reads, and whether the
-// pre-releases (the alpha) count. Nothing is sent unless the user presses the button.
+// pre-releases (the alpha) count. With autocheck, Swell asks GitHub for the releases
+// about half a minute after it starts, at most once a day, and shows a badge above
+// the spaces when a newer one exists. Off, nothing is sent unless the user presses
+// the button in About.
 pref("swell.update.repository", "ivantacca/swell");
 pref("swell.update.channel", "alpha");
+pref("swell.update.autocheck", true);
