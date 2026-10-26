@@ -58,8 +58,8 @@ export function pickAsset(assets, platform, arch) {
   const pattern = new RegExp(
     `^Swell-.+-([^-]+)\\.${extension.replace(".", "\\.")}$`
   );
-  const asset = (assets ?? []).find(({ name }) => {
-    const match = pattern.exec(name);
+  const asset = (assets ?? []).find(({ name: assetName }) => {
+    const match = pattern.exec(assetName);
     return match && normalizeArch(match[1]) == wanted;
   });
   return asset?.browser_download_url ?? null;
