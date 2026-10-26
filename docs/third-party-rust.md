@@ -6,17 +6,16 @@ licence shown; where it offers a choice (`OR`), Swell uses it under either.
 | Crate | Version | Licence | Source |
 | --- | --- | --- | --- |
 | anyhow | 1.0.104 | MIT OR Apache-2.0 | https://github.com/dtolnay/anyhow |
-| askama | 0.16.1 | MIT OR Apache-2.0 | https://github.com/askama-rs/askama |
-| askama_derive | 0.16.1 | MIT OR Apache-2.0 | https://github.com/askama-rs/askama |
-| askama_macros | 0.16.1 | MIT OR Apache-2.0 | https://github.com/askama-rs/askama |
-| askama_parser | 0.16.1 | MIT OR Apache-2.0 | https://github.com/askama-rs/askama |
+| askama | 0.14.0 | MIT OR Apache-2.0 | https://github.com/askama-rs/askama |
+| askama_derive | 0.14.0 | MIT OR Apache-2.0 | https://github.com/askama-rs/askama |
+| askama_parser | 0.14.0 | MIT OR Apache-2.0 | https://github.com/askama-rs/askama |
 | autocfg | 1.5.1 | Apache-2.0 OR MIT | https://github.com/cuviper/autocfg |
 | basic-toml | 0.1.10 | MIT OR Apache-2.0 | https://github.com/dtolnay/basic-toml |
 | bitflags | 2.13.2 | MIT OR Apache-2.0 | https://github.com/bitflags/bitflags |
 | bytes | 1.12.1 | MIT | https://github.com/tokio-rs/bytes |
 | camino | 1.2.6 | MIT OR Apache-2.0 | https://github.com/camino-rs/camino |
-| cargo-platform | 0.3.3 | MIT OR Apache-2.0 | https://github.com/rust-lang/cargo |
-| cargo_metadata | 0.23.1 | MIT | https://github.com/oli-obk/cargo_metadata |
+| cargo-platform | 0.1.9 | MIT OR Apache-2.0 | https://github.com/rust-lang/cargo |
+| cargo_metadata | 0.19.2 | MIT | https://github.com/oli-obk/cargo_metadata |
 | cc | 1.10.0 | MIT OR Apache-2.0 | https://github.com/rust-lang/cc-rs |
 | cfg-if | 1.0.5 | MIT OR Apache-2.0 | https://github.com/rust-lang/cfg-if |
 | equivalent | 1.0.3 | Apache-2.0 OR MIT | https://github.com/indexmap-rs/equivalent |
@@ -26,7 +25,7 @@ licence shown; where it offers a choice (`OR`), Swell uses it under either.
 | fastrand | 2.5.0 | Apache-2.0 OR MIT | https://github.com/smol-rs/fastrand |
 | find-msvc-tools | 0.1.15 | MIT OR Apache-2.0 | https://github.com/rust-lang/cc-rs |
 | foldhash | 0.1.5 | Zlib | https://github.com/orlp/foldhash |
-| fs-err | 3.3.2 | MIT OR Apache-2.0 | https://github.com/andrewhickman/fs-err |
+| fs-err | 2.11.0 | MIT/Apache-2.0 | https://github.com/andrewhickman/fs-err |
 | getrandom | 0.3.4 | MIT OR Apache-2.0 | https://github.com/rust-random/getrandom |
 | glob | 0.3.4 | MIT OR Apache-2.0 | https://github.com/rust-lang/glob |
 | goblin | 0.8.2 | MIT | https://github.com/m4b/goblin |
@@ -72,25 +71,26 @@ licence shown; where it offers a choice (`OR`), Swell uses it under either.
 | textwrap | 0.16.4 | MIT | https://github.com/mgeisler/textwrap |
 | thiserror | 2.0.21 | MIT OR Apache-2.0 | https://github.com/dtolnay/thiserror |
 | thiserror-impl | 2.0.21 | MIT OR Apache-2.0 | https://github.com/dtolnay/thiserror |
-| toml | 1.1.8+spec-1.1.0 | MIT OR Apache-2.0 | https://github.com/toml-rs/toml |
-| toml_datetime | 1.1.2+spec-1.1.0 | MIT OR Apache-2.0 | https://github.com/toml-rs/toml |
+| toml | 0.9.12+spec-1.1.0 | MIT OR Apache-2.0 | https://github.com/toml-rs/toml |
+| toml_datetime | 0.7.5+spec-1.1.0 | MIT OR Apache-2.0 | https://github.com/toml-rs/toml |
 | toml_parser | 1.1.5+spec-1.1.0 | MIT OR Apache-2.0 | https://github.com/toml-rs/toml |
 | toml_writer | 1.1.3+spec-1.1.0 | MIT OR Apache-2.0 | https://github.com/toml-rs/toml |
 | unicode-ident | 1.0.27 | (MIT OR Apache-2.0) AND Unicode-3.0 | https://github.com/dtolnay/unicode-ident |
 | unicode-width | 0.2.2 | MIT OR Apache-2.0 | https://github.com/unicode-rs/unicode-width |
-| uniffi | 0.32.2 | MPL-2.0 | https://github.com/mozilla/uniffi-rs |
-| uniffi_bindgen | 0.32.2 | MPL-2.0 | https://github.com/mozilla/uniffi-rs |
-| uniffi_core | 0.32.2 | MPL-2.0 | https://github.com/mozilla/uniffi-rs |
-| uniffi_internal_macros | 0.32.2 | MPL-2.0 | https://github.com/mozilla/uniffi-rs |
-| uniffi_macros | 0.32.2 | MPL-2.0 | https://github.com/mozilla/uniffi-rs |
-| uniffi_meta | 0.32.2 | MPL-2.0 | https://github.com/mozilla/uniffi-rs |
-| uniffi_pipeline | 0.32.2 | MPL-2.0 | https://github.com/mozilla/uniffi-rs |
-| uniffi_udl | 0.32.2 | MPL-2.0 | https://github.com/mozilla/uniffi-rs |
+| uniffi | 0.31.2 | MPL-2.0 | https://github.com/mozilla/uniffi-rs |
+| uniffi_bindgen | 0.31.2 | MPL-2.0 | https://github.com/mozilla/uniffi-rs |
+| uniffi_core | 0.31.2 | MPL-2.0 | https://github.com/mozilla/uniffi-rs |
+| uniffi_internal_macros | 0.31.2 | MPL-2.0 | https://github.com/mozilla/uniffi-rs |
+| uniffi_macros | 0.31.2 | MPL-2.0 | https://github.com/mozilla/uniffi-rs |
+| uniffi_meta | 0.31.2 | MPL-2.0 | https://github.com/mozilla/uniffi-rs |
+| uniffi_pipeline | 0.31.2 | MPL-2.0 | https://github.com/mozilla/uniffi-rs |
+| uniffi_udl | 0.31.2 | MPL-2.0 | https://github.com/mozilla/uniffi-rs |
 | vcpkg | 0.2.15 | MIT/Apache-2.0 | https://github.com/mcgoo/vcpkg-rs |
 | wasip2 | 1.0.4+wasi-0.2.12 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | https://github.com/bytecodealliance/wasi-rs |
 | weedle2 | 5.0.0 | MIT | https://github.com/mozilla/uniffi-rs |
 | windows-link | 0.2.1 | MIT OR Apache-2.0 | https://github.com/microsoft/windows-rs |
 | windows-sys | 0.61.2 | MIT OR Apache-2.0 | https://github.com/microsoft/windows-rs |
+| winnow | 0.7.15 | MIT | https://github.com/winnow-rs/winnow |
 | winnow | 1.0.4 | MIT | https://github.com/winnow-rs/winnow |
 | wit-bindgen | 0.57.1 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | https://github.com/bytecodealliance/wit-bindgen |
 | zmij | 1.0.23 | MIT | https://github.com/dtolnay/zmij |

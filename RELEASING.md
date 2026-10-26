@@ -19,6 +19,17 @@ signed build set `SWELL_SIGN_IDENTITY` ("Developer ID Application: ...") and
 Check the build before publishing: copy the app to Applications, open it (right-click, Open),
 and run through the manual checks in `docs/` (camera, downloads, print, restart).
 
+## First publication
+
+Settings that live on GitHub, not in the repository, and that the docs rely on:
+
+1. Create the repository as `ivantacca/swell` (the name is used in the README, `site/`, the
+   About dialog and `swell.update.repository`).
+2. Settings > Code security: turn on **Private vulnerability reporting** (`SECURITY.md`).
+3. Settings > Pages > Source: **GitHub Actions** (`.github/workflows/pages.yml`).
+4. Push `main`, check that the `ci` workflow is green (the `lint` job has not run on GitHub
+   before and may need a setup fix), then publish the first pre-release as described below.
+
 ## Publishing
 
 1. Make sure the working tree is committed; the version is `app/config/version.txt`.

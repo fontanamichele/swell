@@ -30,7 +30,7 @@ Every patch starts with a header (text before the first `diff`/`---` line is ign
 | `0021-uniffi-core-ffi-generated.patch` | output of `./mach uniffi generate` after 0020 (22,000 lines, mechanical; never edit by hand, regenerate on every rebase and on every change to `core-ffi`) | M1 |
 | `0030-cocoa-shellservice-include.patch` | `widget/cocoa/nsMenuBarX.mm` includes `nsIShellService.h` only for the browser app | M1, upstreamable |
 | `0031-settings-dumps-swell-app.patch` | Remote Settings dump generator accepts `swell/app` and installs into its app dir | M1 |
-| `0100-p4-prototype.patch` | a per-space add-on copy carries its container in its id (`name--s<N>@domain`); native hosts see the original id | prototype |
+| `0100-p4-prototype.patch` | a per-space add-on copy carries its container in its id (`name--s<N>@domain`); native hosts see the original id | prototype, in use until the final version replaces it |
 | `0200-places-visited-per-container.patch` | `:visited` and visit notifications per container, behind `places.history.isolate_by_user_context` | M2, partly upstreamable |
 | `0210-satchel-form-history-per-container.patch` | form history keeps a container per entry, behind `browser.formfill.isolate_by_user_context` | M2, upstreamable |
 | `0211-formautofill-per-container.patch` | address and card storage per container (own file), pluggable save prompt, behind `extensions.formautofill.isolate_by_user_context` | M2, upstreamable |
