@@ -1,7 +1,7 @@
 # M0 findings: isolation spike
 
 2026-10-24 · base: Firefox `main` 161.0a1 at `f536a878f58f` (pinned in `FIREFOX_REV`; not an ESR), macOS arm64, artifact build.
-Raw data: `spikes/m0/audit-results.md`, `spikes/m0/ext-observations.md`, `spikes/m0/measure/results/*.json`.
+The raw data of the M0 spike (audit results, extension observations, measurements) is not part of this repository; the numbers below are its summary.
 Tests: `tests/isolation/browser/`. Patches: `patches/0000-test-hook.patch` (local), `patches/0100-p4-prototype.patch`.
 
 ## Recommendation
@@ -63,7 +63,7 @@ warns about references to the original ID, managed storage and native messaging.
 Unsigned copies install here because this build has `MOZ_REQUIRE_SIGNING: false`; the pref `xpinstall.signatures.required=false` is honoured.
 (A release or ESR build of Swell must set that flag off or sign copies itself.)
 
-Add-ons tested (pinned, hashes in `spikes/m0/addons/README.md`): Dark Reader 4.9.133, uBlock Origin 1.75.0, 1Password 8.12.41.1, and
+Add-ons tested (pinned versions): Dark Reader 4.9.133, uBlock Origin 1.75.0, 1Password 8.12.41.1, and
 the own fixture (`tests/isolation/browser/browser_isolation_extensions.js`).
 
 Observation matrix, fixture add-on, two copies (a for container 1, b for container 2). "leaks" means the copy saw or ran in another space.
