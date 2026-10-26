@@ -145,7 +145,7 @@ button {
     appearance: auto;
     -moz-default-appearance: -moz-window-button-box;
     flex: none;
-    margin-inline: 12px 8px;
+    margin-inline: 0 8px;
   }
 
   /* The window buttons belong to the sidebar: macOS hides them when the box
@@ -155,7 +155,7 @@ button {
   }
 
   :root[sidebar-collapsed][sidebar-peek] #window-buttons-box {
-    margin-inline-start: calc(12px + var(--peek-gap));
+    margin-inline-start: var(--peek-gap);
   }
 
   #window-controls {

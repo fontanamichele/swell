@@ -265,6 +265,14 @@ add_task(async function test_macos_reserves_room_for_the_window_buttons() {
     rect("sidebar-toggle").left + 1,
     "before the sidebar button"
   );
+  Assert.less(
+    Math.abs(
+      box.left -
+        document.querySelector(".nav-pill").getBoundingClientRect().left
+    ),
+    1.5,
+    "the window buttons start at the left margin of the address pill"
+  );
 });
 
 add_task(async function test_the_window_is_dragged_by_its_margins() {
