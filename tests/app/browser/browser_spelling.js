@@ -21,22 +21,27 @@ add_task(
     });
 
     let suggestions;
-    await rendered(async () => {
-      await BrowserTestUtils.synthesizeMouse(
-        "#field",
-        16,
-        14,
-        { type: "contextmenu", button: 2 },
-        tab.browser
-      );
-      await rendered(() => !menu().hidden, "the menu opens");
-      suggestions = labels();
-      if (suggestions.includes("the")) {
-        return true;
-      }
-      menu().hidden = true;
-      return false;
-    }, "the word gets suggestions");
+    await rendered(
+      async () => {
+        await BrowserTestUtils.synthesizeMouse(
+          "#field",
+          16,
+          14,
+          { type: "contextmenu", button: 2 },
+          tab.browser
+        );
+        await rendered(() => !menu().hidden, "the menu opens", 100, 100);
+        suggestions = labels();
+        if (suggestions.includes("the")) {
+          return true;
+        }
+        menu().hidden = true;
+        return false;
+      },
+      "the word gets suggestions",
+      100,
+      300
+    );
 
     [...menu().querySelectorAll("button")]
       .find(b => b.textContent == "the")

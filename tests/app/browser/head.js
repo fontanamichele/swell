@@ -91,8 +91,10 @@ function rowFor(id) {
   return document.querySelector(`.row[data-id="${CSS.escape(id)}"]`);
 }
 
-async function rendered(condition, message) {
-  return TestUtils.waitForCondition(condition, message);
+// `maxTries` of `interval` ms; the default is 5 s, which a loaded machine (right after a
+// build, for one) can exceed for things that start processes or read a keychain.
+async function rendered(condition, message, interval = 100, maxTries = 50) {
+  return TestUtils.waitForCondition(condition, message, interval, maxTries);
 }
 // /* This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this

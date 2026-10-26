@@ -139,7 +139,9 @@ add_task(async function test_the_passwords_dialog_manages_the_spaces_logins() {
   });
   await TestUtils.waitForCondition(
     () => summaries().length == 1,
-    "the login is listed"
+    "the login is listed",
+    100,
+    300
   );
   Assert.ok(summaries()[0].includes("dialog.test"));
   Assert.ok(summaries()[0].includes("dialog-user"));
