@@ -49,15 +49,6 @@ if (Services.appinfo.OS != "Darwin") {
 // popup blocking, media controls); nothing else in this application does.
 ChromeUtils.importESModule("resource://gre/modules/ActorManagerParent.sys.mjs");
 
-// The only dictionary in the tree. Firefox registers its dictionaries from a list of
-// built-in add-ons that Swell does not have.
-Cc["@mozilla.org/spellchecker/engine;1"]
-  .getService(Ci.mozISpellCheckingEngine)
-  .addDictionary(
-    "en-US",
-    Services.io.newURI("resource://gre/dictionaries/en-US.aff")
-  );
-
 // Firefox keeps finished downloads only in Places history, which the downloads
 // list does not read. Keep them all in the download store (downloads.json), where
 // each remembers its container.
