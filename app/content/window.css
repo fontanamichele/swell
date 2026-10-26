@@ -216,6 +216,10 @@ button {
   margin-inline-start: auto;
   align-items: stretch;
   -moz-window-dragging: no-drag;
+
+  &[hidden] {
+    display: none;
+  }
 }
 
 @media (-moz-platform: linux) and (-moz-gtk-csd-reversed-placement) {

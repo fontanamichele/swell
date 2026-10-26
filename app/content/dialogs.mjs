@@ -196,12 +196,16 @@ export class Dialogs {
         return bridge.selectedTab?.browser;
       },
       setTabLabelForAuthPrompts() {},
-      // The test harness keeps a tabbrowser's tabs tidy when this exists.
+      // The test harness keeps a tabbrowser's tabs tidy when this exists, and
+      // asks it to insert the browser of a tab it waits for (all are inserted).
+      _insertBrowser() {},
       tabs: [],
       addTab() {},
       removeTab() {},
       stop() {},
     };
+    // The test harness cleans up a window with a gBrowser through this service.
+    win.NewTabPagePreloading = { removePreloadedBrowser() {} };
     bridge.on("selected", () => this.#showSelected());
     bridge.on("tabclosed", ({ liveTab }) => {
       for (const stack of this.#pages.querySelectorAll(".dialogStack")) {
