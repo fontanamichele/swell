@@ -69,7 +69,7 @@ if [ "$resolved" != "$have" ] && ! { [ -n "$resolved" ] && git -C "$root" merge-
   fi
 fi
 
-# Conventional commit messages and the version bump (tools/hooks/commit-msg).
+# Conventional commit messages (tools/hooks/commit-msg).
 git -C "$swell" config core.hooksPath tools/hooks
 
 if [ "$patches" -eq 1 ]; then

@@ -1,6 +1,5 @@
 #!/bin/sh
-# Enforces conventional commits. (The version bump is tools/hooks/post-commit: the commit's
-# contents are fixed before this hook runs, so the bump has to follow it.)
+# Enforces conventional commits.
 #
 #   type(scope)!: summary     types: feat fix perf refactor test docs build chore style ci patch
 #

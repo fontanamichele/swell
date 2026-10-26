@@ -32,8 +32,8 @@ Never commit to Mozilla's tree directly.
 Conventional commits: `type(scope): summary`, with `!` before the colon for a breaking
 change. Types: `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `build`, `chore`, `style`,
 `ci`, `patch`. Scopes: `core`, `app`, `tests`, `tools`, `docs`, `firefox`. A hook
-(`tools/hooks/commit-msg`, enabled by `tools/setup.sh`) checks the format, and another bumps
-the version on each commit.
+(`tools/hooks/commit-msg`, enabled by `tools/setup.sh`) checks the format. The version is
+not touched by ordinary commits: `tools/release.sh` bumps it when a release is cut.
 
 ## Licence of contributions
 
