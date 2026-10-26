@@ -148,9 +148,7 @@ add_task(
       `${BASE}file_beforeunload.html`
     );
     // A page only gets to ask after the user has used it.
-    await SpecialPowers.spawn(tab.browser, [], () => {
-      content.document.notifyUserGestureActivation();
-    });
+    await BrowserTestUtils.synthesizeMouseAtCenter("#field", {}, tab.browser);
     await rendered(() => tab.browser.hasBeforeUnload, "the page registered it");
 
     const closing = bridge.closeTab(tab.liveTab);

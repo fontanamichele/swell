@@ -27,8 +27,14 @@ from marionette_driver.marionette import Marionette
 APP = "obj-swell/dist/Swell.app/Contents/MacOS/swell"
 
 # Remote Settings is allowed on purpose (a decision of the M2 milestone): read-only
-# downloads of the add-on blocklist and certificate revocation data.
-ALLOWED = {"firefox.settings.services.mozilla.com"}
+# downloads of the add-on blocklist and certificate revocation data, from the
+# service itself, its attachment CDN and the CDN of the signature chains that
+# verify what it sends.
+ALLOWED = {
+    "firefox.settings.services.mozilla.com",
+    "firefox-settings-attachments.cdn.mozilla.net",
+    "content-signature-2.cdn.mozilla.net",
+}
 LOCAL = {"localhost", "127.0.0.1", "[::1]", "::1", "0.0.0.0"}
 
 HOST = re.compile(r"(?:https?|wss?)://([A-Za-z0-9._\-\[\]:]+?)(?::\d+)?(?:/|\s|$|\")")

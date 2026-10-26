@@ -21,7 +21,8 @@ only Remote Settings (below), and that is tested: `tests/e2e/network_silence.py`
 anything else is contacted. Two things can reach a server without you doing anything in a
 page:
 
-1. **Remote Settings** from Mozilla (`firefox.settings.services.mozilla.com`): a list of
+1. **Remote Settings** from Mozilla (`firefox.settings.services.mozilla.com`, plus its download and signature servers
+   `firefox-settings-attachments.cdn.mozilla.net` and `content-signature-2.cdn.mozilla.net`): a list of
    security data the engine uses, such as certificate revocation and blocklists. The request
    shows your IP address and the engine version to Mozilla, like any web request. It is on by
    default because it protects you. A setting to turn it off, and later a mirror that is not

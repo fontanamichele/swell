@@ -98,6 +98,9 @@ add_task(async function test_mouse_buttons_go_back_and_forward_in_a_page() {
   const { bridge, app } = await swellApp();
   const space = await freshSpace(app, "Mouse history");
   const tab = await inFront(bridge, app, space);
+  for (const id of ["sidebar", "titlebar-left"]) {
+    byId(id).dispatchEvent(new MouseEvent("mouseleave"));
+  }
   tab.browser.fixupAndLoadURIString(SECOND, {
     triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
   });
