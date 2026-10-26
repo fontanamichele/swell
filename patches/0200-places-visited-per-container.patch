@@ -2,10 +2,10 @@ Purpose: Answer :visited per container. Places records the container of every vi
 Test: MOZCONFIG=swell/mozconfig ./mach test swell/tests/app/isolation/browser/browser_history.js --headless
 
 diff --git a/modules/libpref/init/StaticPrefList.yaml b/modules/libpref/init/StaticPrefList.yaml
-index 9117d347320d..d8cb5e6a5f16 100644
+index 343389801368..44124a2d9af3 100644
 --- a/modules/libpref/init/StaticPrefList.yaml
 +++ b/modules/libpref/init/StaticPrefList.yaml
-@@ -17885,6 +17885,13 @@
+@@ -17048,6 +17048,13 @@
  # Prefs starting with "places."
  #---------------------------------------------------------------------------
  
@@ -20,7 +20,7 @@ index 9117d347320d..d8cb5e6a5f16 100644
  # prefs only apply at restart.
  - name: places.frecency.pages.alternative.featureGate
 diff --git a/toolkit/components/places/History.cpp b/toolkit/components/places/History.cpp
-index 26db6e3ae5ed..430b3624e7a3 100644
+index 26db6e3ae5ed..8e30c2d59173 100644
 --- a/toolkit/components/places/History.cpp
 +++ b/toolkit/components/places/History.cpp
 @@ -417,7 +417,8 @@ class VisitedQuery final : public PendingStatementCallback {
@@ -60,7 +60,7 @@ index 26db6e3ae5ed..430b3624e7a3 100644
      return aParamsArray->AddParams(params);
    }
  
-@@ -530,18 +539,40 @@ class VisitedQuery final : public PendingStatementCallback {
+@@ -530,18 +539,64 @@ class VisitedQuery final : public PendingStatementCallback {
   private:
    explicit VisitedQuery(VisitedUrlsToContentParentSet&& aUrlsToContentParentSet,
                          const nsMainThreadPtrHandle<mozIVisitedStatusCallback>&
@@ -85,15 +85,39 @@ index 26db6e3ae5ed..430b3624e7a3 100644
 +  return StaticPrefs::places_history_isolate_by_user_context();
 +}
 +
++// The container is the "userContextId" attribute of the origin suffix that
++// follows the '^' in a remote type, and absent for the default container.
++static uint32_t UserContextIdOfRemoteType(const nsACString& aRemoteType) {
++  int32_t suffixIdx = aRemoteType.FindChar('^');
++  if (suffixIdx == kNotFound) {
++    return 0;
++  }
++  nsAutoCString suffix(Substring(aRemoteType, suffixIdx + 1));
++  constexpr nsLiteralCString kKey = "userContextId="_ns;
++  int32_t keyIdx = suffix.Find(kKey);
++  if (keyIdx == kNotFound) {
++    return 0;
++  }
++  nsAutoCString value(Substring(suffix, keyIdx + kKey.Length()));
++  int32_t end = value.FindChar('&');
++  if (end != kNotFound) {
++    value.Truncate(end);
++  }
++  nsresult rv;
++  int32_t id = value.ToInteger(&rv);
++  return NS_SUCCEEDED(rv) && id > 0 ? static_cast<uint32_t>(id) : 0;
++}
++
 +// The content processes that host pages of one container. A process only ever
-+// hosts a single container (RemoteType::SharedWeb keeps it in the remote type).
++// hosts a single container (the remote type keeps it in its origin suffix).
 +static History::ContentParentSet ContentParentsOfContainer(
 +    uint32_t aUserContextId) {
 +  History::ContentParentSet processes;
 +  nsTArray<dom::ContentParent*> all;
 +  dom::ContentParent::GetAll(all);
 +  for (dom::ContentParent* process : all) {
-+    if (process->GetRemoteType().UserContextId() == aUserContextId) {
++    if (UserContextIdOfRemoteType(process->GetRemoteType()) ==
++        aUserContextId) {
 +      processes.Insert(process);
 +    }
 +  }
@@ -103,7 +127,7 @@ index 26db6e3ae5ed..430b3624e7a3 100644
  /**
   * Notifies observers about a visit or an array of visits.
   */
-@@ -569,7 +600,14 @@ class NotifyManyVisitsObservers : public Runnable {
+@@ -569,7 +624,14 @@ class NotifyManyVisitsObservers : public Runnable {
      if (aNow - aPlace.visitTime < RECENTLY_VISITED_URIS_MAX_AGE) {
        mHistory->AppendToRecentlyVisitedURIs(aURI, aPlace.hidden);
      }
@@ -119,7 +143,7 @@ index 26db6e3ae5ed..430b3624e7a3 100644
  
      aNavHistory->UpdateDaysOfHistory(aPlace.visitTime);
  
-@@ -1553,14 +1591,28 @@ nsresult History::QueueVisitedStatement(RefPtr<VisitedQuery>&& aQuery) {
+@@ -1553,14 +1615,28 @@ nsresult History::QueueVisitedStatement(RefPtr<VisitedQuery>&& aQuery) {
    }
    auto conn = ConcurrentConnection::GetInstance();
    if (conn.isSome()) {
@@ -156,7 +180,7 @@ index 26db6e3ae5ed..430b3624e7a3 100644
    }
    return NS_OK;
  }
-@@ -2418,8 +2470,31 @@ void History::StartPendingVisitedQueries(PendingVisitedQueries&& aQueries) {
+@@ -2418,8 +2494,32 @@ void History::StartPendingVisitedQueries(PendingVisitedQueries&& aQueries) {
      if (!uris.IsEmpty()) {
        (void)cpc->SendStartVisitedQueries(uris);
      }
@@ -176,7 +200,8 @@ index 26db6e3ae5ed..430b3624e7a3 100644
 +        continue;
 +      }
 +      for (const auto& process : processes) {
-+        uint32_t userContextId = process->GetRemoteType().UserContextId();
++        uint32_t userContextId =
++            UserContextIdOfRemoteType(process->GetRemoteType());
 +        byContainer.LookupOrInsert(userContextId)
 +            .LookupOrInsert(uri)
 +            .Insert(process);
