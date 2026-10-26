@@ -116,7 +116,7 @@ export)
     esac
     stem=${subject%%:*}
     out="$swell/patches/$stem.patch"
-    { git log -1 --format=%b "$sha" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}'; echo; git show --format= --no-color -p "$sha"; } > "$out"
+    { git log -1 --format=%b "$sha" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}'; echo; git show --format= --no-color --binary -p "$sha"; } > "$out"
     echo "exported $stem"
   done
   ;;
