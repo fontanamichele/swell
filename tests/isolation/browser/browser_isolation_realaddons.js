@@ -8,7 +8,7 @@
 "use strict";
 
 // Runs only when SWELL_ADDONS points at the derived add-ons directory
-// (swell/spikes/m0/addons/derived).
+// (a folder of add-ons made with tools/derive-extension).
 
 ChromeUtils.defineESModuleGetters(this, {
   AddonManager: "resource://gre/modules/AddonManager.sys.mjs",
