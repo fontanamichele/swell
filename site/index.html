@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Swell</title>
+  <meta name="description" content="A minimal, open-source browser on Gecko with fully isolated spaces in one window.">
+  <style>
+    :root { color-scheme: light dark; --fg: #1c1e23; --bg: #fbfbfc; --muted: #6b7080; --accent: #3b6cf4; --card: #eceef2; }
+    @media (prefers-color-scheme: dark) { :root { --fg: #e8eaf0; --bg: #16181c; --muted: #9aa0b2; --accent: #7c9cff; --card: #1f2126; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 17px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--fg); background: var(--bg); }
+    main { max-width: 720px; margin: 0 auto; padding: 56px 20px 80px; }
+    h1 { font-size: 44px; margin: 0 0 4px; letter-spacing: -0.02em; }
+    .tag { color: var(--muted); font-size: 20px; margin: 0 0 28px; }
+    .badge { display: inline-block; font-size: 13px; padding: 2px 10px; border-radius: 99px; background: var(--card); margin-bottom: 18px; }
+    a { color: var(--accent); }
+    .button { display: inline-block; padding: 12px 22px; border-radius: 12px; background: var(--accent); color: #fff; font-weight: 600; text-decoration: none; }
+    section { margin-top: 44px; }
+    h2 { font-size: 22px; margin: 0 0 10px; }
+    ul { padding-left: 20px; }
+    code, pre { font: 14px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--card); border-radius: 8px; }
+    code { padding: 1px 6px; }
+    pre { padding: 12px 14px; overflow-x: auto; }
+    footer { margin-top: 56px; color: var(--muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+<main>
+  <span class="badge">Alpha</span>
+  <h1>Swell</h1>
+  <p class="tag">A minimal browser with fully isolated spaces in one window.</p>
+  <p>Each space has its own cookies, site storage, history, saved passwords, form data,
+     extensions and permissions. Sign in to two accounts of the same site side by side, and
+     delete a space to delete everything it kept. Built on Gecko, with an Arc-style sidebar.
+     No telemetry, no accounts, open source (MPL 2.0).</p>
+  <p><a class="button" id="download" href="https://github.com/ivantacca/swell/releases/latest">Download the latest alpha for macOS</a></p>
+  <p style="color: var(--muted); font-size: 15px">Apple silicon, macOS 11 or later. Linux is next; Windows later.</p>
+
+  <section>
+    <h2>Opening the alpha</h2>
+    <p>The alpha is for developers and curious users, and it is <strong>not signed or
+       notarized</strong> yet, so macOS asks you to confirm it the first time:</p>
+    <ol>
+      <li>Open the downloaded disk image and drag Swell to Applications.</li>
+      <li>In Applications, <strong>right-click Swell and choose Open</strong>, then press Open again.</li>
+      <li>If macOS still refuses, run this once in Terminal:
+        <pre>xattr -dr com.apple.quarantine /Applications/Swell.app</pre></li>
+    </ol>
+    <p>Beta builds will be signed. You can verify the download with the checksum published
+       next to it on the release page.</p>
+  </section>
+
+  <section>
+    <h2>What works, what does not</h2>
+    <ul>
+      <li>Spaces, a sidebar of favorites, pinned tabs and folders, a command bar, import from Arc.</li>
+      <li>Passwords, addresses, cards, downloads, camera, microphone and add-ons per space.</li>
+      <li>Not yet: sync, Linux and Windows, Save Page As, a history view, other languages.</li>
+    </ul>
+    <p>Found a problem? <a href="https://github.com/ivantacca/swell/issues">Open an issue</a>.
+       Security reports: see <a href="https://github.com/ivantacca/swell/security/policy">the security policy</a>.</p>
+  </section>
+
+  <footer>
+    <a href="https://github.com/ivantacca/swell">Source</a> ·
+    <a href="https://github.com/ivantacca/swell/blob/main/PRIVACY.md">Privacy</a> ·
+    <a href="https://github.com/ivantacca/swell/blob/main/NOTICE.md">Notices</a>
+    <p>Swell is not affiliated with Mozilla. Firefox and Mozilla are trademarks of the Mozilla Foundation.</p>
+  </footer>
+</main>
+</body>
+</html>

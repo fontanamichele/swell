@@ -1,0 +1,74 @@
+# Tests and lint that do not need a build of Gecko. The browser tests and the isolation
+# suite need the Firefox tree and a full build (30+ minutes, 15 GB): run them locally
+# (see CONTRIBUTING.md).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --locked
+
+  hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: MPL header on every source file
+        run: python3 tools/check-headers.py
+      - name: Shell scripts parse
+        run: for f in tools/*.sh tools/hooks/*; do sh -n "$f"; done
+      - name: Python tools parse and their tests pass
+        run: |
+          python3 -m py_compile tools/*.py tools/derive-extension/*.py tests/e2e/*.py
+          python3 -m unittest discover -s tools/derive-extension -p 'test_*.py'
+      - name: The third-party list is up to date
+        run: |
+          python3 tools/third-party.py > /tmp/third-party-rust.md
+          diff -u docs/third-party-rust.md /tmp/third-party-rust.md
+
+  # Mozilla's linters (ESLint, stylelint, ruff, ...) live in the Firefox tree, so this
+  # job fetches it at the pinned revision (a shallow, blob-filtered clone). It has not
+  # been run on GitHub yet: if it fails for a setup reason, fix the setup, not the code.
+  lint:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Firefox at the pinned revision
+        run: |
+          git clone --no-checkout --filter=blob:none --depth 1 https://github.com/mozilla-firefox/firefox firefox
+      - uses: actions/checkout@v4
+        with:
+          path: swell-src
+      - name: Check out the pinned revision with Swell inside
+        run: |
+          rev=$(grep -v '^#' swell-src/FIREFOX_REV | head -1)
+          cd firefox
+          git fetch --depth 1 origin "$rev"
+          git checkout FETCH_HEAD
+          mv ../swell-src swell
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: mach lint
+        working-directory: firefox
+        run: ./mach lint -l eslint -l stylelint -l ruff swell/app swell/tests/app swell/tests/xpcshell swell/tests/e2e swell/tools --quiet
