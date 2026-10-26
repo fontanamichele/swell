@@ -47,6 +47,31 @@ add_task(async function test_zoom_keys_and_memory_per_space() {
   await closeAllTabs(bridge);
 });
 
+add_task(async function test_accel_plus_zooms_on_any_layout() {
+  const { bridge, app } = await swellApp();
+  const space = await freshSpace(app, "Zoom keys");
+  const tab = await openInSpace(bridge, space.id, PAGE);
+  const context = tab.browser.browsingContext;
+  zoomIs(context, 1, "starts at 100%");
+
+  // A US layout: "=" (and "+" with shift) on the equals key.
+  EventUtils.synthesizeKey("=", { accelKey: true, code: "Equal" }, window);
+  zoomIs(context, 1.1, "accel+= zooms in");
+  // An Italian layout: "+" is on the key that is "]" elsewhere, which also means
+  // forward; what is typed decides.
+  EventUtils.synthesizeKey(
+    "+",
+    { accelKey: true, code: "BracketRight" },
+    window
+  );
+  zoomIs(context, 1.2, "accel++ on the bracket key zooms in");
+  EventUtils.synthesizeKey("-", { accelKey: true, code: "Slash" }, window);
+  zoomIs(context, 1.1, "accel+- zooms out");
+  EventUtils.synthesizeKey("0", { accelKey: true, code: "Digit0" }, window);
+  zoomIs(context, 1, "accel+0 resets");
+  await closeAllTabs(bridge);
+});
+
 add_task(async function test_saved_zoom_is_applied_when_a_site_loads() {
   const { bridge, app } = await swellApp();
   const space = await freshSpace(app, "Zoom load");
