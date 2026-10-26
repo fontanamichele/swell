@@ -172,6 +172,7 @@
     >
       <menu id="file-menu" label="File">
         <menupopup>
+          <menuitem id="aboutName" label="About Swell" data-action="about" />
           <menuitem label="New Tab" data-action="new-tab" />
           <menuitem label="New Space&#x2026;" data-action="new-space" />
           <menuseparator />
@@ -286,6 +287,34 @@
         <button type="button" id="autofill-close">Close</button>
       </div>
     </dialog>
+    <dialog id="about-dialog">
+      <h2 id="about-name">Swell</h2>
+      <p id="about-version"></p>
+      <p id="about-build" class="about-muted"></p>
+      <p class="about-muted">
+        A minimal browser with fully isolated spaces. Built on Gecko, the engine
+        of Firefox; not affiliated with Mozilla. Open source under the MPL 2.0.
+      </p>
+      <p class="about-links">
+        <a href="#" data-url="https://github.com/ivantacca/swell">Source</a>
+        <a
+          href="#"
+          data-url="https://github.com/ivantacca/swell/blob/main/PRIVACY.md"
+          >Privacy</a
+        >
+        <a
+          href="#"
+          data-url="https://github.com/ivantacca/swell/blob/main/NOTICE.md"
+          >Notices</a
+        >
+      </p>
+      <p id="about-update-status" class="about-status" aria-live="polite"></p>
+      <div class="buttons">
+        <button type="button" id="about-download" hidden="">Download</button>
+        <button type="button" id="about-check">Check for updates</button>
+        <button type="button" id="about-close">Close</button>
+      </div>
+    </dialog>
     <dialog id="space-dialog">
       <form method="dialog" id="space-form">
         <h3 id="space-dialog-title">New space</h3>
@@ -305,7 +334,6 @@
             aria-label="Name"
           />
         </div>
-        <div id="space-tints" role="radiogroup" aria-label="Colour"></div>
         <div id="emoji-picker" hidden="">
           <input
             id="emoji-search"

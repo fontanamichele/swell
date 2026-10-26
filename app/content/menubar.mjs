@@ -14,6 +14,7 @@ export class MenuBar {
 
   constructor(app) {
     this.#actions = {
+      about: () => app.about.show(),
       "new-tab": () => app.commandBar.open({ mode: "new" }),
       "new-space": () => app.spaceEditor.create(),
       "close-tab": () =>

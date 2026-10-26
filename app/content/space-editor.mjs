@@ -2,20 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-// What a space's sidebar can be tinted with; the first is no tint at all.
-export const TINTS = [
-  { name: "None", value: null },
-  { name: "Blue", value: "#4b6cf5" },
-  { name: "Purple", value: "#8b5cf6" },
-  { name: "Pink", value: "#ec4899" },
-  { name: "Red", value: "#ef4444" },
-  { name: "Orange", value: "#f97316" },
-  { name: "Yellow", value: "#eab308" },
-  { name: "Green", value: "#22c55e" },
-  { name: "Teal", value: "#14b8a6" },
-  { name: "Graphite", value: "#64748b" },
-];
-
 // The skin tone modifiers of Unicode, light to dark.
 const SKIN_TONES = [
   "\u{1F3FB}",
@@ -45,8 +31,6 @@ export class SpaceEditor {
   #grid;
   #editing = null;
   #glyph = "";
-  #tint = null;
-  #tints;
   #emojiLoaded = null;
   #categories = [];
   #category = null;
@@ -65,10 +49,8 @@ export class SpaceEditor {
     this.#search = doc.getElementById("emoji-search");
     this.#tabs = doc.getElementById("emoji-tabs");
     this.#grid = doc.getElementById("emoji-grid");
-    this.#tints = doc.getElementById("space-tints");
     this.#tones = doc.getElementById("emoji-tones");
     this.#tone = Number(this.#storedTone());
-    this.#renderTints();
 
     doc
       .getElementById("space-cancel")
@@ -113,7 +95,6 @@ export class SpaceEditor {
     this.#submit.textContent = space ? "Save" : "Create space";
     this.#title.value = space?.title ?? "";
     this.#choose(space?.icon.glyph ?? "");
-    this.#chooseTint(space?.tint ?? null);
     this.#search.value = "";
     this.#dialog.showModal();
     this.#title.focus();
@@ -123,48 +104,12 @@ export class SpaceEditor {
   async #save() {
     const title = this.#title.value.trim();
     const glyph = this.#glyph;
-    const tint = this.#tint;
     const editing = this.#editing;
     this.#dialog.close();
     if (editing) {
-      await this.#app.updateSpace(
-        editing.id,
-        title || editing.title,
-        glyph,
-        tint
-      );
+      await this.#app.updateSpace(editing.id, title || editing.title, glyph);
     } else {
-      await this.#app.createSpace(title, glyph, tint);
-    }
-  }
-
-  #renderTints() {
-    this.#tints.replaceChildren(
-      ...TINTS.map(({ name: label, value }) => {
-        const swatch = this.#doc.createElement("button");
-        swatch.type = "button";
-        swatch.className = "tint-swatch";
-        swatch.title = label;
-        swatch.setAttribute("role", "radio");
-        swatch.setAttribute("aria-label", label);
-        swatch.dataset.tint = value ?? "";
-        if (value) {
-          swatch.style.setProperty("--swatch", value);
-        } else {
-          swatch.classList.add("none");
-        }
-        swatch.addEventListener("click", () => this.#chooseTint(value));
-        return swatch;
-      })
-    );
-  }
-
-  #chooseTint(value) {
-    this.#tint = value;
-    for (const swatch of this.#tints.children) {
-      const selected = (swatch.dataset.tint || null) == value;
-      swatch.classList.toggle("selected", selected);
-      swatch.setAttribute("aria-checked", String(selected));
+      await this.#app.createSpace(title, glyph);
     }
   }
 

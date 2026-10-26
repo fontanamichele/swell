@@ -108,3 +108,8 @@ pref("ui.allowOverlayScrollbarsOverlap", 1);
 // for it, under and beside the page, are made by the browser window of Firefox.
 pref("devtools.toolbox.host", "window");
 pref("devtools.toolbox.previousHost", "window");
+
+// The project on GitHub whose releases "Check for updates" reads, and whether the
+// pre-releases (the alpha) count. Nothing is sent unless the user presses the button.
+pref("swell.update.repository", "ivantacca/swell");
+pref("swell.update.channel", "alpha");

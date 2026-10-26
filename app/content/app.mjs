@@ -7,6 +7,7 @@ import { CommandBar } from "chrome://swell/content/commandbar.mjs";
 import { ContextMenu } from "chrome://swell/content/menu.mjs";
 import { Toasts } from "chrome://swell/content/toasts.mjs";
 import { PermissionBar } from "chrome://swell/content/permissions.mjs";
+import { AboutDialog } from "chrome://swell/content/about.mjs";
 import { DownloadsPanel } from "chrome://swell/content/downloads.mjs";
 import { AutofillUI } from "chrome://swell/content/autofill.mjs";
 import { PasswordsUI } from "chrome://swell/content/passwords.mjs";
@@ -60,6 +61,7 @@ export class App {
     this.commandBar = new CommandBar(this);
     this.permissions = new PermissionBar(this);
     this.downloads = new DownloadsPanel(this);
+    this.about = new AboutDialog(this);
     this.autofill = new AutofillUI(this);
     this.passwords = new PasswordsUI(this);
     this.extensions = new ExtensionsUI(this);
@@ -127,6 +129,11 @@ export class App {
     this.#windowChanged();
     this.render();
     this.downloads.init();
+  }
+
+  // Opens an address in a new tab of the active space.
+  openUrlInActiveSpace(url) {
+    return this.run(() => this.bridge.openUrl(url, this.activeSpaceId));
   }
 
   // Opens the print dialog over the page in front.
@@ -365,20 +372,7 @@ export class App {
     });
   }
 
-  // The tint of the active space, for the CSS that colours the sidebar.
-  #applyTint() {
-    const root = this.document.documentElement;
-    const tint = this.space?.tint;
-    if (tint) {
-      root.style.setProperty("--space-tint", tint);
-    } else {
-      root.style.removeProperty("--space-tint");
-    }
-    root.toggleAttribute("tinted", !!tint);
-  }
-
   render() {
-    this.#applyTint();
     this.sidebar.render();
     this.extensionActions.render();
     this.navBar.render();
@@ -550,7 +544,7 @@ export class App {
     return this.run(() => this.core.unpinNode(id, this.activeSpaceId));
   }
 
-  async createSpace(title, emoji, tint = null) {
+  async createSpace(title, emoji) {
     const icon = emoji
       ? new this.Icon.Emoji({ glyph: emoji })
       : new this.Icon.Symbol({ name: "circle" });
@@ -558,19 +552,15 @@ export class App {
       this.core.createSpace(title || "New space", icon)
     );
     if (id) {
-      if (tint) {
-        await this.run(() => this.core.setSpaceTint(id, tint));
-      }
       await this.switchSpace(id);
     }
   }
 
-  async updateSpace(id, title, emoji, tint = null) {
+  async updateSpace(id, title, emoji) {
     const icon = emoji
       ? new this.Icon.Emoji({ glyph: emoji })
       : new this.Icon.Symbol({ name: "circle" });
     await this.run(() => this.core.updateSpace(id, title, icon));
-    await this.run(() => this.core.setSpaceTint(id, tint));
   }
 
   moveSpace(id, index) {

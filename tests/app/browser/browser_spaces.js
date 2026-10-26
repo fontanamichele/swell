@@ -390,45 +390,28 @@ add_task(async function test_the_last_space_cannot_be_deleted() {
   );
 });
 
-add_task(async function test_a_space_is_tinted_from_the_editor() {
+add_task(async function test_the_editor_has_no_colour_chooser() {
   const { app } = await swellApp();
-  const space = await freshSpace(app, "Tinted");
-  const root = document.documentElement;
-  Assert.ok(!root.hasAttribute("tinted"), "no tint to begin with");
-
+  const space = await freshSpace(app, "Plain");
   app.spaceEditor.edit(space);
-  const swatches = [...document.querySelectorAll("#space-tints .tint-swatch")];
-  Assert.greater(swatches.length, 5, "there is a choice of colours");
-  Assert.ok(swatches[0].classList.contains("selected"), "none is chosen");
-  const green = swatches.find(swatch => swatch.title == "Green");
-  green.click();
-  Assert.ok(green.classList.contains("selected"));
-  Assert.ok(!swatches[0].classList.contains("selected"));
-  document.getElementById("space-save").click();
-
-  const saved = await rendered(
-    async () =>
-      (await app.core.listSpaces()).find(s => s.id == space.id)?.tint ?? false,
-    "the core has the tint"
+  Assert.ok(
+    !document.getElementById("space-tints"),
+    "there is nothing to choose a colour with"
   );
-  Assert.equal(saved, green.dataset.tint);
-  await rendered(() => root.hasAttribute("tinted"), "the window is tinted");
+  document.getElementById("space-cancel").click();
+
+  // A colour the core still holds from an earlier version is not shown either.
+  await app.core.setSpaceTint(space.id, "#22c55e");
+  await app.switchSpace(space.id);
+  await rendered(() => app.space?.tint == "#22c55e", "the core has the colour");
+  const root = document.documentElement;
+  Assert.ok(!root.hasAttribute("tinted"), "the window is not tinted");
   Assert.equal(
     root.style.getPropertyValue("--space-tint"),
-    green.dataset.tint,
-    "with the space's colour"
+    "",
+    "no colour is set"
   );
-
-  const other = await freshSpace(app, "Untinted");
-  await rendered(() => !root.hasAttribute("tinted"), "another space is not");
-  await app.switchSpace(space.id);
-  await rendered(() => root.hasAttribute("tinted"), "and the tint comes back");
-
-  app.spaceEditor.edit(app.space);
-  document.querySelector("#space-tints .tint-swatch.none").click();
-  document.getElementById("space-save").click();
-  await rendered(() => !root.hasAttribute("tinted"), "a space is untinted");
-  Assert.ok(other);
+  await app.core.setSpaceTint(space.id, null);
 });
 
 add_task(
