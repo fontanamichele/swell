@@ -96,7 +96,6 @@
 @RESPATH@/chrome/*
 @RESPATH@/app/chrome.manifest
 @RESPATH@/app/chrome/*
-@RESPATH@/defaults/pref/debugger.js
 @RESPATH@/defaults/pref/PdfJsDefaultPrefs.js
 
 ; Default preferences
