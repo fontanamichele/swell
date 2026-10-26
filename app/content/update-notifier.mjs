@@ -50,7 +50,9 @@ export class UpdateNotifier {
     this.#dismiss = doc.getElementById("update-dismiss");
     this.#badge.addEventListener("click", () => {
       if (this.#update) {
-        this.#app.openUrlInActiveSpace(this.#update.url);
+        this.#app.openUrlInActiveSpace(
+          this.#update.downloadUrl ?? this.#update.url
+        );
       }
     });
     this.#dismiss.addEventListener("click", () => {
@@ -106,6 +108,8 @@ export class UpdateNotifier {
       repository: Services.prefs.getStringPref(REPOSITORY_PREF, ""),
       prereleases:
         Services.prefs.getStringPref(CHANNEL_PREF, "alpha") != "stable",
+      platform: AppConstants.platform,
+      arch: Services.sysinfo.getProperty("arch"),
       ...(this.#fetchJson && { fetchJson: this.#fetchJson }),
     });
     if (manual) {
@@ -121,7 +125,9 @@ export class UpdateNotifier {
     this.#row.hidden = !update;
     if (update) {
       this.#label.textContent = `Swell ${update.version} is available`;
-      this.#badge.title = "Open the download page";
+      this.#badge.title = update.downloadUrl
+        ? "Download Swell"
+        : "Open the download page";
     }
   }
 }

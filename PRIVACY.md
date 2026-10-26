@@ -29,7 +29,8 @@ things can reach a server without you doing anything in a page:
    Mozilla's, are planned.
 2. **The update check** (`api.github.com`): about half a minute after Swell starts, and at
    most once a day, it asks GitHub for the releases of the project and shows a badge above
-   your spaces when a newer one exists. It only reads the list; it downloads nothing. GitHub
+   your spaces when a newer one exists. It only reads the list; it downloads nothing (the
+   badge links to the file made for your system, and you decide whether to open it). GitHub
    sees your IP address and that you run Swell, like any web request. It is on by default in
    the alpha; turn it off with "Check for updates automatically" in Swell > About Swell
    (`swell.update.autocheck`), and no request is made until you press "Check for updates".

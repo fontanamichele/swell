@@ -34,6 +34,37 @@ export function compareVersions(a, b) {
   return 0;
 }
 
+const ASSET_EXTENSIONS = { macosx: "dmg", linux: "tar.xz" };
+
+const normalizeArch = arch =>
+  ({ aarch64: "arm64", amd64: "x86_64" })[String(arch).toLowerCase()] ??
+  String(arch).toLowerCase();
+
+/**
+ * Finds the file of a release made for this platform, named
+ * `Swell-<version>-<arch>.<dmg|tar.xz>` by `tools/package.sh`.
+ *
+ * @param {object[]} assets The `assets` of a GitHub release.
+ * @param {string} platform `AppConstants.platform`.
+ * @param {string} arch The CPU architecture, `arm64` and `aarch64` being the same.
+ * @returns {string|null} The download URL, or null when the release has no such file.
+ */
+export function pickAsset(assets, platform, arch) {
+  const extension = ASSET_EXTENSIONS[platform];
+  if (!extension || !arch) {
+    return null;
+  }
+  const wanted = normalizeArch(arch);
+  const pattern = new RegExp(
+    `^Swell-.+-([^-]+)\\.${extension.replace(".", "\\.")}$`
+  );
+  const asset = (assets ?? []).find(({ name }) => {
+    const match = pattern.exec(name);
+    return match && normalizeArch(match[1]) == wanted;
+  });
+  return asset?.browser_download_url ?? null;
+}
+
 /**
  * Asks GitHub for the newest release of the project and says whether it is newer than
  * `current`. Nothing is sent unless this is called. `releases/latest` leaves out
@@ -43,13 +74,18 @@ export function compareVersions(a, b) {
  * @param {string} options.current The running version.
  * @param {string} options.repository `owner/name` on GitHub.
  * @param {boolean} options.prereleases Whether pre-releases count (the alpha channel).
+ * @param {string} [options.platform] `AppConstants.platform`, to find the file to download.
+ * @param {string} [options.arch] The CPU architecture, to find the file to download.
  * @param {Function} [options.fetchJson] Replaces the request, for tests.
- * @returns {Promise<{available: boolean, version?: string, url?: string, notes?: string}>}
+ * @returns {Promise<{available: boolean, version?: string, url?: string, downloadUrl?: string|null, notes?: string}>}
+ *   `downloadUrl` is the file for this platform, null when the release has none.
  */
 export async function checkForUpdate({
   current,
   repository,
   prereleases,
+  platform,
+  arch,
   fetchJson = async url => {
     const response = await fetch(url, {
       headers: { Accept: "application/vnd.github+json" },
@@ -74,6 +110,7 @@ export async function checkForUpdate({
     available: true,
     version: newest.tag_name.replace(/^v/i, ""),
     url: newest.html_url,
+    downloadUrl: pickAsset(newest.assets, platform, arch),
     notes: (newest.body ?? "").trim().slice(0, 600),
   };
 }
@@ -118,7 +155,9 @@ export class AboutDialog {
     this.#check.addEventListener("click", () => this.#checkNow());
     this.#download.addEventListener("click", () => {
       if (this.#update) {
-        this.#app.openUrlInActiveSpace(this.#update.url);
+        this.#app.openUrlInActiveSpace(
+          this.#update.downloadUrl ?? this.#update.url
+        );
         this.#dialog.close();
       }
     });

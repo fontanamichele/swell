@@ -4,7 +4,7 @@
 
 "use strict";
 
-const { compareVersions, checkForUpdate, buildDate } =
+const { compareVersions, checkForUpdate, pickAsset, buildDate } =
   ChromeUtils.importESModule("chrome://swell/content/about.mjs");
 
 const release = (tag, extra = {}) => ({
@@ -83,6 +83,86 @@ add_task(
     Assert.ok(!result.available, "no releases, no update");
   }
 );
+
+add_task(function test_the_file_for_this_system_is_picked() {
+  const asset = name => ({
+    name,
+    browser_download_url: `https://example.com/${name}`,
+  });
+  const assets = [
+    asset("Swell-0.52.0-arm64.dmg"),
+    asset("Swell-0.52.0-arm64.dmg.sha256"),
+    asset("Swell-0.52.0-x86_64.dmg"),
+    asset("Swell-0.52.0-x86_64.tar.xz"),
+    asset("Swell-0.52.0-aarch64.tar.xz"),
+    asset("Swell-0.52.0-aarch64.tar.xz.sha256"),
+  ];
+  const url = name => `https://example.com/${name}`;
+
+  Assert.equal(
+    pickAsset(assets, "macosx", "arm64"),
+    url("Swell-0.52.0-arm64.dmg")
+  );
+  Assert.equal(
+    pickAsset(assets, "macosx", "aarch64"),
+    url("Swell-0.52.0-arm64.dmg"),
+    "aarch64 is arm64"
+  );
+  Assert.equal(
+    pickAsset(assets, "macosx", "x86_64"),
+    url("Swell-0.52.0-x86_64.dmg")
+  );
+  Assert.equal(
+    pickAsset(assets, "linux", "x86_64"),
+    url("Swell-0.52.0-x86_64.tar.xz")
+  );
+  Assert.equal(
+    pickAsset(assets, "linux", "aarch64"),
+    url("Swell-0.52.0-aarch64.tar.xz")
+  );
+  Assert.equal(
+    pickAsset(assets, "linux", "arm64"),
+    url("Swell-0.52.0-aarch64.tar.xz"),
+    "the name is normalized too"
+  );
+  Assert.equal(pickAsset(assets, "win", "x86_64"), null, "no Windows file");
+  Assert.equal(pickAsset([], "macosx", "arm64"), null, "no assets");
+  Assert.equal(pickAsset(undefined, "macosx", "arm64"), null, "no list");
+  Assert.equal(pickAsset(assets, "macosx", undefined), null, "unknown CPU");
+});
+
+add_task(async function test_the_check_links_the_file_when_there_is_one() {
+  const assets = [
+    {
+      name: "Swell-0.52.0-arm64.dmg",
+      browser_download_url: "https://example.com/Swell-0.52.0-arm64.dmg",
+    },
+  ];
+  const fetchJson = async () => [
+    release("v0.52.0", { prerelease: true, assets }),
+  ];
+  const base = {
+    repository: "example/swell",
+    prereleases: true,
+    current: "0.51.0",
+    fetchJson,
+  };
+
+  let result = await checkForUpdate({
+    ...base,
+    platform: "macosx",
+    arch: "arm64",
+  });
+  Assert.equal(result.downloadUrl, assets[0].browser_download_url);
+  Assert.ok(result.url.endsWith("/v0.52.0"), "the release page stays");
+
+  result = await checkForUpdate({ ...base, platform: "linux", arch: "x86_64" });
+  Assert.ok(result.available, "still an update");
+  Assert.equal(result.downloadUrl, null, "no file for this system");
+
+  result = await checkForUpdate(base);
+  Assert.equal(result.downloadUrl, null, "no platform given, no file");
+});
 
 add_task(async function test_about_shows_the_version_and_build() {
   const { app } = await swellApp();

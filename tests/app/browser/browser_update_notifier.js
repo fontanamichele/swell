@@ -81,6 +81,36 @@ add_task(async function test_a_newer_release_shows_the_badge_and_opens_it() {
   row().hidden = true;
 });
 
+add_task(async function test_the_badge_opens_the_file_for_this_system() {
+  const { AppConstants } = ChromeUtils.importESModule(
+    "resource://gre/modules/AppConstants.sys.mjs"
+  );
+  const extension = AppConstants.platform == "macosx" ? "dmg" : "tar.xz";
+  const arch = Services.sysinfo.getProperty("arch");
+  const file = `https://example.com/Swell-99.0.0-${arch}.${extension}`;
+  const { instance, opened } = await notifier([
+    {
+      ...release("v99.0.0"),
+      assets: [
+        {
+          name: `Swell-99.0.0-${arch}.${extension}.sha256`,
+          browser_download_url: `${file}.sha256`,
+        },
+        {
+          name: `Swell-99.0.0-${arch}.${extension}`,
+          browser_download_url: file,
+        },
+      ],
+    },
+  ]);
+  await instance.check();
+  Assert.equal(instance.update.downloadUrl, file);
+  Assert.equal(document.getElementById("update-badge").title, "Download Swell");
+  document.getElementById("update-badge").click();
+  Assert.deepEqual(opened, [file], "it opens the file, not the page");
+  row().hidden = true;
+});
+
 add_task(async function test_no_newer_release_shows_nothing() {
   const { instance } = await notifier([release("v0.0.1")]);
   await instance.check();
