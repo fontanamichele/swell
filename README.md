@@ -5,7 +5,7 @@ in one window**. Each space keeps its own cookies, site storage, history, saved 
 form data, extensions, permissions and downloads, so you can be signed in to two accounts
 of the same site side by side, and deleting a space deletes everything it kept.
 
-> **Status: alpha.** macOS (Apple silicon) first, Linux next, Windows later. It is for
+> **Status: alpha.** macOS (Apple silicon) and Linux, Windows later. It is for
 > developers and curious users: expect rough edges, and the macOS build is not signed yet.
 > See [Download](#download).
 
@@ -21,7 +21,7 @@ of the same site side by side, and deleting a space deletes everything it kept.
 - No telemetry, no crash reporter, and no update is ever installed for you; a daily check for a
   newer release on GitHub can be turned off. See [PRIVACY.md](PRIVACY.md).
 
-Not built yet: sync, Linux and Windows builds, history view, Save Page As, translations
+Not built yet: sync, a Windows build, history view, Save Page As, translations
 (the interface is English), notarized builds.
 
 ## Download
@@ -30,6 +30,11 @@ Pre-releases are on the [releases page](../../releases). The alpha is **not sign
 notarized**, so macOS will refuse to open it at first: right-click the app, choose **Open**,
 then **Open** again (or run `xattr -dr com.apple.quarantine /Applications/Swell.app`). Beta
 builds will be signed.
+
+On Linux, unpack `Swell-<version>-<arch>.tar.xz` where you want to keep it and run
+`./install.sh` inside it to add Swell to your application menu (`./install.sh --uninstall`
+removes the entry). It needs GTK 3 and, to keep saved passwords encrypted, libsecret with a
+keyring running.
 
 ## How it is built
 

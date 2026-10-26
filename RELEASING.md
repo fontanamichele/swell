@@ -16,6 +16,12 @@ It prints `obj-swell/dist/release/Swell-<version>-<arch>.dmg` and a `.sha256` ne
 signed build set `SWELL_SIGN_IDENTITY` ("Developer ID Application: ...") and
 `SWELL_NOTARY_PROFILE` (a `notarytool` keychain profile) first.
 
+On Linux the same script makes `obj-swell/dist/release/Swell-<version>-<arch>.tar.xz` (and a
+`.sha256`) with `MOZCONFIG` defaulting to `swell/mozconfig.linux`. Build on the oldest
+distribution you mean to support, because the binaries need at least its glibc (Ubuntu 22.04 is
+a good floor), after `./mach bootstrap`. The tarball holds the application, `install.sh` (adds
+Swell to the user's menu, `--uninstall` removes it) and the icons. There is no Flatpak yet.
+
 Check the build before publishing: copy the app to Applications, open it (right-click, Open),
 and run through the manual checks in `docs/` (camera, downloads, print, restart).
 
@@ -38,7 +44,8 @@ Settings that live on GitHub, not in the repository, and that the docs rely on:
 
    ```sh
    gh release create v<version> --prerelease --title "Swell <version> (alpha)" \
-     --notes-file RELEASE_NOTES.md obj-swell/dist/release/Swell-<version>-arm64.dmg*
+     --notes-file RELEASE_NOTES.md obj-swell/dist/release/Swell-<version>-arm64.dmg* \
+     obj-swell/dist/release/Swell-<version>-x86_64.tar.xz*
    ```
 4. The download page (`site/`, published by GitHub Pages) links to the latest release. The
    in-app "Check for updates" reads the latest release from GitHub, so a release is also how

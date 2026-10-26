@@ -14,15 +14,20 @@
 #                           store-credentials). Set, together with a real identity, the
 #                           image is notarized and stapled.
 #
-# macOS only for now; the Linux tarball and Flatpak come with the Linux step.
+# On Linux it makes obj-swell/dist/release/Swell-<version>-<arch>.tar.xz instead (the
+# application, an install.sh that adds it to the user's menu, and the icons). Build on the
+# oldest distribution you mean to support: the binaries need at least its glibc. No Flatpak yet.
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
 cd "$root"
-export MOZCONFIG=${MOZCONFIG:-$root/swell/mozconfig}
-
-[ "$(uname -s)" = Darwin ] || { echo "package.sh: macOS only for now" >&2; exit 2; }
+os=$(uname -s)
+case "$os" in
+Darwin) export MOZCONFIG=${MOZCONFIG:-$root/swell/mozconfig} ;;
+Linux) export MOZCONFIG=${MOZCONFIG:-$root/swell/mozconfig.linux} ;;
+*) echo "package.sh: macOS and Linux only" >&2; exit 2 ;;
+esac
 
 if [ "${1:-}" != --skip-build ]; then
   ./mach build
@@ -35,6 +40,23 @@ out=$objdir/dist/release
 name=Swell-$version-$arch
 
 make -C "$objdir/swell/app/installer" stage-package
+
+if [ "$os" = Linux ]; then
+  staged=$objdir/dist/swell
+  [ -x "$staged/swell" ] || { echo "package.sh: nothing staged at $staged" >&2; exit 1; }
+  rm -rf "$out/$name" "$out/$name.tar.xz"
+  mkdir -p "$out/$name/icons"
+  cp -a "$staged" "$out/$name/swell"
+  cp "$here/linux/install.sh" "$here/linux/swell.desktop.in" "$out/$name/"
+  cp "$root"/swell/app/branding/default*.png "$root/swell/app/branding/swell.svg" "$out/$name/icons/"
+  cp "$root/swell/LICENSE" "$root/swell/NOTICE.md" "$out/$name/"
+  tar -C "$out" -cf - "$name" | xz -9 -T0 > "$out/$name.tar.xz"
+  rm -rf "$out/$name"
+  (cd "$out" && sha256sum "$name.tar.xz" > "$name.tar.xz.sha256")
+  echo "$out/$name.tar.xz"
+  exit 0
+fi
+
 staged=$objdir/dist/swell/Swell.app
 [ -d "$staged" ] || { echo "package.sh: nothing staged at $staged" >&2; exit 1; }
 

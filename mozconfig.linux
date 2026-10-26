@@ -1,0 +1,6 @@
+# The Swell build for Linux, used by tools/package.sh.
+# Use: MOZCONFIG=$PWD/swell/mozconfig.linux ./mach <command>   (from the firefox/ directory)
+
+. $topsrcdir/swell/mozconfig
+
+ac_add_options --enable-strip
