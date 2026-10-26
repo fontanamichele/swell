@@ -2005,6 +2005,14 @@ textarea {
   color: var(--sidebar-fg);
 }
 
+.close.unpin-keep {
+  visibility: visible;
+}
+
+.close.unpin-keep::before {
+  mask-image: url("chrome://swell/content/icons/minus.svg");
+}
+
 #nav-copy {
   width: 30px;
   height: 30px;
@@ -2077,7 +2085,7 @@ textarea {
   width: 14px;
   height: 14px;
   background-color: currentColor;
-  mask: url("chrome://swell/content/icons/minus.svg") center / contain no-repeat;
+  mask: url("chrome://swell/content/icons/nav-arrow-left.svg") center / contain no-repeat;
 }
 
 .back-to-pin:hover {

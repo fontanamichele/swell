@@ -255,6 +255,7 @@ export class Sidebar {
       // (a pinned one stays pinned), on one that is not it deletes the pin.
       const closeButton = doc.createElement("button");
       closeButton.className = "close";
+      closeButton.classList.toggle("unpin-keep", saved && !!openTab);
       closeButton.title = openTab ? "Close tab" : "Delete";
       closeButton.setAttribute("aria-label", closeButton.title);
       closeButton.addEventListener("click", event => {
