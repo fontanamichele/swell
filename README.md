@@ -66,6 +66,11 @@ The design is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Security reports: [SECURITY.md](SECURITY.md).
 
+## Support
+
+Swell is free and developed in spare time. If you find it useful, you can
+[buy me a coffee](https://buymeacoffee.com/ivantacca).
+
 ## Licence
 
 [MPL 2.0](LICENSE). Third-party material and Mozilla trademarks: [NOTICE.md](NOTICE.md).
