@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 """Derive a per-space copy of an add-on from a .xpi.
 
 usage: derive_extension.py in.xpi --space SPACE [-o OUTDIR] [--suffix-name]

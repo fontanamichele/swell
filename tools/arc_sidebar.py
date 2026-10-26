@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 """Rebuild Arc's sidebar (Favorites, Spaces > Pinned / Today > folders > tabs)
 from StorableSidebar.json, and optionally export it as bookmarks HTML.
 
 usage: arc_sidebar.py StorableSidebar.json [--html out.html] [--redact]
 """
-import argparse, datetime, html, json, sys
+import argparse
+import datetime
+import html
+import json
+import sys
 from urllib.parse import urlsplit
 
 APPLE_EPOCH = datetime.datetime(2001, 1, 1, tzinfo=datetime.timezone.utc)
@@ -111,17 +119,22 @@ class Sidebar:
                 pad = "    " * ind
                 if "list" in d:
                     lines.append('%s<DT><H3>%s</H3>' % (pad, html.escape(ch.get("title") or "Folder")))
-                    lines.append(pad + "<DL><p>"); emit(ch_id, ind + 1); lines.append(pad + "</DL><p>")
+                    lines.append(pad + "<DL><p>")
+                    emit(ch_id, ind + 1)
+                    lines.append(pad + "</DL><p>")
                 elif "tab" in d:
-                    t = d["tab"]; ts = apple_time(ch.get("createdAt"))
+                    t = d["tab"]
+                    ts = apple_time(ch.get("createdAt"))
                     add = ' ADD_DATE="%d"' % ts.timestamp() if ts else ""
                     lines.append('%s<DT><A HREF="%s"%s>%s</A>' % (pad, html.escape(t.get("savedURL", "")), add,
                                  html.escape(ch.get("title") or t.get("savedTitle") or "")))
 
         def folder(name, ind, ids):
             pad = "    " * ind
-            lines.append('%s<DT><H3>%s</H3>' % (pad, html.escape(name))); lines.append(pad + "<DL><p>")
-            for cid in ids: emit(cid, ind + 1)
+            lines.append('%s<DT><H3>%s</H3>' % (pad, html.escape(name)))
+            lines.append(pad + "<DL><p>")
+            for cid in ids:
+                emit(cid, ind + 1)
             lines.append(pad + "</DL><p>")
 
         folder("Favorites", 1, [cid for _, cid in self.top_apps])

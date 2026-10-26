@@ -1,4 +1,8 @@
 #!/bin/sh
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 # usage: gecko-branch.sh commit | status | save <NNNN> <message> | new <NNNN-name> <purpose> <test> <file>... | fixup <NNNN> | export
 #
 # Keeps our Gecko edits as real commits on a local branch ("swell") of the Firefox

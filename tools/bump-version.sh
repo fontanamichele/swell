@@ -1,4 +1,8 @@
 #!/bin/sh
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 # usage: bump-version.sh major|minor|patch
 # Bumps Swell's version in app/config/version.txt, the file the build reads as the
 # application version (Gecko's own version stays the engine version). Prints the new version.

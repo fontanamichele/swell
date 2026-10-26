@@ -1,4 +1,8 @@
 #!/bin/sh
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 # usage: sign-mac.sh path/to/Swell.app
 # Signs a Swell.app inside out with the hardened runtime: the helper apps, then every
 # library and executable, then the application.

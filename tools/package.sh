@@ -1,4 +1,8 @@
 #!/bin/sh
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 # usage: package.sh [--skip-build]
 # Builds Swell, stages the application with the package manifest
 # (app/installer/package-manifest.in), signs it, and makes a disk image in

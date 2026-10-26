@@ -1,4 +1,8 @@
 #!/bin/sh
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 # usage: apply-patches.sh apply|revert|status
 # Applies or reverts the patch queue in swell/patches/ on the Firefox tree.
 # Safe to re-run: patches that are already applied are skipped on apply, and
